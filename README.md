@@ -58,11 +58,17 @@ Gunakan `.\build.ps1` (default `-Target pack`) untuk membangun **10 model surviv
     - **Melee**: `Melee_Idle_Ready`, `Melee_Swing`
     - **Reaksi, Look-At & Zombie**: `Hit_React`, `Head_LookAt`, `Zombie_Walk_Shamble`, `Zombie_Lunge`, `Zombie_Bite_Grab`
 - **Render QA & Perbandingan**: [survivors_lineup.png](renders/survivors_lineup.png), [universal_weapons_qa.png](renders/universal_weapons_qa.png), [pair_jake.png](renders/pair_jake.png), [pair_maya.png](renders/pair_maya.png), [pair_rico.png](renders/pair_rico.png), [pair_lena.png](renders/pair_lena.png), [pair_tom.png](renders/pair_tom.png)
-- **17 Senjata (`output/weapons/`)**:
+- **17 Senjata (`output/weapons/`)**: dilengkapi socket `MuzzleSocket` & `EjectSocket` plus profil `WEAPON_META["vfx_profile"]`:
   - Sidearms: `pistol` (Glock 17, 202mm), `revolver` (S&W 686 4", 243mm)
   - SMG & Rifles: `smg` (MP5A2, 680mm), `m4` (M4A1, 840mm), `ak47` (AKM/AK-47, 880mm), `scar` (FN SCAR-H, 965mm), `aug` (Steyr AUG A3, 790mm), `m14` (M14 Battle Rifle, 1126mm), `sniper` (M24 SWS, 1092mm)
   - Shotguns & LMG: `pump` (Remington 870, 972mm), `double_barrel` (Side-by-Side 26", 1050mm), `spas12` (Franchi SPAS-12, 1041mm), `lmg` (M249 SAW, 1035mm)
   - Non-firearms: `pipe_wrench` (520mm), `compound_bow` (820mm), `arrow` (750mm), `knife` (280mm)
+- **13 Efek Senjata Modular (`output/vfx/vfx_*.glb`, `scripts/weapon_vfx.py`)**:
+  - *Muzzle Flash Emissive*: `muzzle_pistol`, `muzzle_rifle`, `muzzle_shotgun`, `muzzle_heavy`
+  - *Tracer & Selongsong*: `tracer_bullet`, `tracer_pellet`, `shell_rifle`, `shell_shotgun`, `smoke_puff`
+  - *Busur, Melee & Impact*: `arrow_trail`, `melee_slash`, `impact_spark`, `impact_blood`
+  - Helper `spawn_weapon_vfx()` otomatis menempelkan efek sesuai pose & `MuzzleSocket` / `EjectSocket`; jalankan `.\build.ps1 -Target vfx` untuk build cepat VFX.
+  - Render QA VFX: [weapon_vfx_sheet.png](renders/weapon_vfx_sheet.png), [weapon_vfx_action_qa.png](renders/weapon_vfx_action_qa.png)
 
 ## Cara Menjalankan Ulang
 ```powershell

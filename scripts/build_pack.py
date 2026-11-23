@@ -22,7 +22,8 @@ from palette import create_materials
 from rig_controls import verify_live_ik
 from rig_mechanics import bake_rig_actions
 from survivors import SURVIVOR_BUILDERS
-from weapons import ALL_WEAPON_BUILDERS
+from weapon_vfx import ALL_VFX_BUILDERS
+from weapons import ALL_WEAPON_BUILDERS, WEAPON_META
 
 
 def assert_pure_tris(mesh_objs):
@@ -44,9 +45,43 @@ def build_all_weapons(weapons_dir):
         mins, maxs = world_bounds([obj])
         z_len = maxs[2] - mins[2]
         y_len = maxs[1] - mins[1]
+
+        meta = WEAPON_META[wid]
+        muzzle_sock = bpy.data.objects.new("MuzzleSocket", None)
+        muzzle_sock.empty_display_type = "ARROWS"
+        muzzle_sock.empty_display_size = 0.04
+        bpy.context.scene.collection.objects.link(muzzle_sock)
+        muzzle_sock.parent = obj
+        muzzle_sock.location = meta["muzzle"]
+
+        if meta.get("ejection") is not None:
+            ej_sock = bpy.data.objects.new("EjectSocket", None)
+            ej_sock.empty_display_type = "ARROWS"
+            ej_sock.empty_display_size = 0.03
+            bpy.context.scene.collection.objects.link(ej_sock)
+            ej_sock.parent = obj
+            ej_sock.location = meta["ejection"]
+
         out_glb = os.path.join(weapons_dir, f"weapon_{wid}.glb")
         export_glb(out_glb, selected_only=False)
         print(f"  weapon_{wid:<14s} : {tris:4d} tris | Z={z_len:.3f}m (spec~{expected_z:.3f}m) | Y={y_len:.3f}m")
+
+
+def build_all_vfx(vfx_dir):
+    os.makedirs(vfx_dir, exist_ok=True)
+    print("=" * 64)
+    print(f"BUILDING {len(ALL_VFX_BUILDERS)} MODULAR WEAPON VFX ASSETS (origin=(0,0,0), fwd=+Z)")
+    for vid, builder in ALL_VFX_BUILDERS:
+        clear_scene()
+        materials, idx_map = create_materials()
+        obj, tris = builder(materials, idx_map)
+        assert_pure_tris([obj])
+        mins, maxs = world_bounds([obj])
+        span_z = maxs[2] - mins[2]
+        span_x = maxs[0] - mins[0]
+        out_glb = os.path.join(vfx_dir, f"vfx_{vid}.glb")
+        export_glb(out_glb, selected_only=False)
+        print(f"  vfx_{vid:<18s} : {tris:4d} tris | X={span_x:.3f}m | Z={span_z:.3f}m")
 
 
 def build_all_survivors(surv_dir):
@@ -116,11 +151,14 @@ def build_all_survivors(surv_dir):
 
 
 def main():
+    vfx_only = "--vfx-only" in sys.argv
     out_root = os.path.join(PROJECT_DIR, "output")
     build_all_weapons(os.path.join(out_root, "weapons"))
-    build_all_survivors(os.path.join(out_root, "survivors"))
+    build_all_vfx(os.path.join(out_root, "vfx"))
+    if not vfx_only:
+        build_all_survivors(os.path.join(out_root, "survivors"))
     print("=" * 64)
-    print("BATCH 1 PACK BUILD COMPLETE")
+    print("VFX + WEAPONS BUILD COMPLETE" if vfx_only else "BATCH 1 PACK BUILD COMPLETE")
 
 
 if __name__ == "__main__":

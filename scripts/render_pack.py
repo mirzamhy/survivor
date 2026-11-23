@@ -56,6 +56,7 @@ from survivors import (
     build_tom,
     equip_weapon,
 )
+from weapon_vfx import ALL_VFX_BUILDERS, spawn_weapon_vfx
 from weapons import ALL_WEAPON_BUILDERS
 
 
@@ -545,9 +546,117 @@ def render_universal_weapons_qa(out_path, tile_size=540):
     print(f"Saved universal weapons QA sheet: {out_path}")
 
 
+def render_vfx_sheet(out_path, tile_size=440):
+    """4-column showcase of all 13 modular weapon VFX GLB assets on dark backdrop."""
+    tmp_dir = os.path.join(PROJECT_DIR, "renders", "_tmp_vfx")
+    os.makedirs(tmp_dir, exist_ok=True)
+    tiles = []
+
+    for vid, builder in ALL_VFX_BUILDERS:
+        clear_scene()
+        scene = bpy.context.scene
+        configure_renderer(scene)
+        add_studio_lights(bg_color=(0.06, 0.07, 0.09))
+
+        materials, idx_map = create_materials()
+        obj, _ = builder(materials, idx_map)
+        mins, maxs = world_bounds([obj])
+        c = [(mins[i] + maxs[i]) * 0.5 for i in range(3)]
+        span = max(maxs[0] - mins[0], maxs[1] - mins[1], maxs[2] - mins[2], 0.14) * 1.45
+
+        cam_data = bpy.data.cameras.new("VfxCam")
+        cam_data.type = "ORTHO"
+        cam_data.ortho_scale = span
+        cam_data.clip_start = 0.01
+        cam_data.clip_end = 20.0
+        cam = bpy.data.objects.new("VfxCam", cam_data)
+        scene.collection.objects.link(cam)
+        scene.camera = cam
+
+        aim_camera(cam, (c[0] + 1.4, c[1] + 0.55, c[2] + 0.45), c)
+        p = os.path.join(tmp_dir, f"vfx_{vid}.png")
+        render_image(scene, p, tile_size, tile_size)
+        tiles.append(load_rgba_np(p))
+
+    sheet = _stitch_grid(tiles, cols=4, bg_rgb=(0.04, 0.05, 0.07), gap=4)
+    save_rgba_np(sheet, out_path)
+    for f in os.listdir(tmp_dir):
+        os.remove(os.path.join(tmp_dir, f))
+    os.rmdir(tmp_dir)
+    print(f"Saved {len(tiles)}-effect weapon VFX sheet: {out_path}")
+
+
+def render_weapon_vfx_action_qa(out_path, tile_size=560):
+    """6-panel (3x2) Live Weapon VFX Combat Showcase: Rifle, Pistol, Shotgun, Sniper, Bow, Melee."""
+    tmp_dir = os.path.join(PROJECT_DIR, "renders", "_tmp_vfx_qa")
+    os.makedirs(tmp_dir, exist_ok=True)
+    builder_map = dict(SURVIVOR_BUILDERS)
+    tiles = []
+
+    combos = [
+        ("jake_male",   "m4",            (-2.15, -2.35, 1.15), (0.0, -0.35, 0.96), "recoil"),
+        ("maya_female", "pistol",        (-1.85, -2.25, 1.15), (0.0, -0.30, 0.94), "recoil"),
+        ("tom_female",  "double_barrel", (-2.15, -2.35, 1.15), (0.0, -0.38, 0.96), "recoil"),
+        ("lena_female", "sniper",        (-2.25, -2.35, 1.15), (0.0, -0.38, 0.96), "recoil"),
+        ("lena_male",   "compound_bow",  (-2.20, -2.40, 1.18), (0.0, -0.20, 0.95), "bow"),
+        ("rico_female", "pipe_wrench",   (-2.00, -2.25, 1.18), (0.0, -0.15, 0.95), "melee"),
+    ]
+    for idx, (slug, wid, cam_loc, tgt, mode) in enumerate(combos):
+        clear_scene()
+        scene = bpy.context.scene
+        configure_renderer(scene)
+        add_studio_lights(bg_color=(0.07, 0.08, 0.10))
+        add_ground_disc(radius=2.2)
+        materials, idx_map = create_materials()
+
+        body_obj, _, arm_obj, _ = builder_map[slug](materials, idx_map, scene.collection, scene.collection, scene.collection)
+        equip_weapon(arm_obj, wid, materials, idx_map, collection=scene.collection, clear_existing=True)
+
+        if mode == "bow":
+            apply_bow_draw_pose(arm_obj, body_obj, right_grip_rest=tuple(arm_obj["arrow_grip_rest"]),
+                                draw_factor=1.0, release_follow=True)
+        elif mode == "melee":
+            apply_melee_swing_pose(arm_obj, body_obj, stage="impact")
+        else:
+            apply_aim_ads_pose(arm_obj, body_obj, weapon_id=wid,
+                               right_grip_rest=tuple(arm_obj["right_grip_rest"]),
+                               recoil_pitch_deg=6.0, kick_m=0.025, mode="aim")
+
+        bpy.context.view_layer.update()
+        spawn_weapon_vfx(arm_obj, wid, materials, idx_map, scene.collection, add_light=True)
+        bpy.ops.object.mode_set(mode="OBJECT")
+
+        cd = bpy.data.cameras.new("VfxQaCam")
+        cd.type = "ORTHO"
+        cd.ortho_scale = 2.15
+        cd.clip_start = 0.02
+        cd.clip_end = 50.0
+        cam = bpy.data.objects.new("VfxQaCam", cd)
+        scene.collection.objects.link(cam)
+        scene.camera = cam
+        aim_camera(cam, cam_loc, tgt)
+
+        p = os.path.join(tmp_dir, f"{idx}_{slug}_{wid}.png")
+        render_image(scene, p, tile_size, tile_size)
+        tiles.append(load_rgba_np(p))
+
+    sheet = _stitch_grid(tiles, cols=3, bg_rgb=(0.04, 0.05, 0.07), gap=4)
+    save_rgba_np(sheet, out_path)
+    for f in os.listdir(tmp_dir):
+        os.remove(os.path.join(tmp_dir, f))
+    os.rmdir(tmp_dir)
+    print(f"Saved live weapon VFX action QA sheet: {out_path}")
+
+
 def main():
+    vfx_only = "--vfx-only" in sys.argv
     renders_dir = os.path.join(PROJECT_DIR, "renders")
     os.makedirs(renders_dir, exist_ok=True)
+
+    render_vfx_sheet(os.path.join(renders_dir, "weapon_vfx_sheet.png"))
+    render_weapon_vfx_action_qa(os.path.join(renders_dir, "weapon_vfx_action_qa.png"))
+    if vfx_only:
+        return
 
     render_weapons_sheet(os.path.join(renders_dir, "weapons_sheet.png"))
     render_hand_mechanics_qa(os.path.join(renders_dir, "hand_mechanics_qa.png"))

@@ -93,6 +93,21 @@ MATERIAL_SPECS = [
     ("Mat_BowCam",       "#363A40", 0.42, 0.75),
     ("Mat_VaneRed",      "#CC332A", 0.70, 0.00),
     ("Mat_GlassDark",    "#162228", 0.15, 0.20),
+
+    # Weapon VFX (optional 6-tuple: + emission_hex, emission_strength)
+    ("Mat_VfxFlashCore",  "#FFF7CC", 0.20, 0.00, "#FFF6B8", 10.0),
+    ("Mat_VfxFlashMid",   "#FFB830", 0.30, 0.00, "#FFA820",  6.5),
+    ("Mat_VfxFlashOuter", "#F05A18", 0.40, 0.00, "#E84A10",  3.8),
+    ("Mat_VfxTracer",     "#FFE680", 0.20, 0.00, "#FFD95A",  7.5),
+    ("Mat_VfxSmokeLight", "#C8CCD2", 0.95, 0.00),
+    ("Mat_VfxSmokeDark",  "#6E737A", 0.95, 0.00),
+    ("Mat_VfxSpark",      "#FFE066", 0.20, 0.00, "#FFC832",  8.5),
+    ("Mat_VfxSlashCore",  "#F2F8FF", 0.20, 0.00, "#D8EEFF",  5.5),
+    ("Mat_VfxSlashEdge",  "#7CC4F8", 0.30, 0.00, "#4DA8F0",  3.2),
+    ("Mat_VfxBloodFresh", "#8C1616", 0.32, 0.00),
+    ("Mat_VfxBloodDark",  "#4A0A0A", 0.45, 0.00),
+    ("Mat_VfxBrassHot",   "#E0B850", 0.28, 0.88, "#FFB030",  0.8),
+    ("Mat_VfxLaserRed",   "#FF2020", 0.15, 0.00, "#FF1818",  9.0),
 ]
 
 
@@ -100,7 +115,8 @@ def create_materials():
     """Create or return the survivor material list and index lookup."""
     mats = []
     idx_map = {}
-    for i, (name, color_hex, roughness, metallic) in enumerate(MATERIAL_SPECS):
+    for i, spec in enumerate(MATERIAL_SPECS):
+        name, color_hex, roughness, metallic = spec[0], spec[1], spec[2], spec[3]
         mat = bpy.data.materials.get(name)
         if mat is None:
             mat = bpy.data.materials.new(name=name)
@@ -123,6 +139,9 @@ def create_materials():
         bsdf.inputs["Metallic"].default_value = metallic
         if "Specular IOR Level" in bsdf.inputs:
             bsdf.inputs["Specular IOR Level"].default_value = 0.35
+        if len(spec) >= 6 and "Emission Color" in bsdf.inputs:
+            bsdf.inputs["Emission Color"].default_value = rgba(spec[4])
+            bsdf.inputs["Emission Strength"].default_value = spec[5]
         mat.diffuse_color = col
 
         mats.append(mat)
