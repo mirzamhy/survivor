@@ -1,0 +1,8 @@
+*.blend1
+*.blend2
+__pycache__/
+*.pyc
+*.pyo
+renders/_tmp_*/
+.DS_Store
+Thumbs.db
