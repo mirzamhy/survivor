@@ -529,6 +529,144 @@ def build_weapon_knife(materials, idx_map, collection=None, name="Weapon_Knife")
     return finalize_mesh(name, bm, materials, collection=collection)
 
 
+def build_weapon_katana(materials, idx_map, collection=None, name="Weapon_Katana"):
+    """Tactical Apocalypse Katana (~1020 mm along +Z): wrapped tsuka hilt, iron tsuba, brass habaki, curved blade."""
+    bm = bmesh.new()
+    # Kashira pommel & wrapped tsuka handle (-0.165 to +0.090)
+    add_cylinder(bm, (0.0, -0.002, -0.168), (0.0, -0.002, -0.148),
+                 0.016, 0.015, segments=6, mat_idx=idx_map["Mat_GunMetal"])
+    add_cylinder(bm, (0.0, 0.0, -0.148), (0.0, 0.0, 0.088),
+                 0.014, 0.014, segments=6, mat_idx=idx_map["Mat_GripTape"])
+    for wz in (-0.125, -0.085, -0.045, -0.005, 0.035, 0.068):
+        add_box(bm, center=(0.0, 0.0, wz), size=(0.031, 0.029, 0.014),
+                rot=(0.0, 0.0, 0.18), mat_idx=idx_map["Mat_LeatherDark"])
+    # Octagonal iron tsuba guard & brass habaki collar
+    add_cylinder(bm, (0.0, 0.0, 0.088), (0.0, 0.0, 0.098),
+                 0.040, 0.040, segments=8, mat_idx=idx_map["Mat_GunMetal"])
+    add_box(bm, center=(0.0, 0.002, 0.110), size=(0.012, 0.028, 0.022),
+            mat_idx=idx_map["Mat_Brass"])
+    # 3 gently curving steel blade segments (+Y spine edge forward curve) + razor kissaki tip
+    add_box(bm, center=(0.0, 0.006, 0.235), size=(0.006, 0.026, 0.235),
+            rot=(-0.03, 0.0, 0.0), mat_idx=idx_map["Mat_GunSteel"])
+    add_box(bm, center=(0.0, 0.021, 0.465), size=(0.0055, 0.024, 0.235),
+            rot=(-0.08, 0.0, 0.0), mat_idx=idx_map["Mat_GunSteel"])
+    add_box(bm, center=(0.0, 0.046, 0.685), size=(0.005, 0.021, 0.220),
+            rot=(-0.14, 0.0, 0.0), taper_top=(0.82, 0.85), mat_idx=idx_map["Mat_GunSteel"])
+    # Darkened mune spine strip for silhouette contrast
+    add_box(bm, center=(0.0, 0.014, 0.235), size=(0.007, 0.008, 0.232),
+            rot=(-0.03, 0.0, 0.0), mat_idx=idx_map["Mat_GunMetal"])
+    add_box(bm, center=(0.0, 0.029, 0.465), size=(0.0065, 0.008, 0.232),
+            rot=(-0.08, 0.0, 0.0), mat_idx=idx_map["Mat_GunMetal"])
+    # Kissaki tip (z=0.795 to ~0.855)
+    add_box(bm, center=(0.0, 0.068, 0.820), size=(0.0045, 0.018, 0.068),
+            rot=(-0.22, 0.0, 0.0), taper_top=(0.15, 0.18), mat_idx=idx_map["Mat_GunSteel"])
+    return finalize_mesh(name, bm, materials, collection=collection)
+
+
+def build_weapon_machete(materials, idx_map, collection=None, name="Weapon_Machete"):
+    """Survival Machete (~585 mm along +Z): bolted grip, finger guard, wide flaring chopping blade & sawback."""
+    bm = bmesh.new()
+    # Ergonomic bolted grip (-0.075 to +0.070)
+    add_box(bm, center=(0.0, -0.003, -0.002), size=(0.024, 0.034, 0.145),
+            mat_idx=idx_map["Mat_GunPolymer"])
+    for rz in (-0.042, 0.0, 0.040):
+        add_cylinder(bm, (-0.013, -0.003, rz), (0.013, -0.003, rz),
+                     0.005, 0.005, segments=6, mat_idx=idx_map["Mat_GunSteel"])
+    # Finger guard & lower choil
+    add_box(bm, center=(0.0, 0.010, 0.074), size=(0.020, 0.056, 0.012),
+            mat_idx=idx_map["Mat_GunMetal"])
+    # Wide chopping blade (z=0.08 to 0.45), widening slightly toward tip
+    add_box(bm, center=(0.0, 0.012, 0.265), size=(0.007, 0.054, 0.370),
+            taper_top=(0.95, 1.24), mat_idx=idx_map["Mat_GunSteel"])
+    # Reinforced spine & sawback teeth along -Y/top back edge
+    add_box(bm, center=(0.0, -0.012, 0.260), size=(0.009, 0.010, 0.355),
+            mat_idx=idx_map["Mat_GunMetal"])
+    for nz in (0.14, 0.19, 0.24, 0.29):
+        add_box(bm, center=(0.0, -0.019, nz), size=(0.007, 0.010, 0.018),
+                rot=(-0.45, 0.0, 0.0), mat_idx=idx_map["Mat_GunMetal"])
+    # Clipped tip (z=0.45 to 0.515)
+    add_box(bm, center=(0.0, 0.016, 0.482), size=(0.006, 0.062, 0.066),
+            rot=(-0.12, 0.0, 0.0), taper_top=(0.20, 0.22), mat_idx=idx_map["Mat_GunSteel"])
+    return finalize_mesh(name, bm, materials, collection=collection)
+
+
+def build_weapon_fire_axe(materials, idx_map, collection=None, name="Weapon_FireAxe"):
+    """Fireman's Breaching Axe (~860 mm along +Z): long hardwood haft, taped grip, crimson axe head + steel bit & pick."""
+    bm = bmesh.new()
+    # Long hardwood haft (-0.22 to +0.60) & flared butt knob
+    add_box(bm, center=(0.0, 0.0, -0.225), size=(0.030, 0.044, 0.024),
+            mat_idx=idx_map["Mat_WoodBat"])
+    add_box(bm, center=(0.0, 0.0, 0.195), size=(0.024, 0.036, 0.820),
+            taper_top=(1.02, 1.15), mat_idx=idx_map["Mat_WoodBat"])
+    # Lower & mid grip tape sleeves
+    add_box(bm, center=(0.0, 0.0, -0.015), size=(0.027, 0.039, 0.190),
+            mat_idx=idx_map["Mat_GripTape"])
+    add_box(bm, center=(0.0, 0.0, 0.295), size=(0.026, 0.038, 0.095),
+            mat_idx=idx_map["Mat_GripTape"])
+    # Heavy crimson axe head socket + cheek (z=0.505..0.635)
+    add_box(bm, center=(0.0, 0.010, 0.568), size=(0.036, 0.135, 0.118),
+            mat_idx=idx_map["Mat_WrenchRed"])
+    # Sharp gleaming steel cutting blade extending +Y
+    add_box(bm, center=(0.0, 0.112, 0.568), size=(0.014, 0.088, 0.156),
+            taper_top=(0.35, 1.0), mat_idx=idx_map["Mat_GunSteel"])
+    add_box(bm, center=(0.0, 0.158, 0.568), size=(0.006, 0.016, 0.162),
+            mat_idx=idx_map["Mat_GunSteel"])
+    # Rear steel breaching pick spike extending -Y
+    add_box(bm, center=(0.0, -0.098, 0.576), size=(0.018, 0.105, 0.028),
+            rot=(-0.18, 0.0, 0.0), taper_top=(0.25, 0.35), mat_idx=idx_map["Mat_GunMetal"])
+    return finalize_mesh(name, bm, materials, collection=collection)
+
+
+def build_weapon_spiked_bat(materials, idx_map, collection=None, name="Weapon_SpikedBat"):
+    """Spiked Baseball Bat (~820 mm along +Z): taped handle, tapered hardwood barrel, iron bands & 8 steel nails."""
+    bm = bmesh.new()
+    # Pommel knob + black taped handle (-0.16 to +0.10)
+    add_cylinder(bm, (0.0, 0.0, -0.165), (0.0, 0.0, -0.145),
+                 0.024, 0.018, segments=8, mat_idx=idx_map["Mat_GripTape"])
+    add_cylinder(bm, (0.0, 0.0, -0.145), (0.0, 0.0, 0.105),
+                 0.016, 0.018, segments=8, mat_idx=idx_map["Mat_GripTape"])
+    # Tapered wood barrel (+0.105 to +0.655)
+    add_cylinder(bm, (0.0, 0.0, 0.105), (0.0, 0.0, 0.360),
+                 0.018, 0.032, segments=8, mat_idx=idx_map["Mat_WoodBat"])
+    add_cylinder(bm, (0.0, 0.0, 0.360), (0.0, 0.0, 0.650),
+                 0.032, 0.036, segments=8, mat_idx=idx_map["Mat_WoodBat"])
+    add_cylinder(bm, (0.0, 0.0, 0.650), (0.0, 0.0, 0.662),
+                 0.036, 0.020, segments=8, mat_idx=idx_map["Mat_MetalDark"])
+    # Dark iron reinforcement bands
+    for bz in (0.375, 0.525, 0.625):
+        add_cylinder(bm, (0.0, 0.0, bz - 0.010), (0.0, 0.0, bz + 0.010),
+                     0.037, 0.037, segments=8, mat_idx=idx_map["Mat_MetalDark"])
+    # 8 radial steel spikes driven through sweet spot
+    for k in range(8):
+        ang = k * (math.pi * 0.75) + 0.3
+        sz = 0.415 + k * 0.028
+        nx, ny = math.cos(ang), math.sin(ang)
+        add_cylinder(bm, (nx * 0.028, ny * 0.028, sz), (nx * 0.088, ny * 0.088, sz + 0.014),
+                     0.006, 0.0012, segments=5, mat_idx=idx_map["Mat_GunSteel"])
+    return finalize_mesh(name, bm, materials, collection=collection)
+
+
+def build_weapon_crowbar(materials, idx_map, collection=None, name="Weapon_Crowbar"):
+    """Forged Steel Crowbar (~685 mm along +Z): red hex bar, taped grip, rear chisel & curved split-claw hook."""
+    bm = bmesh.new()
+    # Hexagonal red steel shaft (-0.155 to +0.435)
+    add_cylinder(bm, (0.0, 0.0, -0.155), (0.0, 0.0, 0.435),
+                 0.014, 0.014, segments=6, mat_idx=idx_map["Mat_WrenchRed"])
+    # Ribbed grip sleeve at palm center
+    add_cylinder(bm, (0.0, 0.0, -0.055), (0.0, 0.0, 0.095),
+                 0.017, 0.017, segments=6, mat_idx=idx_map["Mat_GripTape"])
+    # Rear beveled flat pry chisel (-0.215 to -0.155)
+    add_box(bm, center=(0.0, -0.008, -0.185), size=(0.026, 0.009, 0.062),
+            rot=(-0.28, 0.0, 0.0), taper_top=(0.85, 0.35), mat_idx=idx_map["Mat_GunSteel"])
+    # Front curved gooseneck hook & twin claw forks (+0.435 to +0.510)
+    add_box(bm, center=(0.0, 0.026, 0.468), size=(0.022, 0.058, 0.024),
+            rot=(-0.55, 0.0, 0.0), mat_idx=idx_map["Mat_WrenchRed"])
+    for sx in (-0.008, 0.008):
+        add_box(bm, center=(sx, 0.062, 0.478), size=(0.008, 0.042, 0.016),
+                rot=(0.65, 0.0, 0.0), taper_top=(0.55, 0.25), mat_idx=idx_map["Mat_GunSteel"])
+    return finalize_mesh(name, bm, materials, collection=collection)
+
+
 WEAPON_META = {
     "pistol":        {"spec_length": 0.202, "foregrip": (0.0, 0.01, 0.05),   "muzzle": (0.0, 0.04, 0.165), "ejection": (-0.018, 0.044, 0.045),  "shell_type": "rifle",   "vfx_profile": "pistol",  "hold_type": "pistol"},
     "revolver":      {"spec_length": 0.243, "foregrip": (0.0, 0.01, 0.05),   "muzzle": (0.0, 0.05, 0.188), "ejection": None,                      "shell_type": None,      "vfx_profile": "pistol",  "hold_type": "pistol"},
@@ -547,6 +685,11 @@ WEAPON_META = {
     "compound_bow":  {"spec_length": 0.410, "foregrip": (0.0, 0.0, 0.0),     "muzzle": (0.0, 0.0, 0.245),  "ejection": None,                      "shell_type": None,      "vfx_profile": "bow",     "hold_type": "bow"},
     "arrow":         {"spec_length": 0.750, "foregrip": (0.0, 0.0, 0.0),     "muzzle": (0.0, 0.0, 0.620),  "ejection": None,                      "shell_type": None,      "vfx_profile": "bow",     "hold_type": "arrow"},
     "knife":         {"spec_length": 0.280, "foregrip": (0.0, 0.0, 0.0),     "muzzle": (0.0, 0.0, 0.212),  "ejection": None,                      "shell_type": None,      "vfx_profile": "melee",   "hold_type": "melee"},
+    "katana":        {"spec_length": 1.025, "foregrip": (0.0, 0.0, 0.06),    "muzzle": (0.0, 0.068, 0.855),"ejection": None,                      "shell_type": None,      "vfx_profile": "melee",   "hold_type": "melee"},
+    "machete":       {"spec_length": 0.590, "foregrip": (0.0, 0.0, 0.05),    "muzzle": (0.0, 0.016, 0.515),"ejection": None,                      "shell_type": None,      "vfx_profile": "melee",   "hold_type": "melee"},
+    "fire_axe":      {"spec_length": 0.875, "foregrip": (0.0, 0.0, 0.295),   "muzzle": (0.0, 0.145, 0.635),"ejection": None,                      "shell_type": None,      "vfx_profile": "melee",   "hold_type": "melee"},
+    "spiked_bat":    {"spec_length": 0.827, "foregrip": (0.0, 0.0, 0.12),    "muzzle": (0.0, 0.0, 0.655),  "ejection": None,                      "shell_type": None,      "vfx_profile": "melee",   "hold_type": "melee"},
+    "crowbar":       {"spec_length": 0.725, "foregrip": (0.0, 0.0, 0.15),    "muzzle": (0.0, 0.060, 0.505),"ejection": None,                      "shell_type": None,      "vfx_profile": "melee",   "hold_type": "melee"},
 }
 
 ALL_WEAPON_BUILDERS = [
@@ -567,4 +710,9 @@ ALL_WEAPON_BUILDERS = [
     ("compound_bow",  build_weapon_compound_bow,  0.410),
     ("arrow",         build_weapon_arrow,         0.750),
     ("knife",         build_weapon_knife,         0.280),
+    ("katana",        build_weapon_katana,        1.025),
+    ("machete",       build_weapon_machete,       0.590),
+    ("fire_axe",      build_weapon_fire_axe,      0.875),
+    ("spiked_bat",    build_weapon_spiked_bat,    0.827),
+    ("crowbar",       build_weapon_crowbar,       0.725),
 ]
