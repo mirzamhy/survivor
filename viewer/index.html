@@ -1,0 +1,1610 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Survivor vs Zombies &amp; Mutants — 3D Battle Arena</title>
+  <style>
+    :root {
+      --bg: #0f1319;
+      --panel: rgba(17, 22, 30, 0.90);
+      --panel-border: rgba(255, 255, 255, 0.10);
+      --accent: #38bdf8;
+      --survivor: #22c55e;
+      --zombie: #f59e0b;
+      --mutant: #ef4444;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      background: var(--bg); color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 13px;
+      user-select: none;
+    }
+    #canvas-wrap {
+      position: fixed; inset: 0; z-index: 1;
+    }
+    canvas { display: block; width: 100%; height: 100%; }
+
+    /* Floating HTML Labels over 3D units */
+    #labels-layer {
+      position: fixed; inset: 0; z-index: 2; pointer-events: none; overflow: hidden;
+    }
+    .unit-hud {
+      position: absolute;
+      transform: translate(-50%, -100%);
+      background: rgba(10, 14, 20, 0.82);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 6px;
+      padding: 4px 7px;
+      min-width: 108px;
+      text-align: center;
+      backdrop-filter: blur(4px);
+      transition: opacity 0.15s;
+    }
+    .unit-hud.selected {
+      border-color: var(--accent);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.45);
+    }
+    .unit-hud.dead { opacity: 0.45; }
+    .unit-name {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.2px;
+      white-space: nowrap;
+    }
+    .unit-state {
+      font-size: 10px; color: var(--muted); margin-bottom: 3px;
+      white-space: nowrap;
+    }
+    .hp-track {
+      width: 100%; height: 5px; background: rgba(255,255,255,0.12);
+      border-radius: 3px; overflow: hidden;
+    }
+    .hp-fill { height: 100%; transition: width 0.12s; }
+    .hp-fill.survivor { background: var(--survivor); }
+    .hp-fill.zombie { background: var(--zombie); }
+    .hp-fill.mutant { background: var(--mutant); }
+
+    .float-dmg {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      font-weight: 800; font-size: 14px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+      pointer-events: none;
+    }
+
+    /* Top HUD Bar */
+    #topbar {
+      position: fixed; top: 12px; left: 336px; right: 14px; z-index: 10;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      pointer-events: none;
+      transition: left 0.2s ease;
+    }
+    body.sidebar-collapsed #topbar { left: 62px; }
+    .top-pill {
+      pointer-events: auto;
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      background: var(--panel); border: 1px solid var(--panel-border);
+      border-radius: 10px; padding: 8px 14px; backdrop-filter: blur(8px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+    .badge {
+      padding: 3px 8px; border-radius: 999px; font-weight: 700; font-size: 11px;
+      background: rgba(255,255,255,0.08);
+    }
+    .badge.surv { color: #86efac; background: rgba(34,197,94,0.16); border: 1px solid rgba(34,197,94,0.3); }
+    .badge.enm { color: #fca5a5; background: rgba(239,68,68,0.16); border: 1px solid rgba(239,68,68,0.3); }
+    .badge.dist { color: #7dd3fc; background: rgba(56,189,248,0.16); border: 1px solid rgba(56,189,248,0.3); }
+
+    /* Left Sidebar */
+    #sidebar {
+      position: fixed; top: 12px; left: 12px; bottom: 12px; width: 312px; z-index: 12;
+      background: var(--panel); border: 1px solid var(--panel-border);
+      border-radius: 12px; backdrop-filter: blur(10px);
+      display: flex; flex-direction: column;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+      transition: transform 0.2s ease;
+    }
+    body.sidebar-collapsed #sidebar { transform: translateX(-330px); }
+    #toggle-sidebar {
+      position: fixed; top: 14px; left: 14px; z-index: 15;
+      display: none; padding: 8px 11px; border-radius: 8px;
+      background: var(--panel); border: 1px solid var(--panel-border); color: var(--text);
+      cursor: pointer; font-weight: 700;
+    }
+    body.sidebar-collapsed #toggle-sidebar { display: block; }
+
+    .sb-head {
+      padding: 12px 14px; border-bottom: 1px solid var(--panel-border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .sb-title { font-size: 14px; font-weight: 800; color: #f8fafc; }
+    .sb-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .sb-scroll {
+      flex: 1; overflow-y: auto; padding: 12px 14px;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .sb-scroll::-webkit-scrollbar { width: 6px; }
+    .sb-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+
+    .section {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 9px; padding: 10px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .sec-title {
+      font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.7px;
+      color: var(--accent); display: flex; justify-content: space-between; align-items: center;
+    }
+    label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 3px; }
+    select, input[type="range"] { width: 100%; }
+    select {
+      background: #171e29; color: var(--text);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 6px; padding: 6px 8px; font-size: 12px;
+      outline: none;
+    }
+    select:focus { border-color: var(--accent); }
+    .row { display: flex; gap: 6px; align-items: center; }
+    .row > * { flex: 1; }
+
+    button {
+      background: #1e293b; color: var(--text);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 6px; padding: 7px 10px;
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      transition: background 0.14s, border-color 0.14s, transform 0.08s;
+    }
+    button:hover { background: #293548; border-color: rgba(255,255,255,0.28); }
+    button:active { transform: scale(0.98); }
+    button.primary { background: #0284c7; border-color: #38bdf8; color: #fff; }
+    button.primary:hover { background: #0369a1; }
+    button.good { background: #15803d; border-color: #22c55e; color: #fff; }
+    button.good:hover { background: #166534; }
+    button.danger { background: #991b1b; border-color: #ef4444; color: #fff; }
+    button.danger:hover { background: #7f1d1d; }
+    button.sm { padding: 4px 8px; font-size: 11px; }
+
+    .preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+    .preset-grid button { font-size: 11px; padding: 6px 6px; text-align: left; }
+
+    .roster-list { display: flex; flex-direction: column; gap: 4px; max-height: 150px; overflow-y: auto; }
+    .roster-item {
+      display: flex; align-items: center; justify-content: space-between; gap: 6px;
+      padding: 5px 7px; border-radius: 6px; background: rgba(0,0,0,0.28);
+      border: 1px solid rgba(255,255,255,0.06); cursor: pointer;
+    }
+    .roster-item.selected { border-color: var(--accent); background: rgba(56,189,248,0.12); }
+    .roster-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .roster-dot.survivor { background: var(--survivor); }
+    .roster-dot.zombie { background: var(--zombie); }
+    .roster-dot.mutant { background: var(--mutant); }
+
+    .check-row {
+      display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text); cursor: pointer;
+    }
+    .check-row input { accent-color: var(--accent); cursor: pointer; }
+
+    /* Bottom camera bar */
+    #cam-bar {
+      position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); z-index: 10;
+      display: flex; gap: 6px; background: var(--panel);
+      border: 1px solid var(--panel-border); border-radius: 10px;
+      padding: 6px 10px; backdrop-filter: blur(8px);
+    }
+
+    /* Battle Winner Banner */
+    #result-banner {
+      position: fixed; top: 76px; left: 50%; transform: translateX(-50%); z-index: 14;
+      display: none; align-items: center; gap: 14px;
+      background: rgba(15, 23, 42, 0.94); border: 2px solid var(--accent);
+      border-radius: 12px; padding: 12px 20px; box-shadow: 0 12px 32px rgba(0,0,0,0.6);
+    }
+    #result-banner.show { display: flex; }
+
+    /* Loading & Protocol Warning Toast */
+    #toast {
+      position: fixed; bottom: 64px; right: 16px; z-index: 20;
+      background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px; padding: 9px 14px; max-width: 380px;
+      font-size: 12px; display: none;
+    }
+    #toast.show { display: block; }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="canvas-wrap"></div>
+  <div id="labels-layer"></div>
+
+  <button id="toggle-sidebar" title="Buka Panel Kontrol">☰ Menu</button>
+
+  <aside id="sidebar">
+    <div class="sb-head">
+      <div>
+        <div class="sb-title">3D Battle Arena</div>
+        <div class="sb-sub">Survivor vs Zombies &amp; Mutants</div>
+      </div>
+      <button id="btn-collapse" class="sm" title="Sembunyikan Panel">✕</button>
+    </div>
+
+    <div class="sb-scroll">
+      <!-- 1. Preset Duel & Squad -->
+      <div class="section">
+        <div class="sec-title">Preset Cepat</div>
+        <div class="preset-grid">
+          <button data-preset="jake_vs_bile">Jake vs Bile Tank</button>
+          <button data-preset="rico_katana_vs_scythe">Rico [Katana] vs Scythe</button>
+          <button data-preset="tom_axe_vs_bile">Tom [Fire Axe] vs Bile Tank</button>
+          <button data-preset="lena_machete_vs_zombies">Lena [Machete] vs Zombies</button>
+          <button data-preset="maya_vs_arachnid">Maya vs Arachnid Maw</button>
+          <button data-preset="lena_vs_thorn">Lena vs Thorn Shroud</button>
+          <button data-preset="tom_vs_rafflesia">Tom vs Rafflesia</button>
+          <button data-preset="squad_vs_mutants">5 Survivor vs 5 Mutant</button>
+          <button data-preset="squad_vs_zombies">5 Survivor vs 6 Zombie</button>
+        </div>
+      </div>
+
+      <!-- 2. Pengaturan Jarak & Pertarungan -->
+      <div class="section">
+        <div class="sec-title">
+          <span>Jarak &amp; Pertempuran</span>
+          <span id="dist-val" style="color:#f8fafc;">12 m</span>
+        </div>
+        <div>
+          <label for="slider-distance">Jarak Awal Survivor ↔ Monster (agar jalan mendekat)</label>
+          <input id="slider-distance" type="range" min="3" max="24" step="1" value="12" />
+        </div>
+        <div class="row">
+          <button id="btn-apply-dist" class="primary">Reset Posisi &amp; Jalan</button>
+          <button id="btn-clear-all" class="danger">Kosongkan</button>
+        </div>
+        <div>
+          <label for="sel-surv-behavior">Perilaku Survivor</label>
+          <select id="sel-surv-behavior">
+            <option value="hold">Diam &amp; Tembak di Tempat (Hold Stance)</option>
+            <option value="advance">Maju Mendekati Musuh (Advance)</option>
+          </select>
+        </div>
+        <div>
+          <label for="sel-combat-mode">Mode Arena</label>
+          <select id="sel-combat-mode">
+            <option value="battle">Pertempuran Normal (HP &amp; Death)</option>
+            <option value="immortal">Uji Animasi Abadi (Tak Bisa Mati)</option>
+          </select>
+        </div>
+        <label class="check-row"><input id="chk-vfx" type="checkbox" checked /> Tampilkan Efek 3D (VFX Serangan &amp; Tembakan)</label>
+        <label class="check-row"><input id="chk-hud" type="checkbox" checked /> Tampilkan Bar HP &amp; Status di Atas Kepala</label>
+        <label class="check-row"><input id="chk-ruler" type="checkbox" checked /> Tampilkan Garis Ukur Jarak</label>
+      </div>
+
+      <!-- 3. Tambah Karakter -->
+      <div class="section">
+        <div class="sec-title">Tambah Karakter ke Arena</div>
+        <div>
+          <label for="sel-survivor">Pilih Survivor (10 Model)</label>
+          <select id="sel-survivor"></select>
+        </div>
+        <div>
+          <label for="sel-weapon">Senjata Survivor</label>
+          <select id="sel-weapon"></select>
+        </div>
+        <button id="btn-add-survivor" class="good">+ Tambah Survivor (Sisi Kiri)</button>
+
+        <hr style="border:0;border-top:1px solid rgba(255,255,255,0.08);margin:4px 0;" />
+
+        <div>
+          <label for="sel-enemy">Pilih Zombie / Monster Mutant (11 Model)</label>
+          <select id="sel-enemy"></select>
+        </div>
+        <button id="btn-add-enemy" class="danger">+ Tambah Zombie / Mutant (Sisi Kanan)</button>
+      </div>
+
+      <!-- 4. Daftar Unit & Kontrol Animasi -->
+      <div class="section">
+        <div class="sec-title">
+          <span>Unit Aktif</span>
+          <span id="unit-count" style="color:var(--muted);">0</span>
+        </div>
+        <div id="roster-list" class="roster-list"></div>
+
+        <div id="inspector-box" style="display:none; flex-direction:column; gap:6px; margin-top:4px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.08);">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+            <span style="font-size:11px;font-weight:700;color:#f8fafc;">Terpilih: <span id="insp-name" style="color:var(--accent);">-</span></span>
+            <button id="btn-resume-ai" class="sm good" style="flex:0 0 auto;">▶ AI Otomatis</button>
+          </div>
+          <details style="font-size:11px;color:var(--muted);">
+            <summary style="cursor:pointer;padding:2px 0;">Opsional: Uji Clip Manual</summary>
+            <div style="display:flex;flex-direction:column;gap:5px;margin-top:6px;">
+              <div class="row">
+                <button class="sm" data-anim-role="idle">Idle</button>
+                <button class="sm" data-anim-role="walk">Walk</button>
+                <button class="sm" data-anim-role="run">Run</button>
+                <button class="sm" data-anim-role="attack">Attack</button>
+              </div>
+              <div class="row">
+                <button class="sm" data-anim-role="skill">Skill</button>
+                <button class="sm" data-anim-role="hit">Hit</button>
+                <button class="sm" data-anim-role="death">Death</button>
+              </div>
+              <div class="row">
+                <select id="sel-raw-clip"></select>
+                <button id="btn-play-raw" class="sm primary" style="flex:0 0 auto;">Putar</button>
+              </div>
+            </div>
+          </details>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Top Controls & Telemetry -->
+  <div id="topbar">
+    <div class="top-pill">
+      <span id="stat-surv" class="badge surv">Survivor: 0</span>
+      <span id="stat-enm" class="badge enm">Monster/Zombie: 0</span>
+      <span id="stat-dist" class="badge dist">Jarak Terdekat: -</span>
+    </div>
+    <div class="top-pill">
+      <button id="btn-pause" class="sm primary">⏸ Jeda</button>
+      <div style="display:flex;align-items:center;gap:6px;width:130px;">
+        <span style="font-size:11px;color:var(--muted);">Speed</span>
+        <input id="slider-speed" type="range" min="0.25" max="2.0" step="0.25" value="1.0" />
+        <span id="speed-val" style="font-size:11px;min-width:30px;">1.0x</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result Banner -->
+  <div id="result-banner">
+    <div>
+      <div id="result-title" style="font-size:16px;font-weight:800;">Pertempuran Selesai!</div>
+      <div id="result-sub" style="font-size:12px;color:var(--muted);">-</div>
+    </div>
+    <button id="btn-rematch" class="primary">↺ Ulangi Pertarungan</button>
+  </div>
+
+  <!-- Camera Presets -->
+  <div id="cam-bar">
+    <button class="sm" data-cam="arena">🎥 Arena 3/4</button>
+    <button class="sm" data-cam="side">📏 Samping (Jarak)</button>
+    <button class="sm" data-cam="close">🔍 Dekat Duel</button>
+    <button class="sm" data-cam="follow">🎯 Ikuti Terpilih</button>
+  </div>
+
+  <div id="toast"></div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+
+    // -----------------------------------------------------------------------
+    // 1. CATALOG DEFINITIONS (Exact GLB Paths, Animations, Stats & VFX)
+    // -----------------------------------------------------------------------
+    const SURVIVORS = [
+      { id: 'jake_male',   label: 'Jake (Male) — M4 Carbine',       defaultWeapon: 'm4',            hp: 260 },
+      { id: 'jake_female', label: 'Jake (Female) — M4 Carbine',     defaultWeapon: 'm4',            hp: 250 },
+      { id: 'maya_male',   label: 'Maya (Male) — Glock 17',         defaultWeapon: 'pistol',        hp: 230 },
+      { id: 'maya_female', label: 'Maya (Female) — Glock 17',       defaultWeapon: 'pistol',        hp: 225 },
+      { id: 'rico_male',   label: 'Rico (Male) — Pipe Wrench',      defaultWeapon: 'pipe_wrench',   hp: 300 },
+      { id: 'rico_female', label: 'Rico (Female) — Pipe Wrench',    defaultWeapon: 'pipe_wrench',   hp: 290 },
+      { id: 'lena_male',   label: 'Lena (Male) — Compound Bow',     defaultWeapon: 'compound_bow',  hp: 240 },
+      { id: 'lena_female', label: 'Lena (Female) — Compound Bow',   defaultWeapon: 'compound_bow',  hp: 235 },
+      { id: 'tom_male',    label: 'Tom (Male) — Double Barrel',     defaultWeapon: 'double_barrel', hp: 280 },
+      { id: 'tom_female',  label: 'Tom (Female) — Double Barrel',   defaultWeapon: 'double_barrel', hp: 270 },
+    ];
+
+    const WEAPONS = {
+      default:       { label: 'Default Bawaan Karakter', cls: 'auto' },
+      m4:            { label: 'M4A1 Carbine',         cls: 'rifle',   range: 14.0, cd: 0.48, dmg: 22, vfx: 'muzzle_rifle',   proj: 'tracer_bullet',  hand: 'R', muzzleZ: 0.54 },
+      ak47:          { label: 'AK-47 Assault Rifle',  cls: 'rifle',   range: 14.0, cd: 0.52, dmg: 26, vfx: 'muzzle_rifle',   proj: 'tracer_bullet',  hand: 'R', muzzleZ: 0.56 },
+      scar:          { label: 'FN SCAR-H',            cls: 'rifle',   range: 15.0, cd: 0.56, dmg: 30, vfx: 'muzzle_rifle',   proj: 'tracer_bullet',  hand: 'R', muzzleZ: 0.64 },
+      aug:           { label: 'Steyr AUG A3',         cls: 'rifle',   range: 14.0, cd: 0.50, dmg: 24, vfx: 'muzzle_rifle',   proj: 'tracer_bullet',  hand: 'R', muzzleZ: 0.45 },
+      m14:           { label: 'M14 Battle Rifle',     cls: 'rifle',   range: 16.5, cd: 0.72, dmg: 38, vfx: 'muzzle_rifle',   proj: 'tracer_bullet',  hand: 'R', muzzleZ: 0.78 },
+      smg:           { label: 'MP5A2 SMG',            cls: 'rifle',   range: 11.5, cd: 0.34, dmg: 15, vfx: 'muzzle_rifle',   proj: 'tracer_bullet',  hand: 'R', muzzleZ: 0.42 },
+      sniper:        { label: 'M24 Sniper Rifle',     cls: 'rifle',   range: 20.0, cd: 1.35, dmg: 78, vfx: 'muzzle_heavy',   proj: 'tracer_bullet',  hand: 'R', muzzleZ: 0.75 },
+      lmg:           { label: 'M249 SAW LMG',         cls: 'rifle',   range: 14.5, cd: 0.32, dmg: 20, vfx: 'muzzle_heavy',   proj: 'tracer_bullet',  hand: 'R', muzzleZ: 0.72 },
+      pump:          { label: 'Remington 870 Shotgun',cls: 'rifle',   range: 8.5,  cd: 1.05, dmg: 52, vfx: 'muzzle_shotgun', proj: 'tracer_pellet',  hand: 'R', muzzleZ: 0.63 },
+      double_barrel: { label: 'Double Barrel Shotgun',cls: 'rifle',   range: 8.0,  cd: 1.10, dmg: 64, vfx: 'muzzle_shotgun', proj: 'tracer_pellet',  hand: 'R', muzzleZ: 0.74 },
+      spas12:        { label: 'SPAS-12 Shotgun',      cls: 'rifle',   range: 8.5,  cd: 0.90, dmg: 48, vfx: 'muzzle_shotgun', proj: 'tracer_pellet',  hand: 'R', muzzleZ: 0.68 },
+      pistol:        { label: 'Glock 17 Pistol',      cls: 'pistol',  range: 10.5, cd: 0.58, dmg: 20, vfx: 'muzzle_pistol',  proj: 'tracer_bullet',  hand: 'R', muzzleZ: 0.17 },
+      revolver:      { label: 'S&W 686 Revolver',     cls: 'pistol',  range: 11.5, cd: 0.85, dmg: 38, vfx: 'muzzle_pistol',  proj: 'tracer_bullet',  hand: 'R', muzzleZ: 0.19 },
+      compound_bow:  { label: 'Compound Bow',         cls: 'bow',     range: 15.0, cd: 1.15, dmg: 52, vfx: 'arrow_trail',    proj: 'arrow_trail',    hand: 'L', muzzleZ: 0.25 },
+      katana:        { label: 'Katana — Pedang Samurai (Melee)', cls: 'melee', range: 2.15, cd: 0.72, dmg: 46, slashScale: 1.35, vfx: 'melee_slash', proj: null, hand: 'R', muzzleZ: 0.85 },
+      machete:       { label: 'Machete — Golok Survival (Melee)', cls: 'melee', range: 1.85, cd: 0.65, dmg: 38, slashScale: 1.10, vfx: 'melee_slash', proj: null, hand: 'R', muzzleZ: 0.50 },
+      fire_axe:      { label: 'Fire Axe — Kapak Pemadam (Melee)', cls: 'melee', range: 2.05, cd: 1.02, dmg: 66, slashScale: 1.40, vfx: 'melee_slash', proj: null, hand: 'R', muzzleZ: 0.62 },
+      spiked_bat:    { label: 'Spiked Bat — Tongkat Berpaku (Melee)', cls: 'melee', range: 1.95, cd: 0.86, dmg: 50, slashScale: 1.20, vfx: 'melee_slash', proj: null, hand: 'R', muzzleZ: 0.64 },
+      crowbar:       { label: 'Crowbar — Linggis Tempur (Melee)', cls: 'melee', range: 1.80, cd: 0.78, dmg: 42, slashScale: 1.05, vfx: 'melee_slash', proj: null, hand: 'R', muzzleZ: 0.50 },
+      pipe_wrench:   { label: 'Pipe Wrench (Melee)',  cls: 'melee',   range: 1.75, cd: 0.88, dmg: 38, slashScale: 1.00, vfx: 'melee_slash',    proj: null,             hand: 'R', muzzleZ: 0.42 },
+      knife:         { label: 'Survival Knife',       cls: 'melee',   range: 1.50, cd: 0.60, dmg: 26, slashScale: 0.82, vfx: 'melee_slash',    proj: null,             hand: 'R', muzzleZ: 0.21 },
+    };
+
+    const ENEMIES = [
+      // 5 Weird Mutants (with custom skeleton & dedicated 3D VFX)
+      {
+        id: 'mutant_bile_juggernaut', kind: 'mutant', label: '[Mutant] Bile Juggernaut (Tank Lambat)',
+        glb: '../output/zombies/mutant_bile_juggernaut.glb', vfxGlb: '../output/vfx/vfx_mutant_bile_juggernaut.glb',
+        hp: 680, speed: 0.92, range: 2.25, skillRange: 3.1, cd: 1.85, dmg: 52, skillDmg: 75,
+        vfxMode: 'ground_slam',
+        anims: { idle: 'Idle_Lumber', walk: 'Walk_Stomp_Slow', run: 'Walk_Stomp_Slow', attack: 'Attack_Crusher_Swipe', skill: 'Skill_Seismic_Bile_Slam', hit: 'Attack_Crusher_Swipe', death: 'Death_Timber' }
+      },
+      {
+        id: 'mutant_rafflesia', kind: 'mutant', label: '[Mutant] Rafflesia Blood-Flower',
+        glb: '../output/zombies/mutant_rafflesia.glb', vfxGlb: '../output/vfx/vfx_mutant_rafflesia.glb',
+        hp: 360, speed: 1.38, range: 2.0, skillRange: 5.5, cd: 1.55, dmg: 32, skillDmg: 42,
+        vfxMode: 'head_forward', vfxProjColor: 0x98e042,
+        anims: { idle: 'Idle_Sway', walk: 'Crawl_Stalk', run: 'Crawl_Stalk', attack: 'Attack_Lunge_Bite', skill: 'Skill_Vine_Thrash', hit: 'Attack_Lunge_Bite', death: 'Death_Wilt' }
+      },
+      {
+        id: 'mutant_scythe_stalker', kind: 'mutant', label: '[Mutant] Scythe Stalker (Cepat)',
+        glb: '../output/zombies/mutant_scythe_stalker.glb', vfxGlb: '../output/vfx/vfx_mutant_scythe_stalker.glb',
+        hp: 290, speed: 2.55, range: 2.05, skillRange: 3.2, cd: 1.15, dmg: 36, skillDmg: 52,
+        vfxMode: 'scythe_forward',
+        anims: { idle: 'Idle_Hunch', walk: 'Run_Limp_Stalk', run: 'Run_Limp_Stalk', attack: 'Attack_Scythe_Clef', skill: 'Skill_Reaper_Lunge', hit: 'Attack_Scythe_Clef', death: 'Death_Collapse' }
+      },
+      {
+        id: 'mutant_thorn_shroud', kind: 'mutant', label: '[Mutant] Thorn Shroud Seraph',
+        glb: '../output/zombies/mutant_thorn_shroud.glb', vfxGlb: '../output/vfx/vfx_mutant_thorn_shroud.glb',
+        hp: 330, speed: 1.75, range: 2.1, skillRange: 6.2, cd: 1.45, dmg: 30, skillDmg: 44,
+        vfxMode: 'head_forward', vfxProjColor: 0xa8dcff,
+        anims: { idle: 'Idle_Veil_Sway', walk: 'Glide_Stilt_Stalk', run: 'Glide_Stilt_Stalk', attack: 'Attack_Blade_Sweep', skill: 'Skill_Razor_Bloom', hit: 'Attack_Blade_Sweep', death: 'Death_Shatter' }
+      },
+      {
+        id: 'mutant_arachnid_maw', kind: 'mutant', label: '[Mutant] Arachnid Maw (Cepat + Asam)',
+        glb: '../output/zombies/mutant_arachnid_maw.glb', vfxGlb: '../output/vfx/vfx_mutant_arachnid_maw.glb',
+        hp: 270, speed: 2.85, range: 1.85, skillRange: 6.5, cd: 1.10, dmg: 28, skillDmg: 38,
+        vfxMode: 'head_forward', vfxProjColor: 0xa6f214,
+        anims: { idle: 'Idle_Acid_Throb', walk: 'Skitter_Scuttle', run: 'Skitter_Scuttle', attack: 'Attack_Mandible', skill: 'Skill_Acid_Pounce', hit: 'Attack_Mandible', death: 'Death_Curl' }
+      },
+      // 6 Faceless Horror Zombies (shared Mixamo 15-clip set)
+      {
+        id: 'zombie_walker_shambler', kind: 'zombie', label: '[Zombie] Walker Shambler',
+        glb: '../output/zombies/zombie_walker_shambler.glb', vfxGlb: '../output/vfx/vfx_impact_blood.glb',
+        hp: 150, speed: 1.15, range: 1.55, skillRange: 1.75, cd: 1.30, dmg: 18, skillDmg: 24,
+        vfxMode: 'melee_bite',
+        anims: { idle: 'Zombie_Idle_Sway', walk: 'Zombie_Walk_Shamble', run: 'Zombie_Walk_Shamble', attack: 'Zombie_Attack_Swipe', skill: 'Zombie_Bite_Grab', hit: 'Zombie_Hit_React', death: 'Zombie_Death_Fall' }
+      },
+      {
+        id: 'zombie_crawler_stalker', kind: 'zombie', label: '[Zombie] Crawler Stalker (Feral Cepat)',
+        glb: '../output/zombies/zombie_crawler_stalker.glb', vfxGlb: '../output/vfx/vfx_melee_slash.glb',
+        hp: 120, speed: 2.65, range: 1.50, skillRange: 2.6, cd: 1.00, dmg: 20, skillDmg: 28,
+        vfxMode: 'melee_bite',
+        anims: { idle: 'Zombie_Idle_Sway', walk: 'Zombie_Walk_Shamble', run: 'Zombie_Run_Feral', attack: 'Zombie_Attack_Swipe', skill: 'Zombie_Lunge', hit: 'Zombie_Hit_React', death: 'Zombie_Death_Fall' }
+      },
+      {
+        id: 'zombie_banshee_screamer', kind: 'zombie', label: '[Zombie] Banshee Screamer (Sonic)',
+        glb: '../output/zombies/zombie_banshee_screamer.glb', vfxGlb: '../output/vfx/vfx_mutant_thorn_shroud.glb',
+        hp: 140, speed: 2.25, range: 1.55, skillRange: 5.5, cd: 1.40, dmg: 16, skillDmg: 26,
+        vfxMode: 'head_forward', vfxProjColor: 0x9ec4f0,
+        anims: { idle: 'Zombie_Idle_Sway', walk: 'Zombie_Walk_Shamble', run: 'Zombie_Run_Feral', attack: 'Zombie_Attack_Swipe', skill: 'Skill_Sonic_Shriek', hit: 'Zombie_Hit_React', death: 'Zombie_Death_Fall' }
+      },
+      {
+        id: 'zombie_spitter_hazmat', kind: 'zombie', label: '[Zombie] Spitter Hazmat (Ludah Asam)',
+        glb: '../output/zombies/zombie_spitter_hazmat.glb', vfxGlb: '../output/vfx/vfx_mutant_arachnid_maw.glb',
+        hp: 165, speed: 1.25, range: 1.60, skillRange: 6.8, cd: 1.50, dmg: 16, skillDmg: 30,
+        vfxMode: 'head_forward', vfxProjColor: 0x8ee038,
+        anims: { idle: 'Zombie_Idle_Sway', walk: 'Zombie_Walk_Shamble', run: 'Zombie_Walk_Shamble', attack: 'Zombie_Attack_Swipe', skill: 'Skill_Acid_Spit', hit: 'Zombie_Hit_React', death: 'Zombie_Death_Fall' }
+      },
+      {
+        id: 'zombie_bloater_boomer', kind: 'zombie', label: '[Zombie] Bloater Boomer (Gas Meledak)',
+        glb: '../output/zombies/zombie_bloater_boomer.glb', vfxGlb: '../output/vfx/vfx_mutant_bile_juggernaut.glb',
+        hp: 260, speed: 0.95, range: 1.85, skillRange: 2.3, cd: 1.65, dmg: 24, skillDmg: 48,
+        vfxMode: 'ground_slam',
+        anims: { idle: 'Zombie_Idle_Sway', walk: 'Zombie_Walk_Shamble', run: 'Zombie_Walk_Shamble', attack: 'Zombie_Attack_Swipe', skill: 'Skill_Volatile_Detonate', hit: 'Zombie_Hit_React', death: 'Zombie_Death_Fall' }
+      },
+      {
+        id: 'zombie_juggernaut_brute', kind: 'zombie', label: '[Zombie] Juggernaut Brute SWAT',
+        glb: '../output/zombies/zombie_juggernaut_brute.glb', vfxGlb: '../output/vfx/vfx_mutant_bile_juggernaut.glb',
+        hp: 460, speed: 1.05, range: 2.05, skillRange: 2.7, cd: 1.75, dmg: 40, skillDmg: 58,
+        vfxMode: 'ground_slam',
+        anims: { idle: 'Zombie_Idle_Sway', walk: 'Zombie_Walk_Shamble', run: 'Zombie_Walk_Shamble', attack: 'Zombie_Attack_Swipe', skill: 'Skill_Ground_Slam', hit: 'Zombie_Hit_React', death: 'Zombie_Death_Fall' }
+      },
+    ];
+
+    const PRESETS = {
+      jake_vs_bile:             { dist: 12, surv: [{ id: 'jake_male' }], enm: ['mutant_bile_juggernaut'] },
+      rico_katana_vs_scythe:    { dist: 10, surv: [{ id: 'rico_male', weapon: 'katana' }], enm: ['mutant_scythe_stalker'] },
+      tom_axe_vs_bile:          { dist: 10, surv: [{ id: 'tom_male', weapon: 'fire_axe' }], enm: ['mutant_bile_juggernaut'] },
+      lena_machete_vs_zombies:  { dist: 11, surv: [{ id: 'lena_female', weapon: 'machete' }, { id: 'rico_female', weapon: 'spiked_bat' }], enm: ['zombie_walker_shambler', 'zombie_crawler_stalker', 'zombie_banshee_screamer'] },
+      maya_vs_arachnid:         { dist: 14, surv: [{ id: 'maya_female' }], enm: ['mutant_arachnid_maw'] },
+      lena_vs_thorn:            { dist: 13, surv: [{ id: 'lena_female' }], enm: ['mutant_thorn_shroud'] },
+      tom_vs_rafflesia:         { dist: 11, surv: [{ id: 'tom_male' }], enm: ['mutant_rafflesia'] },
+      squad_vs_mutants: {
+        dist: 14,
+        surv: [{ id: 'jake_male' }, { id: 'lena_female' }, { id: 'tom_male' }, { id: 'maya_female' }, { id: 'rico_male', weapon: 'katana' }],
+        enm:  ['mutant_bile_juggernaut', 'mutant_rafflesia', 'mutant_scythe_stalker', 'mutant_thorn_shroud', 'mutant_arachnid_maw'],
+      },
+      squad_vs_zombies: {
+        dist: 13,
+        surv: [{ id: 'jake_male' }, { id: 'lena_female' }, { id: 'tom_female', weapon: 'fire_axe' }, { id: 'maya_male' }, { id: 'rico_male', weapon: 'spiked_bat' }],
+        enm:  ['zombie_juggernaut_brute', 'zombie_bloater_boomer', 'zombie_walker_shambler', 'zombie_spitter_hazmat', 'zombie_banshee_screamer', 'zombie_crawler_stalker'],
+      },
+    };
+
+    // -----------------------------------------------------------------------
+    // 2. THREE.JS SCENE, LIGHTING & ARENA SETUP
+    // -----------------------------------------------------------------------
+    const wrap = document.getElementById('canvas-wrap');
+    const labelsLayer = document.getElementById('labels-layer');
+    const toastEl = document.getElementById('toast');
+
+    function showToast(msg, color = '#7dd3fc', ms = 3500) {
+      toastEl.innerHTML = msg;
+      toastEl.style.borderColor = color;
+      toastEl.classList.add('show');
+      clearTimeout(toastEl._timer);
+      if (ms > 0) toastEl._timer = setTimeout(() => toastEl.classList.remove('show'), ms);
+    }
+
+    if (window.location.protocol === 'file:') {
+      showToast(
+        '⚠️ Kamu membuka file via <code>file://</code>. Browser memblokir load file .glb! Jalankan <code>start_viewer.ps1</code> lalu buka <b>http://localhost:8080/viewer/index.html</b>.',
+        '#ef4444', 0
+      );
+    }
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    wrap.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x161b24);
+    scene.fog = new THREE.FogExp2(0x161b24, 0.016);
+
+    const camera = new THREE.PerspectiveCamera(44, window.innerWidth / window.innerHeight, 0.1, 140);
+    camera.position.set(0, 6.2, 13.5);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.target.set(0, 1.0, 0);
+    controls.maxPolarAngle = Math.PI * 0.485;
+    controls.minDistance = 2.0;
+    controls.maxDistance = 42.0;
+
+    // 3-Point Horror Tactical Lighting
+    const hemi = new THREE.HemisphereLight(0xcbd5e1, 0x1e2430, 1.15);
+    scene.add(hemi);
+
+    const keyLight = new THREE.DirectionalLight(0xfff4e0, 2.35);
+    keyLight.position.set(8, 16, 10);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.set(2048, 2048);
+    keyLight.shadow.camera.near = 1;
+    keyLight.shadow.camera.far = 48;
+    keyLight.shadow.camera.left = -16;
+    keyLight.shadow.camera.right = 16;
+    keyLight.shadow.camera.top = 16;
+    keyLight.shadow.camera.bottom = -16;
+    keyLight.shadow.bias = -0.0005;
+    scene.add(keyLight);
+
+    const rimLight = new THREE.DirectionalLight(0x60a5fa, 0.95);
+    rimLight.position.set(-10, 8, -12);
+    scene.add(rimLight);
+
+    // Arena Ground + Grid + Distance Ruler Line
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(46, 34),
+      new THREE.MeshStandardMaterial({ color: 0x1d2430, roughness: 0.92, metalness: 0.04 })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    const grid = new THREE.GridHelper(40, 40, 0x334155, 0x242e3d);
+    grid.position.y = 0.004;
+    scene.add(grid);
+
+    // Distance meter 3D line between Survivor frontline & Monster frontline
+    const rulerGeo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(-4, 0.04, 0), new THREE.Vector3(4, 0.04, 0)
+    ]);
+    const rulerMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.85 });
+    const rulerLine = new THREE.Line(rulerGeo, rulerMat);
+    scene.add(rulerLine);
+
+    const ringGeo = new THREE.RingGeometry(0.46, 0.56, 24);
+    const selectRing = new THREE.Mesh(
+      ringGeo,
+      new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide })
+    );
+    selectRing.rotation.x = -Math.PI / 2;
+    selectRing.position.y = 0.015;
+    selectRing.visible = false;
+    scene.add(selectRing);
+
+    // -----------------------------------------------------------------------
+    // 3. GLB ASSET CACHE & WEAPON/VFX LOADER (cache-busted for freshly baked animations)
+    // -----------------------------------------------------------------------
+    const ASSET_VER = '?v=3';
+    const loader = new GLTFLoader();
+    const gltfCache = new Map();
+
+    function loadGLB(url) {
+      const fullUrl = url + ASSET_VER;
+      if (!gltfCache.has(fullUrl)) {
+        gltfCache.set(fullUrl, loader.loadAsync(fullUrl));
+      }
+      return gltfCache.get(fullUrl);
+    }
+
+    function prepShadows(root) {
+      root.traverse((o) => {
+        if (o.isMesh || o.isSkinnedMesh) {
+          o.castShadow = true;
+          o.receiveShadow = true;
+          o.frustumCulled = false; // avoids skinned bounding-box culling during leaps/slams
+        }
+      });
+    }
+
+    // -----------------------------------------------------------------------
+    // 4. STATE & SIMULATION DATA
+    // -----------------------------------------------------------------------
+    const units = [];
+    const activeVfx = [];
+    const activeProjectiles = [];
+    const floatDmgs = [];
+    let nextUid = 1;
+    let selectedUid = null;
+    let paused = false;
+    let timeScale = 1.0;
+    let battleOver = false;
+    let followCam = false;
+
+    const sliderDist = document.getElementById('slider-distance');
+    const distVal = document.getElementById('dist-val');
+    const selSurvBehavior = document.getElementById('sel-surv-behavior');
+    const selCombatMode = document.getElementById('sel-combat-mode');
+    const chkVfx = document.getElementById('chk-vfx');
+    const chkHud = document.getElementById('chk-hud');
+    const chkRuler = document.getElementById('chk-ruler');
+    const rosterListEl = document.getElementById('roster-list');
+    const inspectorBox = document.getElementById('inspector-box');
+    const inspNameEl = document.getElementById('insp-name');
+    const selRawClip = document.getElementById('sel-raw-clip');
+    const resultBanner = document.getElementById('result-banner');
+
+    function playClip(unit, clipName, loopOnce = false, fade = 0.16, clipSpeed = 1.0) {
+      if (!clipName) return null;
+      const clip = unit.clipsByName[clipName];
+      if (!clip) return null;
+      if (unit.currentClip === clipName && !loopOnce) {
+        if (unit.currentAction) unit.currentAction.timeScale = clipSpeed;
+        return unit.currentAction;
+      }
+
+      const nextAct = unit.mixer.clipAction(clip);
+      nextAct.reset();
+      nextAct.timeScale = clipSpeed;
+      if (loopOnce) {
+        nextAct.setLoop(THREE.LoopOnce, 1);
+        nextAct.clampWhenFinished = true;
+      } else {
+        nextAct.setLoop(THREE.LoopRepeat, Infinity);
+        nextAct.clampWhenFinished = false;
+      }
+      nextAct.play();
+      if (unit.currentAction && unit.currentAction !== nextAct) {
+        unit.currentAction.crossFadeTo(nextAct, fade, false);
+      }
+      unit.currentAction = nextAct;
+      unit.currentClip = clipName;
+      return nextAct;
+    }
+
+    function pickSurvivorClips(weaponId, availableClips) {
+      const w = WEAPONS[weaponId] || WEAPONS.m4;
+      const has = (name) => Boolean(availableClips[name]);
+      const rWalk = has('Rifle_Walk_Cycle') ? 'Rifle_Walk_Cycle' : 'Rifle_Idle_Ready';
+      const rRun = has('Rifle_Run_Cycle') ? 'Rifle_Run_Cycle' : rWalk;
+      if (w.cls === 'pistol') {
+        return {
+          idle: has('Pistol_Idle_Ready') ? 'Pistol_Idle_Ready' : 'Rifle_Idle_Ready',
+          aim: has('Pistol_Aim_ADS') ? 'Pistol_Aim_ADS' : 'Pistol_Idle_Ready',
+          walk: rWalk,
+          run: rRun,
+          attack: has('Pistol_Shoot_Recoil') ? 'Pistol_Shoot_Recoil' : 'Rifle_Shoot_Recoil',
+          skill: 'Pistol_Reload_Tactical',
+          hit: 'Hit_React',
+          death: 'Zombie_Death_Fall',
+        };
+      }
+      if (w.cls === 'bow') {
+        return {
+          idle: has('Bow_Idle_Ready') ? 'Bow_Idle_Ready' : 'Rifle_Idle_Ready',
+          aim: has('Bow_Aim_Draw') ? 'Bow_Aim_Draw' : 'Bow_Idle_Ready',
+          walk: rWalk,
+          run: rRun,
+          attack: has('Bow_Shoot_Release') ? 'Bow_Shoot_Release' : 'Bow_Aim_Draw',
+          skill: 'Bow_Aim_Draw',
+          hit: 'Hit_React',
+          death: 'Zombie_Death_Fall',
+        };
+      }
+      if (w.cls === 'melee') {
+        const mIdle = has('Melee_Idle_Ready') ? 'Melee_Idle_Ready' : 'Rifle_Idle_Ready';
+        const mWalk = has('Melee_Walk_Cycle') ? 'Melee_Walk_Cycle' : rWalk;
+        const mRun  = has('Melee_Run_Cycle') ? 'Melee_Run_Cycle' : rRun;
+        return {
+          idle: mIdle,
+          aim: mIdle,
+          walk: mWalk,
+          run: mRun,
+          attack: has('Melee_Swing') ? 'Melee_Swing' : 'Rifle_Shoot_Recoil',
+          skill: has('Melee_Heavy_Slash') ? 'Melee_Heavy_Slash' : 'Melee_Swing',
+          hit: 'Hit_React',
+          death: 'Zombie_Death_Fall',
+        };
+      }
+      return {
+        idle: 'Rifle_Idle_Ready',
+        aim: 'Rifle_Aim_ADS',
+        walk: rWalk,
+        run: rRun,
+        attack: 'Rifle_Shoot_Recoil',
+        skill: 'Rifle_Reload_Tactical',
+        hit: 'Hit_React',
+        death: 'Zombie_Death_Fall',
+      };
+    }
+
+    function createUnitHUD(unit) {
+      const el = document.createElement('div');
+      el.className = 'unit-hud';
+      el.innerHTML = `
+        <div class="unit-name"></div>
+        <div class="unit-state">Siap</div>
+        <div class="hp-track"><div class="hp-fill ${unit.kind}"></div></div>
+      `;
+      el.querySelector('.unit-name').textContent = unit.shortName;
+      labelsLayer.appendChild(el);
+      unit.hudEl = el;
+      unit.stateEl = el.querySelector('.unit-state');
+      unit.hpFillEl = el.querySelector('.hp-fill');
+    }
+
+    function spawnFloatingDamage(worldPos, dmg, color = '#fbbf24') {
+      const el = document.createElement('div');
+      el.className = 'float-dmg';
+      el.style.color = color;
+      el.textContent = `-${Math.round(dmg)}`;
+      labelsLayer.appendChild(el);
+      floatDmgs.push({ el, pos: worldPos.clone(), life: 0.75, maxLife: 0.75 });
+    }
+
+    async function spawnSurvivor(specId, weaponChoice = 'default') {
+      const meta = SURVIVORS.find((s) => s.id === specId) || SURVIVORS[0];
+      const useCustomWeapon = weaponChoice && weaponChoice !== 'default' && weaponChoice !== meta.defaultWeapon;
+      const wid = (weaponChoice && weaponChoice !== 'default') ? weaponChoice : meta.defaultWeapon;
+      const wMeta = WEAPONS[wid] || WEAPONS.m4;
+      const glbUrl = useCustomWeapon
+        ? `../output/survivors/unarmed/${meta.id}_unarmed.glb`
+        : `../output/survivors/${meta.id}.glb`;
+
+      const gltf = await loadGLB(glbUrl);
+      const clone = SkeletonUtils.clone(gltf.scene);
+      prepShadows(clone);
+
+      let weaponNode = null;
+      let muzzleNode = null;
+      if (useCustomWeapon) {
+        const wGltf = await loadGLB(`../output/weapons/weapon_${wid}.glb`);
+        const wClone = SkeletonUtils.clone(wGltf.scene);
+        prepShadows(wClone);
+        const sockName = wMeta.hand === 'L' ? 'WeaponSocket_L' : 'WeaponSocket_R';
+        const sock = clone.getObjectByName(sockName);
+        if (sock) sock.add(wClone);
+        else clone.add(wClone);
+        weaponNode = wClone;
+        muzzleNode = wClone.getObjectByName('MuzzleSocket') || null;
+      } else {
+        clone.traverse((o) => {
+          if (o.name && o.name.includes('_Weapon_')) weaponNode = o;
+        });
+      }
+
+      const mixer = new THREE.AnimationMixer(clone);
+      const clipsByName = {};
+      for (const c of gltf.animations) clipsByName[c.name] = c;
+      const anims = pickSurvivorClips(wid, clipsByName);
+
+      const group = new THREE.Group();
+      group.add(clone);
+      scene.add(group);
+
+      const unit = {
+        uid: nextUid++,
+        team: 'survivor',
+        kind: 'survivor',
+        specId: meta.id,
+        shortName: `${meta.id.replace('_', ' ')} [${wid}]`,
+        group, model: clone, mixer, clipsByName, anims,
+        hp: meta.hp, maxHp: meta.hp,
+        speed: 2.35,
+        range: wMeta.range,
+        skillRange: wMeta.range,
+        cd: wMeta.cd,
+        cooldown: Math.random() * 0.25,
+        dmg: wMeta.dmg,
+        skillDmg: wMeta.dmg * 1.4,
+        weaponId: wid,
+        weaponClass: wMeta.cls,
+        weaponNode,
+        muzzleNode,
+        muzzleZ: wMeta.muzzleZ || 0.45,
+        vfxId: wMeta.vfx,
+        projId: wMeta.proj,
+        slashScale: wMeta.slashScale || 1.0,
+        attackCount: 0,
+        vel: new THREE.Vector3(),
+        pendingHit: null,
+        dead: false,
+        manualHold: false,
+        lockTimer: 0,
+        stateText: 'Idle',
+        height: 1.80,
+      };
+      createUnitHUD(unit);
+      units.push(unit);
+      playClip(unit, unit.anims.aim || unit.anims.idle, false, 0.05);
+      layoutArenaPositions();
+      refreshRosterUI();
+      return unit;
+    }
+
+    async function spawnEnemy(specId) {
+      const meta = ENEMIES.find((e) => e.id === specId) || ENEMIES[0];
+      const gltf = await loadGLB(meta.glb);
+      const clone = SkeletonUtils.clone(gltf.scene);
+      prepShadows(clone);
+
+      const mixer = new THREE.AnimationMixer(clone);
+      const clipsByName = {};
+      for (const c of gltf.animations) clipsByName[c.name] = c;
+
+      const group = new THREE.Group();
+      group.add(clone);
+      scene.add(group);
+
+      const unit = {
+        uid: nextUid++,
+        team: 'enemy',
+        kind: meta.kind,
+        specId: meta.id,
+        shortName: meta.label.replace(/\[.*?\]\s*/, ''),
+        group, model: clone, mixer, clipsByName, anims: meta.anims,
+        hp: meta.hp, maxHp: meta.hp,
+        speed: meta.speed,
+        range: meta.range,
+        skillRange: meta.skillRange,
+        cd: meta.cd,
+        cooldown: Math.random() * 0.35,
+        dmg: meta.dmg,
+        skillDmg: meta.skillDmg,
+        vfxGlb: meta.vfxGlb,
+        vfxMode: meta.vfxMode,
+        vfxProjColor: meta.vfxProjColor || null,
+        attackCount: 0,
+        vel: new THREE.Vector3(),
+        pendingHit: null,
+        dead: false,
+        manualHold: false,
+        lockTimer: 0,
+        stateText: 'Walk',
+        height: meta.id.includes('juggernaut') ? 2.25 : (meta.id === 'mutant_arachnid_maw' ? 1.15 : 1.85),
+      };
+      createUnitHUD(unit);
+      units.push(unit);
+      playClip(unit, unit.anims.aim || unit.anims.idle, false, 0.05);
+      layoutArenaPositions();
+      refreshRosterUI();
+      return unit;
+    }
+
+    function layoutArenaPositions() {
+      const dist = parseFloat(sliderDist.value);
+      const halfD = dist * 0.5;
+      const survs = units.filter((u) => u.team === 'survivor');
+      const enms = units.filter((u) => u.team === 'enemy');
+
+      const placeTeam = (list, baseX, dirSign) => {
+        const perRow = 5;
+        list.forEach((u, i) => {
+          const row = Math.floor(i / perRow);
+          const idxInRow = i % perRow;
+          const rowLen = Math.min(perRow, list.length - row * perRow);
+          const z = (idxInRow - (rowLen - 1) * 0.5) * 2.15;
+          const x = baseX + dirSign * row * 1.9;
+          u.group.position.set(x, 0, z);
+          u.group.rotation.set(0, dirSign < 0 ? Math.PI * 0.5 : -Math.PI * 0.5, 0);
+          u.hp = u.maxHp;
+          u.dead = false;
+          u.manualHold = false;
+          u.lockTimer = 0;
+          u.attackCount = 0;
+          u.pendingHit = null;
+          u.vel.set(0, 0, 0);
+          u.cooldown = Math.random() * 0.25;
+          u.hudEl.classList.remove('dead');
+          playClip(u, u.team === 'survivor' ? (u.anims.aim || u.anims.idle) : u.anims.walk, false, 0.08);
+        });
+      };
+
+      placeTeam(survs, -halfD, -1); // face +X (yaw = +PI/2)
+      placeTeam(enms,  +halfD, +1); // face -X (yaw = -PI/2)
+      battleOver = false;
+      resultBanner.classList.remove('show');
+    }
+
+    function clearArena() {
+      for (const u of units) {
+        scene.remove(u.group);
+        u.hudEl.remove();
+      }
+      units.length = 0;
+      for (const v of activeVfx) scene.remove(v.mesh);
+      activeVfx.length = 0;
+      for (const p of activeProjectiles) scene.remove(p.mesh);
+      activeProjectiles.length = 0;
+      selectedUid = null;
+      selectRing.visible = false;
+      battleOver = false;
+      resultBanner.classList.remove('show');
+      refreshRosterUI();
+    }
+
+    // -----------------------------------------------------------------------
+    // 5. 3D VFX & PROJECTILES HELPERS
+    // -----------------------------------------------------------------------
+    async function spawnTimedVfx(glbUrl, worldPos, dirVec, { groundFlat = false, scale = 1.0, life = 0.42 } = {}) {
+      if (!chkVfx.checked || !glbUrl) return;
+      try {
+        const gltf = await loadGLB(glbUrl);
+        const mesh = gltf.scene.clone(true);
+        mesh.position.copy(worldPos);
+        mesh.scale.setScalar(scale);
+
+        if (!groundFlat && dirVec && dirVec.lengthSq() > 1e-5) {
+          const target = worldPos.clone().add(dirVec);
+          mesh.lookAt(target);
+          // Blender +Z forward assets become +Y forward in glTF; rotate +90deg around local X to aim along +Z!
+          mesh.rotateX(Math.PI * 0.5);
+        }
+        scene.add(mesh);
+        activeVfx.push({ mesh, life, maxLife: life, startScale: scale });
+      } catch (err) {
+        console.warn('VFX load error:', glbUrl, err);
+      }
+    }
+
+    function spawnProjectile(fromPos, toPos, colorHex, speed = 22.0, onImpact = null) {
+      const dir = new THREE.Vector3().subVectors(toPos, fromPos);
+      const dist = dir.length();
+      if (dist < 0.05) { if (onImpact) onImpact(); return; }
+      dir.normalize();
+
+      const mesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.028, 0.018, 0.45, 6),
+        new THREE.MeshBasicMaterial({ color: colorHex })
+      );
+      mesh.position.copy(fromPos);
+      mesh.lookAt(toPos);
+      mesh.rotateX(Math.PI * 0.5);
+      scene.add(mesh);
+      activeProjectiles.push({ mesh, dir, speed, distLeft: dist, onImpact });
+    }
+
+    function getMuzzleWorldPos(unit) {
+      if (unit.muzzleNode) {
+        const p = new THREE.Vector3();
+        unit.muzzleNode.getWorldPosition(p);
+        return p;
+      }
+      const sock = unit.model.getObjectByName(unit.weaponClass === 'bow' ? 'WeaponSocket_L' : 'WeaponSocket_R');
+      if (sock) {
+        const p = new THREE.Vector3(0, unit.muzzleZ, -0.04);
+        sock.localToWorld(p);
+        return p;
+      }
+      const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(unit.group.quaternion);
+      return unit.group.position.clone().add(new THREE.Vector3(0, 1.38, 0)).addScaledVector(fwd, 0.55);
+    }
+
+    function getEnemyAttackOrigin(unit) {
+      const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(unit.group.quaternion);
+      if (unit.vfxMode === 'ground_slam') {
+        const lHand = unit.model.getObjectByName('Arm_L_Hand');
+        const rHand = unit.model.getObjectByName('Arm_R_Hand');
+        if (lHand && rHand) {
+          const pL = new THREE.Vector3(); lHand.getWorldPosition(pL);
+          const pR = new THREE.Vector3(); rHand.getWorldPosition(pR);
+          return new THREE.Vector3(0.5 * (pL.x + pR.x), 0.03, 0.5 * (pL.z + pR.z)).addScaledVector(fwd, 0.25);
+        }
+        return unit.group.position.clone().addScaledVector(fwd, 1.0).setY(0.03);
+      }
+      if (unit.vfxMode === 'scythe_forward') {
+        const sb = unit.model.getObjectByName('Scythe_Blade');
+        if (sb) {
+          const p = new THREE.Vector3(); sb.getWorldPosition(p);
+          return p.addScaledVector(fwd, 0.25);
+        }
+      }
+      const head = unit.model.getObjectByName('Head') || unit.model.getObjectByName('mixamorig:Head');
+      if (head) {
+        const p = new THREE.Vector3(); head.getWorldPosition(p);
+        return p.addScaledVector(fwd, 0.24);
+      }
+      return unit.group.position.clone().add(new THREE.Vector3(0, unit.height * 0.65, 0)).addScaledVector(fwd, 0.45);
+    }
+
+    // -----------------------------------------------------------------------
+    // 6. COMBAT & WALKING AI SIMULATION
+    // -----------------------------------------------------------------------
+    function nearestLivingEnemy(unit) {
+      let best = null;
+      let bestD = Infinity;
+      for (const other of units) {
+        if (other.dead || other.team === unit.team) continue;
+        const d = unit.group.position.distanceTo(other.group.position);
+        if (d < bestD) { bestD = d; best = other; }
+      }
+      return { target: best, dist: bestD };
+    }
+
+    function applyDamage(target, amount, attacker, pushImpulse = 0.0) {
+      if (target.dead) return;
+      const immortal = selCombatMode.value === 'immortal';
+      if (!immortal) {
+        target.hp = Math.max(0, target.hp - amount);
+      }
+      const hitPos = target.group.position.clone().add(new THREE.Vector3(0, target.height * 0.62, 0));
+      spawnFloatingDamage(hitPos, amount, attacker.team === 'survivor' ? '#fef08a' : '#f87171');
+      if (chkVfx.checked) {
+        spawnTimedVfx('../output/vfx/vfx_impact_blood.glb', hitPos, new THREE.Vector3(0, 1, 0), { groundFlat: true, scale: 0.9, life: 0.28 });
+      }
+      if (pushImpulse > 0 && attacker) {
+        const kb = new THREE.Vector3().subVectors(target.group.position, attacker.group.position).setY(0);
+        if (kb.lengthSq() > 1e-5) {
+          kb.normalize();
+          const massFactor = (target.maxHp > 400) ? 0.35 : 1.0;
+          target.vel.addScaledVector(kb, pushImpulse * massFactor);
+        }
+      }
+      if (!immortal && target.hp <= 0) {
+        target.dead = true;
+        target.pendingHit = null;
+        target.stateText = 'Tumbang';
+        target.hudEl.classList.add('dead');
+        playClip(target, target.anims.death || target.anims.hit, true, 0.14);
+      } else if (target.lockTimer <= 0 && target.kind === 'zombie') {
+        // Zombies flinch on hit if not mid-skill
+        playClip(target, target.anims.hit, true, 0.08, 1.15);
+        target.lockTimer = 0.24;
+      }
+    }
+
+    const _turnDummy = new THREE.Object3D();
+    function updateUnitAI(unit, dt) {
+      unit.mixer.update(dt);
+
+      // Apply damped knockback / lunge velocity impulse & keep inside arena
+      if (unit.vel.lengthSq() > 1e-5 && dt > 0) {
+        unit.group.position.addScaledVector(unit.vel, dt);
+        unit.group.position.x = THREE.MathUtils.clamp(unit.group.position.x, -21, 21);
+        unit.group.position.z = THREE.MathUtils.clamp(unit.group.position.z, -15, 15);
+        unit.vel.multiplyScalar(Math.exp(-8.5 * dt));
+      }
+
+      if (unit.dead) return;
+
+      // Resolve synchronized melee/monster strike impact at animation strike frame
+      if (unit.pendingHit && dt > 0) {
+        unit.pendingHit.timer -= dt;
+        if (unit.pendingHit.timer <= 0) {
+          const ph = unit.pendingHit;
+          unit.pendingHit = null;
+          if (ph.kind === 'melee_surv') {
+            const muz = getMuzzleWorldPos(unit);
+            const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(unit.group.quaternion);
+            spawnTimedVfx('../output/vfx/vfx_melee_slash.glb', muz, fwd, { groundFlat: false, scale: unit.slashScale || 1.05, life: 0.28 });
+            if (ph.target && !ph.target.dead && unit.group.position.distanceTo(ph.target.group.position) <= unit.range + 1.3) {
+              applyDamage(ph.target, ph.dmg, unit, ph.push || 1.6);
+            }
+          } else if (ph.kind === 'enemy_melee') {
+            const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(unit.group.quaternion);
+            const o2 = getEnemyAttackOrigin(unit);
+            spawnTimedVfx(unit.vfxGlb, o2, fwd, { groundFlat: ph.isSlam, scale: ph.isSlam ? 1.1 : 1.0, life: 0.48 });
+            if (ph.target && !ph.target.dead && unit.group.position.distanceTo(ph.target.group.position) <= ph.maxDist) {
+              applyDamage(ph.target, ph.dmg, unit, ph.isSlam ? 3.2 : 1.8);
+            }
+          }
+        }
+      }
+
+      if (unit.manualHold) return;
+      if (unit.cooldown > 0) unit.cooldown -= dt;
+      if (unit.lockTimer > 0) {
+        unit.lockTimer -= dt;
+        return;
+      }
+
+      const { target, dist } = nearestLivingEnemy(unit);
+      if (!target) {
+        unit.stateText = 'Menang / Idle';
+        playClip(unit, unit.anims.idle, false, 0.22);
+        return;
+      }
+
+      // Smooth horizontal slerp toward target
+      const lookPos = new THREE.Vector3(target.group.position.x, unit.group.position.y, target.group.position.z);
+      const dir = new THREE.Vector3().subVectors(lookPos, unit.group.position);
+      if (dir.lengthSq() > 1e-6) {
+        dir.normalize();
+        _turnDummy.position.copy(unit.group.position);
+        _turnDummy.lookAt(lookPos);
+        unit.group.quaternion.slerp(_turnDummy.quaternion, Math.min(1.0, dt * 11.0));
+      }
+
+      if (unit.team === 'enemy') {
+        const useSkill = (unit.attackCount % 2 === 1) && Boolean(unit.anims.skill);
+        const engageRange = useSkill ? unit.skillRange : unit.range;
+
+        if (dist > engageRange) {
+          const isSprint = (dist > engageRange + 3.0) && unit.anims.run && (unit.anims.run !== unit.anims.walk);
+          const moveClip = isSprint ? unit.anims.run : unit.anims.walk;
+          const moveSpd = isSprint ? unit.speed * 1.24 : unit.speed;
+          const clipScale = THREE.MathUtils.clamp(moveSpd / Math.max(0.75, unit.speed), 0.85, 1.35);
+          unit.group.position.addScaledVector(dir, moveSpd * dt);
+          unit.stateText = `${isSprint ? 'Berlari' : 'Berjalan'} (${dist.toFixed(1)}m)`;
+          playClip(unit, moveClip, false, 0.16, clipScale);
+        } else if (unit.cooldown <= 0) {
+          unit.attackCount++;
+          const clip = useSkill ? unit.anims.skill : unit.anims.attack;
+          const act = playClip(unit, clip, true, 0.12, 1.05);
+          const dur = act ? Math.min(1.35, act.getClip().duration / 1.05) : 0.72;
+          unit.lockTimer = dur * 0.78;
+          unit.cooldown = Math.max(dur * 0.86, unit.cd);
+          unit.stateText = useSkill ? 'Skill Serang!' : 'Menyerang!';
+
+          const dmg = useSkill ? unit.skillDmg : unit.dmg;
+          const origin = getEnemyAttackOrigin(unit);
+          if (useSkill && unit.skillRange > 3.5 && unit.vfxProjColor) {
+            spawnTimedVfx(unit.vfxGlb, origin, dir, { groundFlat: false, scale: 0.95, life: 0.45 });
+            const hitPt = target.group.position.clone().add(new THREE.Vector3(0, 1.15, 0));
+            spawnProjectile(origin, hitPt, unit.vfxProjColor, 14.0, () => applyDamage(target, dmg, unit, 1.4));
+          } else {
+            const isSlam = (unit.vfxMode === 'ground_slam');
+            if (dist > engageRange * 0.65) {
+              unit.vel.addScaledVector(dir, isSlam ? 2.4 : 2.1);
+            }
+            unit.pendingHit = {
+              kind: 'enemy_melee',
+              timer: dur * 0.40,
+              target,
+              dmg,
+              isSlam,
+              maxDist: engageRange + 1.25,
+            };
+          }
+        } else {
+          unit.stateText = 'Siap Serang';
+          playClip(unit, unit.anims.idle, false, 0.16);
+        }
+      } else {
+        // Survivor AI: dynamic Run when far -> Walk on approach -> Combo Slash / Crisp Gunfire
+        const shouldAdvance = (unit.weaponClass === 'melee') || (selSurvBehavior.value === 'advance');
+        if (dist > unit.range && shouldAdvance) {
+          const isSprint = (dist > unit.range + 2.6) && Boolean(unit.anims.run);
+          const moveClip = isSprint ? unit.anims.run : unit.anims.walk;
+          const moveSpd = isSprint ? 3.55 : 2.15;
+          const clipScale = isSprint ? 1.12 : 1.0;
+          unit.group.position.addScaledVector(dir, moveSpd * dt);
+          unit.stateText = `${isSprint ? 'Lari' : 'Maju'} (${dist.toFixed(1)}m)`;
+          playClip(unit, moveClip, false, 0.14, clipScale);
+        } else if (dist <= unit.range && unit.cooldown <= 0) {
+          unit.attackCount++;
+          const isHeavyMelee = (unit.weaponClass === 'melee') && (unit.attackCount % 2 === 0) && Boolean(unit.anims.skill);
+          const atkClip = isHeavyMelee ? unit.anims.skill : unit.anims.attack;
+          const act = playClip(unit, atkClip, true, 0.10, unit.weaponClass === 'melee' ? 1.10 : 1.15);
+          const rawDur = act ? act.getClip().duration : 0.45;
+          const dur = unit.weaponClass === 'melee' ? Math.min(1.05, rawDur / 1.10) : Math.min(0.42, rawDur * 0.68);
+          unit.lockTimer = dur * (unit.weaponClass === 'melee' ? 0.78 : 0.62);
+          unit.cooldown = unit.weaponClass === 'melee' ? Math.max(dur * 0.85, unit.cd) : unit.cd;
+          unit.stateText = unit.weaponClass === 'melee' ? (isHeavyMelee ? 'Tebasan Berat!' : 'Ayun Senjata!') : 'Menembak!';
+
+          const muz = getMuzzleWorldPos(unit);
+          const aimPt = target.group.position.clone().add(new THREE.Vector3(0, target.height * 0.55, 0));
+          if (unit.weaponClass === 'melee') {
+            if (dist > unit.range * 0.65) {
+              unit.vel.addScaledVector(dir, isHeavyMelee ? 2.8 : 2.2);
+            }
+            unit.pendingHit = {
+              kind: 'melee_surv',
+              timer: dur * 0.40,
+              target,
+              dmg: isHeavyMelee ? unit.dmg * 1.28 : unit.dmg,
+              push: isHeavyMelee ? 2.8 : 1.6,
+            };
+          } else {
+            spawnTimedVfx(`../output/vfx/vfx_${unit.vfxId}.glb`, muz, dir, { groundFlat: false, scale: 1.05, life: 0.18 });
+            const pColor = unit.weaponClass === 'bow' ? 0xf87171 : 0xffe680;
+            spawnProjectile(muz, aimPt, pColor, unit.weaponClass === 'bow' ? 20.0 : 32.0, () => applyDamage(target, unit.dmg, unit, unit.weaponClass === 'bow' ? 1.0 : 0.45));
+          }
+        } else {
+          unit.stateText = dist <= unit.range ? 'Membidik' : `Siaga (${dist.toFixed(1)}m)`;
+          playClip(unit, unit.anims.aim || unit.anims.idle, false, 0.16);
+        }
+      }
+    }
+
+    // -----------------------------------------------------------------------
+    // 7. ROSTER UI, INSPECTOR, PRESETS & CAMERA
+    // -----------------------------------------------------------------------
+    function refreshRosterUI() {
+      document.getElementById('unit-count').textContent = `${units.length}`;
+      rosterListEl.innerHTML = '';
+      for (const u of units) {
+        const item = document.createElement('div');
+        item.className = 'roster-item' + (u.uid === selectedUid ? ' selected' : '');
+        item.innerHTML = `
+          <div style="display:flex;align-items:center;gap:7px;min-width:0;">
+            <span class="roster-dot ${u.kind}"></span>
+            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;">${u.shortName}</span>
+          </div>
+          <button class="sm danger" style="padding:2px 6px;flex:0 0 auto;">✕</button>
+        `;
+        item.addEventListener('click', (e) => {
+          if (e.target.tagName === 'BUTTON') return;
+          selectUnit(u.uid);
+        });
+        item.querySelector('button').addEventListener('click', () => removeUnit(u.uid));
+        rosterListEl.appendChild(item);
+      }
+      updateInspectorUI();
+    }
+
+    function selectUnit(uid) {
+      selectedUid = uid;
+      for (const u of units) {
+        u.hudEl.classList.toggle('selected', u.uid === uid);
+      }
+      refreshRosterUI();
+    }
+
+    function removeUnit(uid) {
+      const idx = units.findIndex((u) => u.uid === uid);
+      if (idx === -1) return;
+      const u = units[idx];
+      scene.remove(u.group);
+      u.hudEl.remove();
+      units.splice(idx, 1);
+      if (selectedUid === uid) selectedUid = units[0]?.uid ?? null;
+      refreshRosterUI();
+    }
+
+    function updateInspectorUI() {
+      const u = units.find((x) => x.uid === selectedUid);
+      if (!u) {
+        inspectorBox.style.display = 'none';
+        selectRing.visible = false;
+        return;
+      }
+      inspectorBox.style.display = 'flex';
+      inspNameEl.textContent = u.shortName;
+      selRawClip.innerHTML = '';
+      for (const name of Object.keys(u.clipsByName).sort()) {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        selRawClip.appendChild(opt);
+      }
+    }
+
+    async function loadPreset(presetKey) {
+      const p = PRESETS[presetKey];
+      if (!p) return;
+      sliderDist.value = p.dist;
+      distVal.textContent = `${p.dist} m`;
+      clearArena();
+      showToast('Memuat model 3D & animasi...', '#38bdf8', 2500);
+      await Promise.all([
+        ...p.surv.map((s) => spawnSurvivor(s.id, s.weapon || 'default')),
+        ...p.enm.map((eid) => spawnEnemy(eid)),
+      ]);
+      layoutArenaPositions();
+      if (units.length > 0) selectUnit(units[0].uid);
+      showToast(`Preset siap! Jarak awal ${p.dist} m — zombie/mutant berjalan mendekati survivor.`, '#22c55e', 2800);
+    }
+
+    function setCameraPreset(mode) {
+      followCam = (mode === 'follow');
+      const d = parseFloat(sliderDist.value);
+      if (mode === 'arena') {
+        camera.position.set(0, 6.2, Math.max(11.5, d * 1.05));
+        controls.target.set(0, 1.0, 0);
+      } else if (mode === 'side') {
+        camera.position.set(0, 2.8, Math.max(13.0, d * 1.15));
+        controls.target.set(0, 1.0, 0);
+      } else if (mode === 'close') {
+        camera.position.set(0, 2.2, 5.8);
+        controls.target.set(0, 1.0, 0);
+      } else if (mode === 'follow') {
+        const u = units.find((x) => x.uid === selectedUid) || units[0];
+        if (u) {
+          controls.target.copy(u.group.position).add(new THREE.Vector3(0, 1.0, 0));
+          camera.position.copy(controls.target).add(new THREE.Vector3(2.8, 1.8, 4.2));
+        }
+      }
+    }
+
+    // -----------------------------------------------------------------------
+    // 8. POPULATE DROPDOWNS & BIND EVENTS
+    // -----------------------------------------------------------------------
+    const selSurv = document.getElementById('sel-survivor');
+    for (const s of SURVIVORS) {
+      const o = document.createElement('option');
+      o.value = s.id; o.textContent = s.label;
+      selSurv.appendChild(o);
+    }
+
+    const selWep = document.getElementById('sel-weapon');
+    for (const [wid, wm] of Object.entries(WEAPONS)) {
+      const o = document.createElement('option');
+      o.value = wid; o.textContent = wm.label;
+      selWep.appendChild(o);
+    }
+
+    const selEnm = document.getElementById('sel-enemy');
+    for (const e of ENEMIES) {
+      const o = document.createElement('option');
+      o.value = e.id; o.textContent = e.label;
+      selEnm.appendChild(o);
+    }
+
+    document.querySelectorAll('[data-preset]').forEach((btn) => {
+      btn.addEventListener('click', () => loadPreset(btn.dataset.preset));
+    });
+
+    document.querySelectorAll('[data-cam]').forEach((btn) => {
+      btn.addEventListener('click', () => setCameraPreset(btn.dataset.cam));
+    });
+
+    sliderDist.addEventListener('input', () => {
+      distVal.textContent = `${sliderDist.value} m`;
+    });
+    sliderDist.addEventListener('change', layoutArenaPositions);
+
+    document.getElementById('btn-apply-dist').addEventListener('click', layoutArenaPositions);
+    document.getElementById('btn-rematch').addEventListener('click', layoutArenaPositions);
+    document.getElementById('btn-clear-all').addEventListener('click', clearArena);
+
+    document.getElementById('btn-add-survivor').addEventListener('click', async () => {
+      const u = await spawnSurvivor(selSurv.value, selWep.value);
+      selectUnit(u.uid);
+    });
+    document.getElementById('btn-add-enemy').addEventListener('click', async () => {
+      const u = await spawnEnemy(selEnm.value);
+      selectUnit(u.uid);
+    });
+
+    document.getElementById('btn-pause').addEventListener('click', (e) => {
+      paused = !paused;
+      e.target.textContent = paused ? '▶ Lanjut' : '⏸ Jeda';
+    });
+
+    const sliderSpeed = document.getElementById('slider-speed');
+    sliderSpeed.addEventListener('input', () => {
+      timeScale = parseFloat(sliderSpeed.value);
+      document.getElementById('speed-val').textContent = `${timeScale.toFixed(2).replace(/\.00$/, '.0')}x`;
+    });
+
+    document.getElementById('btn-collapse').addEventListener('click', () => document.body.classList.add('sidebar-collapsed'));
+    document.getElementById('toggle-sidebar').addEventListener('click', () => document.body.classList.remove('sidebar-collapsed'));
+
+    // Inspector animation preview buttons
+    document.querySelectorAll('[data-anim-role]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const u = units.find((x) => x.uid === selectedUid);
+        if (!u) return;
+        const role = btn.dataset.animRole;
+        const clip = u.anims[role];
+        const once = (role !== 'idle' && role !== 'walk' && role !== 'run');
+        u.manualHold = (role === 'idle' || role === 'death');
+        u.stateText = `Preview: ${clip || role}`;
+        playClip(u, clip, once, 0.14);
+        if (once && !u.manualHold) u.lockTimer = 1.1;
+      });
+    });
+
+    document.getElementById('btn-play-raw').addEventListener('click', () => {
+      const u = units.find((x) => x.uid === selectedUid);
+      if (!u) return;
+      const clip = selRawClip.value;
+      u.manualHold = true;
+      u.stateText = `Clip: ${clip}`;
+      playClip(u, clip, false, 0.14);
+    });
+
+    document.getElementById('btn-resume-ai').addEventListener('click', () => {
+      const u = units.find((x) => x.uid === selectedUid);
+      if (!u) return;
+      u.manualHold = false;
+      u.lockTimer = 0;
+    });
+
+    // Click 3D unit to select
+    const raycaster = new THREE.Raycaster();
+    const ptr = new THREE.Vector2();
+    let downPt = { x: 0, y: 0 };
+    renderer.domElement.addEventListener('pointerdown', (e) => { downPt = { x: e.clientX, y: e.clientY }; });
+    renderer.domElement.addEventListener('pointerup', (e) => {
+      if (Math.hypot(e.clientX - downPt.x, e.clientY - downPt.y) > 6) return;
+      ptr.x = (e.clientX / window.innerWidth) * 2 - 1;
+      ptr.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(ptr, camera);
+      const hits = raycaster.intersectObjects(units.map((u) => u.group), true);
+      if (hits.length > 0) {
+        let obj = hits[0].object;
+        while (obj && obj.parent !== scene) obj = obj.parent;
+        const found = units.find((u) => u.group === obj);
+        if (found) selectUnit(found.uid);
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // -----------------------------------------------------------------------
+    // 9. MAIN RENDER & SIMULATION LOOP
+    // -----------------------------------------------------------------------
+    const clock = new THREE.Clock();
+    const statSurv = document.getElementById('stat-surv');
+    const statEnm = document.getElementById('stat-enm');
+    const statDist = document.getElementById('stat-dist');
+    const tmpVec = new THREE.Vector3();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const rawDt = Math.min(0.05, clock.getDelta());
+      const dt = paused ? 0 : rawDt * timeScale;
+
+      for (const u of units) updateUnitAI(u, dt);
+
+      // Update timed VFX
+      for (let i = activeVfx.length - 1; i >= 0; i--) {
+        const v = activeVfx[i];
+        v.life -= rawDt * timeScale;
+        if (v.life <= 0) {
+          scene.remove(v.mesh);
+          activeVfx.splice(i, 1);
+        }
+      }
+
+      // Update projectiles
+      for (let i = activeProjectiles.length - 1; i >= 0; i--) {
+        const p = activeProjectiles[i];
+        const step = p.speed * dt;
+        p.mesh.position.addScaledVector(p.dir, step);
+        p.distLeft -= step;
+        if (p.distLeft <= 0) {
+          scene.remove(p.mesh);
+          activeProjectiles.splice(i, 1);
+          if (p.onImpact) p.onImpact();
+        }
+      }
+
+      // Telemetry + Distance Ruler + Result check
+      const aliveSurv = units.filter((u) => u.team === 'survivor' && !u.dead);
+      const aliveEnm = units.filter((u) => u.team === 'enemy' && !u.dead);
+      statSurv.textContent = `Survivor: ${aliveSurv.length}`;
+      statEnm.textContent = `Monster/Zombie: ${aliveEnm.length}`;
+
+      let minPairDist = Infinity;
+      let pairA = null, pairB = null;
+      for (const s of aliveSurv) {
+        for (const e of aliveEnm) {
+          const d = s.group.position.distanceTo(e.group.position);
+          if (d < minPairDist) { minPairDist = d; pairA = s; pairB = e; }
+        }
+      }
+      statDist.textContent = pairA ? `Jarak Terdekat: ${minPairDist.toFixed(2)} m` : 'Jarak Terdekat: -';
+
+      rulerLine.visible = chkRuler.checked && Boolean(pairA && pairB);
+      if (rulerLine.visible) {
+        const posArr = rulerLine.geometry.attributes.position;
+        posArr.setXYZ(0, pairA.group.position.x, 0.05, pairA.group.position.z);
+        posArr.setXYZ(1, pairB.group.position.x, 0.05, pairB.group.position.z);
+        posArr.needsUpdate = true;
+      }
+
+      if (!battleOver && units.length >= 2 && (aliveSurv.length === 0 || aliveEnm.length === 0) && selCombatMode.value === 'battle') {
+        const hasSurvTeam = units.some((u) => u.team === 'survivor');
+        const hasEnmTeam = units.some((u) => u.team === 'enemy');
+        if (hasSurvTeam && hasEnmTeam) {
+          battleOver = true;
+          document.getElementById('result-title').textContent = aliveSurv.length > 0 ? '🏆 Survivor Menang!' : '💀 Zombie / Monster Menang!';
+          document.getElementById('result-sub').textContent = `Tersisa ${aliveSurv.length} Survivor vs ${aliveEnm.length} Monster/Zombie`;
+          resultBanner.classList.add('show');
+        }
+      }
+
+      // Selection ring & follow camera
+      const selU = units.find((u) => u.uid === selectedUid);
+      if (selU) {
+        selectRing.visible = true;
+        selectRing.position.set(selU.group.position.x, 0.015, selU.group.position.z);
+        if (followCam) {
+          controls.target.lerp(tmpVec.copy(selU.group.position).add(new THREE.Vector3(0, 1.0, 0)), 0.12);
+        }
+      } else {
+        selectRing.visible = false;
+      }
+
+      // Project 3D -> 2D HUD Labels & Floating Damage
+      const showHud = chkHud.checked;
+      for (const u of units) {
+        if (!showHud) { u.hudEl.style.display = 'none'; continue; }
+        tmpVec.copy(u.group.position).add(new THREE.Vector3(0, u.height + 0.30, 0));
+        tmpVec.project(camera);
+        if (tmpVec.z > 1) {
+          u.hudEl.style.display = 'none';
+        } else {
+          u.hudEl.style.display = 'block';
+          u.hudEl.style.left = `${(tmpVec.x * 0.5 + 0.5) * window.innerWidth}px`;
+          u.hudEl.style.top = `${(-tmpVec.y * 0.5 + 0.5) * window.innerHeight}px`;
+          u.stateEl.textContent = u.stateText;
+          u.hpFillEl.style.width = `${Math.max(0, (u.hp / u.maxHp) * 100)}%`;
+        }
+      }
+
+      for (let i = floatDmgs.length - 1; i >= 0; i--) {
+        const fd = floatDmgs[i];
+        fd.life -= rawDt;
+        fd.pos.y += 1.2 * rawDt;
+        if (fd.life <= 0) {
+          fd.el.remove();
+          floatDmgs.splice(i, 1);
+          continue;
+        }
+        tmpVec.copy(fd.pos).project(camera);
+        fd.el.style.left = `${(tmpVec.x * 0.5 + 0.5) * window.innerWidth}px`;
+        fd.el.style.top = `${(-tmpVec.y * 0.5 + 0.5) * window.innerHeight}px`;
+        fd.el.style.opacity = `${Math.max(0, fd.life / fd.maxLife)}`;
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    // Boot with default duel: Jake vs Bile Juggernaut at 12m distance
+    if (window.location.protocol !== 'file:') {
+      loadPreset('jake_vs_bile');
+    }
+  </script>
+</body>
+</html>
