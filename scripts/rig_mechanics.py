@@ -1004,6 +1004,40 @@ def apply_hit_react_pose(arm_obj, body_obj, stage="peak"):
     snap_feet_to_floor(arm_obj, body_obj, floor_z=0.0)
 
 
+def apply_zombie_idle_pose(arm_obj, body_obj, phase=0.0):
+    """Eerie hunched zombie idle sway (`phase` in [0, 1)): uneven shoulders, twitching lolled head, claws."""
+    bpy.context.view_layer.objects.active = arm_obj
+    bpy.ops.object.mode_set(mode="POSE")
+    pb = arm_obj.pose.bones
+    reset_pose(pb)
+
+    s = max(0.75, pb["mixamorig:Head"].bone.head_local.z / 1.565)
+    ang = 2.0 * math.pi * phase
+    sway = math.sin(ang)
+
+    pb["mixamorig:Hips"].location = Vector((0.018 * s * sway, 0.0, -0.055 * s))
+    _rot_bone(pb, "mixamorig:Hips",   (10.0, -8.0 + 4.0 * sway, 3.0 * sway))
+    _rot_bone(pb, "mixamorig:Spine",  (10.0 + 2.5 * math.cos(ang), 2.0, -3.0))
+    _rot_bone(pb, "mixamorig:Spine1", (10.0 + 2.0 * math.cos(ang), 3.0, -4.0))
+    _rot_bone(pb, "mixamorig:Spine2", (9.0, 4.0, -5.0))
+    _rot_bone(pb, "mixamorig:Neck",   (-10.0, -8.0 + 6.0 * sway, 14.0))
+    _rot_bone(pb, "mixamorig:Head",   (-12.0, -10.0 + 8.0 * sway, 16.0))
+    bpy.context.view_layer.update()
+
+    _solve_grounded_leg(arm_obj, "Left",  stride_y=-0.08 * s, lift_z=0.0, lat_x_off=0.02 * s, foot_yaw_deg=8.0)
+    _solve_grounded_leg(arm_obj, "Right", stride_y=0.07 * s,  lift_z=0.0, lat_x_off=-0.03 * s, foot_yaw_deg=-14.0)
+
+    _rot_bone(pb, "mixamorig:LeftShoulder",  (4.0, 0.0, 8.0))
+    _rot_bone(pb, "mixamorig:LeftArm",       (-28.0 + 5.0 * sway, -12.0, -64.0))
+    _rot_bone(pb, "mixamorig:LeftForeArm",   (0.0, 0.0, -28.0))
+    _rot_bone(pb, "mixamorig:RightShoulder", (-6.0, 0.0, -12.0))
+    _rot_bone(pb, "mixamorig:RightArm",      (-48.0 - 5.0 * sway, 10.0, 44.0))
+    _rot_bone(pb, "mixamorig:RightForeArm",  (0.0, 0.0, 34.0))
+    pose_hand_grip(pb, "Left", "claw")
+    pose_hand_grip(pb, "Right", "claw")
+    snap_feet_to_floor(arm_obj, body_obj, floor_z=0.0)
+
+
 def apply_zombie_shamble_pose(arm_obj, body_obj, phase=0.25):
     """Asymmetric zombie shambling walk (`phase` in [0, 1)): lateral hunch, lolled head, dragging limp leg."""
     bpy.context.view_layer.objects.active = arm_obj
@@ -1011,9 +1045,10 @@ def apply_zombie_shamble_pose(arm_obj, body_obj, phase=0.25):
     pb = arm_obj.pose.bones
     reset_pose(pb)
 
+    s = max(0.75, pb["mixamorig:Head"].bone.head_local.z / 1.565)
     ang = 2.0 * math.pi * phase
     # Asymmetric limp sway + permanent forward hunched spine + head lolled right
-    pb["mixamorig:Hips"].location = Vector((0.038 * math.sin(ang) - 0.015, 0.0, -0.065 - 0.018 * abs(math.cos(ang))))
+    pb["mixamorig:Hips"].location = Vector(((0.038 * math.sin(ang) - 0.015) * s, 0.0, (-0.065 - 0.018 * abs(math.cos(ang))) * s))
     _rot_bone(pb, "mixamorig:Hips",   (16.0, -10.0 * math.cos(ang) - 8.0, 7.0 * math.sin(ang) + 5.0))
     _rot_bone(pb, "mixamorig:Spine",  (10.0, 6.0 * math.cos(ang), -4.0))
     _rot_bone(pb, "mixamorig:Spine1", (12.0, 6.0 * math.cos(ang), -4.0))
@@ -1023,13 +1058,13 @@ def apply_zombie_shamble_pose(arm_obj, body_obj, phase=0.25):
     bpy.context.view_layer.update()
 
     # Left leg takes uneven step; Right leg drags awkwardly behind/sideways
-    l_str = -0.22 * math.cos(ang + math.pi)
-    l_lift = 0.055 * max(0.0, -math.sin(ang + math.pi))
-    r_str = -0.14 * math.cos(ang) + 0.08
-    r_lift = 0.025 * max(0.0, -math.sin(ang))
+    l_str = -0.22 * s * math.cos(ang + math.pi)
+    l_lift = 0.055 * s * max(0.0, -math.sin(ang + math.pi))
+    r_str = (-0.14 * math.cos(ang) + 0.08) * s
+    r_lift = 0.025 * s * max(0.0, -math.sin(ang))
     _solve_grounded_leg(arm_obj, "Left", stride_y=l_str, lift_z=l_lift, foot_pitch_deg=12.0 * math.cos(ang + math.pi))
     _solve_grounded_leg(arm_obj, "Right", stride_y=r_str, lift_z=r_lift,
-                        foot_pitch_deg=-14.0, lat_x_off=-0.025, foot_yaw_deg=-14.0)
+                        foot_pitch_deg=-14.0, lat_x_off=-0.025 * s, foot_yaw_deg=-14.0)
 
     # Uneven reaching zombie arms with claw hands
     sw = 12.0 * math.sin(ang)
@@ -1042,6 +1077,467 @@ def apply_zombie_shamble_pose(arm_obj, body_obj, phase=0.25):
     pose_hand_grip(pb, "Left", "claw")
     pose_hand_grip(pb, "Right", "claw")
     snap_feet_to_floor(arm_obj, body_obj, floor_z=0.0)
+
+
+def apply_zombie_run_pose(arm_obj, body_obj, phase=0.14):
+    """Feral aggressive zombie sprint (`phase` in [0, 1)): heavy forward pitch, outstretched claws."""
+    bpy.context.view_layer.objects.active = arm_obj
+    bpy.ops.object.mode_set(mode="POSE")
+    pb = arm_obj.pose.bones
+    reset_pose(pb)
+
+    s = max(0.75, pb["mixamorig:Head"].bone.head_local.z / 1.565)
+    ang = 2.0 * math.pi * phase
+    pelv_yaw = -14.0 * math.cos(ang)
+
+    pb["mixamorig:Hips"].location = Vector((0.02 * s * math.sin(ang), 0.0, (-0.085 + 0.036 * math.sin(2.0 * ang - 0.6)) * s))
+    _rot_bone(pb, "mixamorig:Hips",   (24.0, pelv_yaw, 5.0 * math.sin(ang)))
+    _rot_bone(pb, "mixamorig:Spine",  (10.0, -pelv_yaw * 0.45, 0.0))
+    _rot_bone(pb, "mixamorig:Spine1", (10.0, -pelv_yaw * 0.45, 0.0))
+    _rot_bone(pb, "mixamorig:Spine2", (8.0,  -pelv_yaw * 0.45, 0.0))
+    _rot_bone(pb, "mixamorig:Neck",   (-20.0, 0.0, 4.0))
+    _rot_bone(pb, "mixamorig:Head",   (-22.0, pelv_yaw * 0.20, 6.0))
+
+    for side, p_off in (("Right", 0.0), ("Left", 0.5)):
+        ph = (phase + p_off) % 1.0
+        a = 2.0 * math.pi * ph
+        hip_x = 48.0 * math.cos(a) + 12.0
+        knee_flex = -(26.0 + 62.0 * (0.5 - 0.5 * math.sin(a + 0.55)))
+        foot_x = -22.0 if ph < 0.45 else (-10.0 + 22.0 * ((ph - 0.45) / 0.55))
+        _rot_bone(pb, f"mixamorig:{side}UpLeg",   (hip_x, 0.0, 0.0))
+        _rot_bone(pb, f"mixamorig:{side}Leg",     (knee_flex, 0.0, 0.0))
+        _rot_bone(pb, f"mixamorig:{side}Foot",    (foot_x, 0.0, 0.0))
+        _rot_bone(pb, f"mixamorig:{side}ToeBase", (18.0, 0.0, 0.0))
+
+    sw = 26.0 * math.cos(ang)
+    _rot_bone(pb, "mixamorig:LeftShoulder",  (8, 0, 12))
+    _rot_bone(pb, "mixamorig:LeftArm",       (-12, -16, -68 - sw))
+    _rot_bone(pb, "mixamorig:LeftForeArm",   (0, 0, -26))
+    _rot_bone(pb, "mixamorig:RightShoulder", (8, 0, -12))
+    _rot_bone(pb, "mixamorig:RightArm",      (-12, 16, 68 - sw))
+    _rot_bone(pb, "mixamorig:RightForeArm",  (0, 0, 26))
+    pose_hand_grip(pb, "Left", "claw")
+    pose_hand_grip(pb, "Right", "claw")
+    is_flight = (0.30 < phase < 0.44) or (0.80 < phase < 0.94)
+    snap_feet_to_floor(arm_obj, body_obj, floor_z=0.04 * s if is_flight else 0.0)
+
+
+def apply_zombie_swipe_pose(arm_obj, body_obj, stage="impact"):
+    """4-stage heavy raking zombie claw swipe (`windup`, `impact`, `follow`, `recover`)."""
+    bpy.context.view_layer.objects.active = arm_obj
+    bpy.ops.object.mode_set(mode="POSE")
+    pb = arm_obj.pose.bones
+    reset_pose(pb)
+    s = max(0.75, pb["mixamorig:Head"].bone.head_local.z / 1.565)
+
+    if stage == "windup":
+        pb["mixamorig:Hips"].location = Vector((0.0, 0.02 * s, -0.07 * s))
+        _rot_bone(pb, "mixamorig:Hips",   (12, -32, 0))
+        _rot_bone(pb, "mixamorig:Spine",  (6, -8, 0))
+        _rot_bone(pb, "mixamorig:Spine2", (8, -12, 0))
+        _rot_bone(pb, "mixamorig:Head",   (-8, 34, 8))
+        bpy.context.view_layer.update()
+        _solve_grounded_leg(arm_obj, "Left",  stride_y=-0.16 * s, lift_z=0.0, foot_yaw_deg=-18.0)
+        _solve_grounded_leg(arm_obj, "Right", stride_y=0.16 * s,  lift_z=0.0, foot_yaw_deg=-34.0)
+        _rot_bone(pb, "mixamorig:RightShoulder", (10, -10, -14))
+        _rot_bone(pb, "mixamorig:RightArm",      (16, 20, -44))
+        _rot_bone(pb, "mixamorig:RightForeArm",  (0, 0, 84))
+        _rot_bone(pb, "mixamorig:LeftArm",       (-40, 8, -56))
+        _rot_bone(pb, "mixamorig:LeftForeArm",   (0, 0, -40))
+    elif stage == "impact":
+        pb["mixamorig:Hips"].location = Vector((0.0, -0.05 * s, -0.09 * s))
+        _rot_bone(pb, "mixamorig:Hips",   (22, 32, 0))
+        _rot_bone(pb, "mixamorig:Spine",  (8, 12, 0))
+        _rot_bone(pb, "mixamorig:Spine2", (10, 18, -6))
+        _rot_bone(pb, "mixamorig:Neck",   (-12, -16, 6))
+        _rot_bone(pb, "mixamorig:Head",   (-14, -28, 12))
+        _rot_bone(pb, "mixamorig:LeftUpLeg",  (36, 8, 6))
+        _rot_bone(pb, "mixamorig:LeftLeg",    (-44, 0, 0))
+        _rot_bone(pb, "mixamorig:RightUpLeg", (-26, -10, -4))
+        _rot_bone(pb, "mixamorig:RightLeg",   (-22, 0, 0))
+        _rot_bone(pb, "mixamorig:RightShoulder", (10, 14, 18))
+        _rot_bone(pb, "mixamorig:RightArm",      (-22, 26, 76))
+        _rot_bone(pb, "mixamorig:RightForeArm",  (0, 0, 28))
+        _rot_bone(pb, "mixamorig:LeftArm",       (-48, -14, -18))
+        _rot_bone(pb, "mixamorig:LeftForeArm",   (0, 0, -54))
+    else:
+        pb["mixamorig:Hips"].location = Vector((0.0, -0.02 * s, -0.06 * s))
+        _rot_bone(pb, "mixamorig:Hips",   (14, 18, 0))
+        _rot_bone(pb, "mixamorig:Spine2", (8, 10, -4))
+        _rot_bone(pb, "mixamorig:Head",   (-10, -18, 8))
+        _rot_bone(pb, "mixamorig:LeftUpLeg",  (22, 6, 4))
+        _rot_bone(pb, "mixamorig:LeftLeg",    (-30, 0, 0))
+        _rot_bone(pb, "mixamorig:RightUpLeg", (-14, -6, -4))
+        _rot_bone(pb, "mixamorig:RightLeg",   (-20, 0, 0))
+        _rot_bone(pb, "mixamorig:RightArm",     (-34, 20, 88))
+        _rot_bone(pb, "mixamorig:RightForeArm", (0, 0, 46))
+        _rot_bone(pb, "mixamorig:LeftArm",      (-44, 6, -42))
+        _rot_bone(pb, "mixamorig:LeftForeArm",  (0, 0, -34))
+
+    pose_hand_grip(pb, "Left", "claw")
+    pose_hand_grip(pb, "Right", "claw")
+    snap_feet_to_floor(arm_obj, body_obj, floor_z=0.0)
+
+
+def apply_zombie_death_pose(arm_obj, body_obj, stage="prone"):
+    """4-stage zombie collapse (`stagger`, `knees`, `fall`, `prone`) grounded cleanly at Z=0."""
+    bpy.context.view_layer.objects.active = arm_obj
+    bpy.ops.object.mode_set(mode="POSE")
+    pb = arm_obj.pose.bones
+    reset_pose(pb)
+    s = max(0.75, pb["mixamorig:Head"].bone.head_local.z / 1.565)
+
+    if stage == "stagger":
+        pb["mixamorig:Hips"].location = Vector((0.0, 0.04 * s, -0.08 * s))
+        _rot_bone(pb, "mixamorig:Hips",   (-12, 10, 6))
+        _rot_bone(pb, "mixamorig:Spine2", (-10, 6, 4))
+        _rot_bone(pb, "mixamorig:Head",   (-14, 12, 8))
+        _rot_bone(pb, "mixamorig:LeftUpLeg",  (24, 0, 6))
+        _rot_bone(pb, "mixamorig:LeftLeg",    (-34, 0, 0))
+        _rot_bone(pb, "mixamorig:RightUpLeg", (8, 0, -6))
+        _rot_bone(pb, "mixamorig:RightLeg",   (-26, 0, 0))
+        _rot_bone(pb, "mixamorig:LeftArm",    (-24, 10, -40))
+        _rot_bone(pb, "mixamorig:RightArm",   (-20, -10, 44))
+    elif stage == "knees":
+        pb["mixamorig:Hips"].location = Vector((0.0, -0.04 * s, -0.44 * s))
+        _rot_bone(pb, "mixamorig:Hips",   (26, 8, 4))
+        _rot_bone(pb, "mixamorig:Spine2", (18, 4, 4))
+        _rot_bone(pb, "mixamorig:Head",   (16, -8, 10))
+        _rot_bone(pb, "mixamorig:LeftUpLeg",  (56, 0, 6))
+        _rot_bone(pb, "mixamorig:LeftLeg",    (-112, 0, 0))
+        _rot_bone(pb, "mixamorig:RightUpLeg", (48, 0, -6))
+        _rot_bone(pb, "mixamorig:RightLeg",   (-104, 0, 0))
+        _rot_bone(pb, "mixamorig:LeftArm",    (-34, 0, -56))
+        _rot_bone(pb, "mixamorig:RightArm",   (-34, 0, 56))
+    elif stage == "fall":
+        pb["mixamorig:Hips"].location = Vector((0.0, -0.10 * s, -0.62 * s))
+        _rot_bone(pb, "mixamorig:Hips",   (62, 12, -8))
+        _rot_bone(pb, "mixamorig:Spine2", (14, 0, -6))
+        _rot_bone(pb, "mixamorig:Head",   (-16, 12, 14))
+        _rot_bone(pb, "mixamorig:LeftUpLeg",  (28, 0, 8))
+        _rot_bone(pb, "mixamorig:LeftLeg",    (-58, 0, 0))
+        _rot_bone(pb, "mixamorig:RightUpLeg", (14, 0, -8))
+        _rot_bone(pb, "mixamorig:RightLeg",   (-38, 0, 0))
+        _rot_bone(pb, "mixamorig:LeftArm",    (-20, -14, -76))
+        _rot_bone(pb, "mixamorig:RightArm",   (-28, 12, 68))
+    else:  # prone
+        pb["mixamorig:Hips"].location = Vector((0.0, -0.16 * s, -0.78 * s))
+        _rot_bone(pb, "mixamorig:Hips",   (86, 10, -8))
+        _rot_bone(pb, "mixamorig:Spine2", (4, 0, -6))
+        _rot_bone(pb, "mixamorig:Head",   (-10, 24, 16))
+        _rot_bone(pb, "mixamorig:LeftUpLeg",  (8, 0, 12))
+        _rot_bone(pb, "mixamorig:LeftLeg",    (-20, 0, 0))
+        _rot_bone(pb, "mixamorig:RightUpLeg", (-4, 0, -10))
+        _rot_bone(pb, "mixamorig:RightLeg",   (-12, 0, 0))
+        _rot_bone(pb, "mixamorig:LeftArm",    (-56, -24, -64))
+        _rot_bone(pb, "mixamorig:LeftForeArm",(0, 0, -48))
+        _rot_bone(pb, "mixamorig:RightArm",   (-48, 22, 74))
+        _rot_bone(pb, "mixamorig:RightForeArm",(0, 0, 56))
+
+    pose_hand_grip(pb, "Left", "claw")
+    pose_hand_grip(pb, "Right", "claw")
+    snap_feet_to_floor(arm_obj, body_obj, floor_z=0.0)
+
+
+def apply_zombie_shriek_pose(arm_obj, body_obj, stage="peak"):
+    """Banshee Sonic Shriek (`inhale`, `peak`, `recover`): arched spine, skyward unhinged jaw, raised claws."""
+    bpy.context.view_layer.objects.active = arm_obj
+    bpy.ops.object.mode_set(mode="POSE")
+    pb = arm_obj.pose.bones
+    reset_pose(pb)
+    s = max(0.75, pb["mixamorig:Head"].bone.head_local.z / 1.565)
+
+    if stage == "inhale":
+        pb["mixamorig:Hips"].location = Vector((0.0, 0.02 * s, -0.09 * s))
+        _rot_bone(pb, "mixamorig:Hips",   (16, 0, 0))
+        _rot_bone(pb, "mixamorig:Spine",  (12, 0, 0))
+        _rot_bone(pb, "mixamorig:Spine2", (14, 0, 0))
+        _rot_bone(pb, "mixamorig:Head",   (14, 0, 6))
+        _rot_bone(pb, "mixamorig:LeftUpLeg",  (22, 0, 4))
+        _rot_bone(pb, "mixamorig:LeftLeg",    (-30, 0, 0))
+        _rot_bone(pb, "mixamorig:RightUpLeg", (12, 0, -4))
+        _rot_bone(pb, "mixamorig:RightLeg",   (-26, 0, 0))
+        _rot_bone(pb, "mixamorig:LeftArm",    (-24, -18, -54))
+        _rot_bone(pb, "mixamorig:LeftForeArm",(0, 0, -78))
+        _rot_bone(pb, "mixamorig:RightArm",   (-24, 18, 54))
+        _rot_bone(pb, "mixamorig:RightForeArm",(0, 0, 78))
+    elif stage == "peak":
+        pb["mixamorig:Hips"].location = Vector((0.0, 0.0, -0.05 * s))
+        _rot_bone(pb, "mixamorig:Hips",   (-8, -6, 0))
+        _rot_bone(pb, "mixamorig:Spine",  (-12, 2, 0))
+        _rot_bone(pb, "mixamorig:Spine1", (-12, 2, 0))
+        _rot_bone(pb, "mixamorig:Spine2", (-14, 2, 0))
+        _rot_bone(pb, "mixamorig:Neck",   (-14, 0, -4))
+        _rot_bone(pb, "mixamorig:Head",   (-22, 0, -6))
+        _rot_bone(pb, "mixamorig:LeftUpLeg",  (16, 4, 5))
+        _rot_bone(pb, "mixamorig:LeftLeg",    (-18, 0, 0))
+        _rot_bone(pb, "mixamorig:RightUpLeg", (-10, -4, -5))
+        _rot_bone(pb, "mixamorig:RightLeg",   (-16, 0, 0))
+        _rot_bone(pb, "mixamorig:LeftShoulder",  (14, 0, 12))
+        _rot_bone(pb, "mixamorig:LeftArm",       (8, -22, -48))
+        _rot_bone(pb, "mixamorig:LeftForeArm",   (0, 0, -96))
+        _rot_bone(pb, "mixamorig:RightShoulder", (14, 0, -12))
+        _rot_bone(pb, "mixamorig:RightArm",      (8, 22, 48))
+        _rot_bone(pb, "mixamorig:RightForeArm",  (0, 0, 96))
+    else:
+        pb["mixamorig:Hips"].location = Vector((0.0, 0.0, -0.05 * s))
+        _rot_bone(pb, "mixamorig:Hips",   (10, 0, 0))
+        _rot_bone(pb, "mixamorig:Spine2", (8, 0, 0))
+        _rot_bone(pb, "mixamorig:Head",   (-10, 0, 8))
+        _rot_bone(pb, "mixamorig:LeftArm",    (-38, -10, -46))
+        _rot_bone(pb, "mixamorig:RightArm",   (-38, 10, 46))
+
+    pose_hand_grip(pb, "Left", "claw")
+    pose_hand_grip(pb, "Right", "claw")
+    snap_feet_to_floor(arm_obj, body_obj, floor_z=0.0)
+
+
+def apply_zombie_spit_pose(arm_obj, body_obj, stage="spit"):
+    """Spitter Acid Spit (`charge`, `spit`, `recover`): braced lunge projecting toxic vomit straight forward."""
+    bpy.context.view_layer.objects.active = arm_obj
+    bpy.ops.object.mode_set(mode="POSE")
+    pb = arm_obj.pose.bones
+    reset_pose(pb)
+    s = max(0.75, pb["mixamorig:Head"].bone.head_local.z / 1.565)
+
+    if stage == "charge":
+        pb["mixamorig:Hips"].location = Vector((0.0, 0.04 * s, -0.08 * s))
+        _rot_bone(pb, "mixamorig:Hips",   (-6, 0, 0))
+        _rot_bone(pb, "mixamorig:Spine",  (-6, 0, 0))
+        _rot_bone(pb, "mixamorig:Spine2", (-8, 0, 0))
+        _rot_bone(pb, "mixamorig:Neck",   (-14, 0, 0))
+        _rot_bone(pb, "mixamorig:Head",   (-18, 0, 0))
+        _rot_bone(pb, "mixamorig:LeftArm",    (-28, 18, -32))
+        _rot_bone(pb, "mixamorig:RightArm",   (-28, -18, 32))
+    elif stage == "spit":
+        pb["mixamorig:Hips"].location = Vector((0.0, -0.06 * s, -0.10 * s))
+        _rot_bone(pb, "mixamorig:Hips",   (22, -6, 0))
+        _rot_bone(pb, "mixamorig:Spine",  (12, 4, 0))
+        _rot_bone(pb, "mixamorig:Spine1", (14, 4, 0))
+        _rot_bone(pb, "mixamorig:Spine2", (14, 4, 0))
+        _rot_bone(pb, "mixamorig:Neck",   (-26, 0, 0))
+        _rot_bone(pb, "mixamorig:Head",   (-24, 0, 0))
+        _rot_bone(pb, "mixamorig:LeftUpLeg",  (30, 4, 4))
+        _rot_bone(pb, "mixamorig:LeftLeg",    (-38, 0, 0))
+        _rot_bone(pb, "mixamorig:RightUpLeg", (-18, -4, -4))
+        _rot_bone(pb, "mixamorig:RightLeg",   (-22, 0, 0))
+        _rot_bone(pb, "mixamorig:LeftShoulder",  (6, -10, -10))
+        _rot_bone(pb, "mixamorig:LeftArm",       (-18, 28, -22))
+        _rot_bone(pb, "mixamorig:LeftForeArm",   (0, 0, -34))
+        _rot_bone(pb, "mixamorig:RightShoulder", (6, 10, 10))
+        _rot_bone(pb, "mixamorig:RightArm",      (-18, -28, 22))
+        _rot_bone(pb, "mixamorig:RightForeArm",  (0, 0, 34))
+    else:
+        pb["mixamorig:Hips"].location = Vector((0.0, 0.0, -0.06 * s))
+        _rot_bone(pb, "mixamorig:Hips",   (12, 0, 0))
+        _rot_bone(pb, "mixamorig:Spine2", (8, 0, 0))
+        _rot_bone(pb, "mixamorig:Head",   (-10, 0, 8))
+        _rot_bone(pb, "mixamorig:LeftArm",    (-44, 0, -40))
+        _rot_bone(pb, "mixamorig:RightArm",   (-44, 0, 40))
+
+    pose_hand_grip(pb, "Left", "claw")
+    pose_hand_grip(pb, "Right", "claw")
+    snap_feet_to_floor(arm_obj, body_obj, floor_z=0.0)
+
+
+def apply_zombie_detonate_pose(arm_obj, body_obj, stage="burst"):
+    """Bloater Volatile Detonate (`swell`, `burst`, `collapse`): arms brace clear of wide gut then explode outward."""
+    bpy.context.view_layer.objects.active = arm_obj
+    bpy.ops.object.mode_set(mode="POSE")
+    pb = arm_obj.pose.bones
+    reset_pose(pb)
+    s = max(0.75, pb["mixamorig:Head"].bone.head_local.z / 1.565)
+
+    if stage == "swell":
+        pb["mixamorig:Hips"].location = Vector((0.0, 0.0, -0.10 * s))
+        _rot_bone(pb, "mixamorig:Hips",   (12, 0, 0))
+        _rot_bone(pb, "mixamorig:Spine",  (10, 0, 0))
+        _rot_bone(pb, "mixamorig:Spine2", (10, 0, 0))
+        _rot_bone(pb, "mixamorig:Head",   (14, 0, 10))
+        _rot_bone(pb, "mixamorig:LeftUpLeg",  (24, 0, 8))
+        _rot_bone(pb, "mixamorig:LeftLeg",    (-36, 0, 0))
+        _rot_bone(pb, "mixamorig:RightUpLeg", (24, 0, -8))
+        _rot_bone(pb, "mixamorig:RightLeg",   (-36, 0, 0))
+        _rot_bone(pb, "mixamorig:LeftArm",    (-18, -22, -46))
+        _rot_bone(pb, "mixamorig:LeftForeArm",(0, 0, -48))
+        _rot_bone(pb, "mixamorig:RightArm",   (-18, 22, 46))
+        _rot_bone(pb, "mixamorig:RightForeArm",(0, 0, 48))
+    elif stage == "burst":
+        pb["mixamorig:Hips"].location = Vector((0.0, 0.0, -0.06 * s))
+        _rot_bone(pb, "mixamorig:Hips",   (-6, 0, 0))
+        _rot_bone(pb, "mixamorig:Spine",  (-6, 0, 0))
+        _rot_bone(pb, "mixamorig:Spine1", (-6, 0, 0))
+        _rot_bone(pb, "mixamorig:Spine2", (-8, 0, 0))
+        _rot_bone(pb, "mixamorig:Neck",   (-10, 0, 0))
+        _rot_bone(pb, "mixamorig:Head",   (-14, 0, 6))
+        bpy.context.view_layer.update()
+        _solve_grounded_leg(arm_obj, "Left",  stride_y=-0.10 * s, lift_z=0.0, lat_x_off=0.04 * s, foot_yaw_deg=12.0)
+        _solve_grounded_leg(arm_obj, "Right", stride_y=0.10 * s,  lift_z=0.0, lat_x_off=-0.04 * s, foot_yaw_deg=-12.0)
+        _rot_bone(pb, "mixamorig:LeftShoulder",  (10, -8, -10))
+        _rot_bone(pb, "mixamorig:LeftArm",       (-8, 24, -18))
+        _rot_bone(pb, "mixamorig:LeftForeArm",   (0, 0, -18))
+        _rot_bone(pb, "mixamorig:RightShoulder", (10, 8, 10))
+        _rot_bone(pb, "mixamorig:RightArm",      (-8, -24, 18))
+        _rot_bone(pb, "mixamorig:RightForeArm",  (0, 0, 18))
+    else:
+        pb["mixamorig:Hips"].location = Vector((0.0, 0.02 * s, -0.22 * s))
+        _rot_bone(pb, "mixamorig:Hips",   (32, 8, 0))
+        _rot_bone(pb, "mixamorig:LeftUpLeg",  (36, 0, 8))
+        _rot_bone(pb, "mixamorig:LeftLeg",    (-58, 0, 0))
+        _rot_bone(pb, "mixamorig:RightUpLeg", (32, 0, -8))
+        _rot_bone(pb, "mixamorig:RightLeg",   (-54, 0, 0))
+        _rot_bone(pb, "mixamorig:LeftArm",    (-28, 0, -32))
+        _rot_bone(pb, "mixamorig:RightArm",   (-28, 0, 32))
+
+    pose_hand_grip(pb, "Left", "claw")
+    pose_hand_grip(pb, "Right", "claw")
+    snap_feet_to_floor(arm_obj, body_obj, floor_z=0.0)
+
+
+def apply_zombie_slam_pose(arm_obj, body_obj, stage="impact"):
+    """Juggernaut Ground Slam (`windup`, `impact`, `recover`): towering rear-back then crushing fist smash."""
+    bpy.context.view_layer.objects.active = arm_obj
+    bpy.ops.object.mode_set(mode="POSE")
+    pb = arm_obj.pose.bones
+    reset_pose(pb)
+    s = max(0.75, pb["mixamorig:Head"].bone.head_local.z / 1.565)
+
+    if stage == "windup":
+        pb["mixamorig:Hips"].location = Vector((0.0, 0.03 * s, -0.06 * s))
+        _rot_bone(pb, "mixamorig:Hips",   (-10, -24, 0))
+        _rot_bone(pb, "mixamorig:Spine",  (-8, -8, 0))
+        _rot_bone(pb, "mixamorig:Spine2", (-10, -10, 0))
+        _rot_bone(pb, "mixamorig:Neck",   (8, 12, 0))
+        _rot_bone(pb, "mixamorig:Head",   (6, 20, 4))
+        _rot_bone(pb, "mixamorig:LeftUpLeg",  (18, 6, 8))
+        _rot_bone(pb, "mixamorig:LeftLeg",    (-24, 0, 0))
+        _rot_bone(pb, "mixamorig:RightUpLeg", (-12, -6, -8))
+        _rot_bone(pb, "mixamorig:RightLeg",   (-18, 0, 0))
+        _rot_bone(pb, "mixamorig:RightShoulder", (18, 0, -14))
+        _rot_bone(pb, "mixamorig:RightArm",      (56, 16, 18))
+        _rot_bone(pb, "mixamorig:RightForeArm",  (0, 0, 44))
+        _rot_bone(pb, "mixamorig:LeftArm",       (-42, -12, -32))
+        _rot_bone(pb, "mixamorig:LeftForeArm",   (0, 0, -40))
+    elif stage == "impact":
+        pb["mixamorig:Hips"].location = Vector((0.0, -0.05 * s, -0.42 * s))
+        _rot_bone(pb, "mixamorig:Hips",   (38, 18, 0))
+        _rot_bone(pb, "mixamorig:Spine",  (14, 8, 0))
+        _rot_bone(pb, "mixamorig:Spine1", (14, 8, 0))
+        _rot_bone(pb, "mixamorig:Spine2", (14, 10, 0))
+        _rot_bone(pb, "mixamorig:Neck",   (-20, -14, 0))
+        _rot_bone(pb, "mixamorig:Head",   (-24, -18, 6))
+        bpy.context.view_layer.update()
+        _solve_grounded_leg(arm_obj, "Left",  stride_y=-0.30 * s, lift_z=0.0, lat_x_off=0.08 * s, foot_yaw_deg=18.0)
+        _solve_grounded_leg(arm_obj, "Right", stride_y=0.22 * s,  lift_z=0.02 * s, foot_pitch_deg=-18.0, toe_bend_deg=22.0, lat_x_off=-0.08 * s, foot_yaw_deg=-18.0)
+        _rot_bone(pb, "mixamorig:RightShoulder", (6, 14, -14))
+        _rot_bone(pb, "mixamorig:RightArm",      (-40, 14, 78))
+        _rot_bone(pb, "mixamorig:RightForeArm",  (0, 0, 12))
+        _rot_bone(pb, "mixamorig:RightHand",     (0, 0, 22))
+        _rot_bone(pb, "mixamorig:LeftShoulder",  (6, 0, 10))
+        _rot_bone(pb, "mixamorig:LeftArm",       (-36, -24, -22))
+        _rot_bone(pb, "mixamorig:LeftForeArm",   (0, 0, -48))
+    else:
+        pb["mixamorig:Hips"].location = Vector((0.0, -0.02 * s, -0.10 * s))
+        _rot_bone(pb, "mixamorig:Hips",   (16, 10, 0))
+        _rot_bone(pb, "mixamorig:Spine2", (10, 6, 0))
+        _rot_bone(pb, "mixamorig:Head",   (-10, -10, 6))
+        _rot_bone(pb, "mixamorig:LeftUpLeg",  (24, 0, 6))
+        _rot_bone(pb, "mixamorig:LeftLeg",    (-30, 0, 0))
+        _rot_bone(pb, "mixamorig:RightUpLeg", (-14, 0, -6))
+        _rot_bone(pb, "mixamorig:RightLeg",   (-22, 0, 0))
+        _rot_bone(pb, "mixamorig:RightArm",     (-42, 16, 36))
+        _rot_bone(pb, "mixamorig:LeftArm",      (-48, -10, -34))
+
+    pose_hand_grip(pb, "Left", "claw")
+    pose_hand_grip(pb, "Right", "fist")
+    snap_feet_to_floor(arm_obj, body_obj, floor_z=0.0)
+
+
+def apply_zombie_echo_click_pose(arm_obj, body_obj, stage="listen"):
+    """Cordyceps Echolocation & Blind Dash (`listen`, `dash`, `grab`)."""
+    bpy.context.view_layer.objects.active = arm_obj
+    bpy.ops.object.mode_set(mode="POSE")
+    pb = arm_obj.pose.bones
+    reset_pose(pb)
+    s = max(0.75, pb["mixamorig:Head"].bone.head_local.z / 1.565)
+
+    if stage == "listen":
+        pb["mixamorig:Hips"].location = Vector((0.0, 0.01 * s, -0.10 * s))
+        _rot_bone(pb, "mixamorig:Hips",   (14, -10, 4))
+        _rot_bone(pb, "mixamorig:Spine",  (12, 4, -4))
+        _rot_bone(pb, "mixamorig:Spine1", (12, 4, -4))
+        _rot_bone(pb, "mixamorig:Spine2", (10, 6, -4))
+        _rot_bone(pb, "mixamorig:Neck",   (-16, 18, -14))
+        _rot_bone(pb, "mixamorig:Head",   (-18, 22, -20))
+        bpy.context.view_layer.update()
+        _solve_grounded_leg(arm_obj, "Left",  stride_y=-0.16 * s, lift_z=0.0, lat_x_off=0.03 * s, foot_yaw_deg=10.0)
+        _solve_grounded_leg(arm_obj, "Right", stride_y=0.14 * s,  lift_z=0.0, lat_x_off=-0.03 * s, foot_yaw_deg=-16.0)
+        # Raised trembling radar-claw arms searching forward-upward
+        _rot_bone(pb, "mixamorig:LeftShoulder",  (8, 0, 12))
+        _rot_bone(pb, "mixamorig:LeftArm",       (-18, -28, -56))
+        _rot_bone(pb, "mixamorig:LeftForeArm",   (0, 0, -58))
+        _rot_bone(pb, "mixamorig:LeftHand",      (0, -14, 18))
+        _rot_bone(pb, "mixamorig:RightShoulder", (6, 0, -12))
+        _rot_bone(pb, "mixamorig:RightArm",      (-28, 24, 48))
+        _rot_bone(pb, "mixamorig:RightForeArm",  (0, 0, 64))
+        _rot_bone(pb, "mixamorig:RightHand",     (0, 16, -16))
+    elif stage == "dash":
+        pb["mixamorig:Hips"].location = Vector((0.0, -0.06 * s, -0.14 * s))
+        _rot_bone(pb, "mixamorig:Hips",   (28, -12, 0))
+        _rot_bone(pb, "mixamorig:Spine",  (12, 6, 0))
+        _rot_bone(pb, "mixamorig:Spine2", (12, 6, 0))
+        _rot_bone(pb, "mixamorig:Neck",   (-16, 8, -10))
+        _rot_bone(pb, "mixamorig:Head",   (-20, 10, -14))
+        bpy.context.view_layer.update()
+        _solve_grounded_leg(arm_obj, "Left",  stride_y=-0.30 * s, lift_z=0.02 * s, foot_pitch_deg=10.0)
+        _solve_grounded_leg(arm_obj, "Right", stride_y=0.34 * s,  lift_z=0.08 * s, foot_pitch_deg=-26.0, toe_bend_deg=24.0)
+        _rot_bone(pb, "mixamorig:LeftShoulder",  (10, 0, 14))
+        _rot_bone(pb, "mixamorig:LeftArm",       (-10, -14, -76))
+        _rot_bone(pb, "mixamorig:LeftForeArm",   (0, 0, -24))
+        _rot_bone(pb, "mixamorig:RightShoulder", (10, 0, -14))
+        _rot_bone(pb, "mixamorig:RightArm",      (-10, 14, 76))
+        _rot_bone(pb, "mixamorig:RightForeArm",  (0, 0, 24))
+    else:  # grab
+        pb["mixamorig:Hips"].location = Vector((0.0, -0.05 * s, -0.10 * s))
+        _rot_bone(pb, "mixamorig:Hips",   (22, 8, 0))
+        _rot_bone(pb, "mixamorig:Spine2", (14, -4, 0))
+        _rot_bone(pb, "mixamorig:Head",   (8, -10, 12))
+        bpy.context.view_layer.update()
+        _solve_grounded_leg(arm_obj, "Left",  stride_y=-0.22 * s, lift_z=0.0)
+        _solve_grounded_leg(arm_obj, "Right", stride_y=0.20 * s,  lift_z=0.0)
+        _rot_bone(pb, "mixamorig:LeftArm",       (-16, -24, -64))
+        _rot_bone(pb, "mixamorig:LeftForeArm",   (0, 0, -48))
+        _rot_bone(pb, "mixamorig:RightArm",      (-16, 24, 64))
+        _rot_bone(pb, "mixamorig:RightForeArm",  (0, 0, 48))
+
+    pose_hand_grip(pb, "Left", "claw")
+    pose_hand_grip(pb, "Right", "claw")
+    snap_feet_to_floor(arm_obj, body_obj, floor_z=0.0)
+
+
+def apply_zombie_signature_pose(arm_obj, body_obj, pose_name="shamble"):
+    """Apply signature zombie showcase pose (`idle`, `shamble`, `run`, `swipe`, `pounce`, `lunge`, `bite`, `shriek`, `spit`, `detonate`, `slam`)."""
+    if pose_name == "idle":
+        apply_zombie_idle_pose(arm_obj, body_obj, phase=0.20)
+    elif pose_name == "run":
+        apply_zombie_run_pose(arm_obj, body_obj, phase=0.14)
+    elif pose_name == "swipe":
+        apply_zombie_swipe_pose(arm_obj, body_obj, stage="impact")
+    elif pose_name in ("lunge", "pounce"):
+        apply_zombie_lunge_pose(arm_obj, body_obj, stage="lunge")
+    elif pose_name == "bite":
+        apply_zombie_bite_pose(arm_obj, body_obj, stage="bite")
+    elif pose_name == "shriek":
+        apply_zombie_shriek_pose(arm_obj, body_obj, stage="peak")
+    elif pose_name == "spit":
+        apply_zombie_spit_pose(arm_obj, body_obj, stage="spit")
+    elif pose_name == "detonate":
+        apply_zombie_detonate_pose(arm_obj, body_obj, stage="burst")
+    elif pose_name == "slam":
+        apply_zombie_slam_pose(arm_obj, body_obj, stage="impact")
+    else:
+        apply_zombie_shamble_pose(arm_obj, body_obj, phase=0.22)
+    bpy.ops.object.mode_set(mode="OBJECT")
 
 
 def apply_zombie_lunge_pose(arm_obj, body_obj, stage="lunge"):
@@ -1185,6 +1681,69 @@ def apply_zombie_bite_pose(arm_obj, body_obj, stage="bite"):
 
     pose_hand_grip(pb, "Left", "claw")
     pose_hand_grip(pb, "Right", "claw")
+    snap_feet_to_floor(arm_obj, body_obj, floor_z=0.0)
+
+
+def apply_zombie_rafflesia_pose(arm_obj, body_obj, stage="stalk"):
+    """Rafflesia Corpse-Flower poses (`stalk`, `lash`, `devour`): swaying whip tendrils & snapping bloom."""
+    bpy.context.view_layer.objects.active = arm_obj
+    bpy.ops.object.mode_set(mode="POSE")
+    pb = arm_obj.pose.bones
+    reset_pose(pb)
+    s = max(0.75, pb["mixamorig:Head"].bone.head_local.z / 1.565)
+
+    if stage == "stalk":
+        pb["mixamorig:Hips"].location = Vector((0.0, 0.0, -0.09 * s))
+        _rot_bone(pb, "mixamorig:Hips",   (14, -6, 0))
+        _rot_bone(pb, "mixamorig:Spine",  (10, 2, -2))
+        _rot_bone(pb, "mixamorig:Spine2", (12, 4, -2))
+        _rot_bone(pb, "mixamorig:Neck",   (-14, 4, 8))
+        _rot_bone(pb, "mixamorig:Head",   (-16, 4, 10))
+        bpy.context.view_layer.update()
+        _solve_grounded_leg(arm_obj, "Left",  stride_y=-0.16 * s, lift_z=0.0, lat_x_off=0.06 * s, foot_yaw_deg=16.0)
+        _solve_grounded_leg(arm_obj, "Right", stride_y=0.14 * s,  lift_z=0.0, lat_x_off=-0.06 * s, foot_yaw_deg=-16.0)
+        _rot_bone(pb, "mixamorig:LeftShoulder",  (6, 0, 12))
+        _rot_bone(pb, "mixamorig:LeftArm",       (-48, -18, -28))
+        _rot_bone(pb, "mixamorig:LeftForeArm",   (0, 0, -28))
+        _rot_bone(pb, "mixamorig:RightShoulder", (6, 0, -12))
+        _rot_bone(pb, "mixamorig:RightArm",      (-46, 18, 30))
+        _rot_bone(pb, "mixamorig:RightForeArm",  (0, 0, 30))
+        pose_hand_grip(pb, "Left", "claw")
+        pose_hand_grip(pb, "Right", "claw")
+    elif stage == "lash":
+        pb["mixamorig:Hips"].location = Vector((0.0, -0.07 * s, -0.18 * s))
+        _rot_bone(pb, "mixamorig:Hips",   (30, -8, 0))
+        _rot_bone(pb, "mixamorig:Spine",  (14, 4, 0))
+        _rot_bone(pb, "mixamorig:Spine2", (16, 6, 0))
+        _rot_bone(pb, "mixamorig:Neck",   (-26, 0, 4))
+        _rot_bone(pb, "mixamorig:Head",   (-26, 0, 6))
+        bpy.context.view_layer.update()
+        _solve_grounded_leg(arm_obj, "Left",  stride_y=-0.30 * s, lift_z=0.0, lat_x_off=0.05 * s, foot_yaw_deg=14.0)
+        _solve_grounded_leg(arm_obj, "Right", stride_y=0.32 * s,  lift_z=0.05 * s, lat_x_off=-0.05 * s, foot_pitch_deg=-22.0, toe_bend_deg=22.0)
+        _rot_bone(pb, "mixamorig:LeftShoulder",  (12, -8, -10))
+        _rot_bone(pb, "mixamorig:LeftArm",       (-12, -22, -66))
+        _rot_bone(pb, "mixamorig:LeftForeArm",   (0, 0, -18))
+        _rot_bone(pb, "mixamorig:RightShoulder", (12, 8, 10))
+        _rot_bone(pb, "mixamorig:RightArm",      (-12, 22, 66))
+        _rot_bone(pb, "mixamorig:RightForeArm",  (0, 0, 18))
+        pose_hand_grip(pb, "Left", "claw")
+        pose_hand_grip(pb, "Right", "claw")
+    else:  # devour
+        pb["mixamorig:Hips"].location = Vector((0.0, -0.03 * s, -0.08 * s))
+        _rot_bone(pb, "mixamorig:Hips",   (14, 0, 0))
+        _rot_bone(pb, "mixamorig:Spine2", (16, 0, 0))
+        _rot_bone(pb, "mixamorig:Neck",   (-10, 0, 0))
+        _rot_bone(pb, "mixamorig:Head",   (-12, 0, 0))
+        bpy.context.view_layer.update()
+        _solve_grounded_leg(arm_obj, "Left",  stride_y=-0.16 * s, lift_z=0.0)
+        _solve_grounded_leg(arm_obj, "Right", stride_y=0.16 * s,  lift_z=0.0)
+        _rot_bone(pb, "mixamorig:LeftArm",       (-18, -28, -56))
+        _rot_bone(pb, "mixamorig:LeftForeArm",   (0, 0, -56))
+        _rot_bone(pb, "mixamorig:RightArm",      (-18, 28, 56))
+        _rot_bone(pb, "mixamorig:RightForeArm",  (0, 0, 56))
+        pose_hand_grip(pb, "Left", "claw")
+        pose_hand_grip(pb, "Right", "claw")
+
     snap_feet_to_floor(arm_obj, body_obj, floor_z=0.0)
 
 
@@ -1409,6 +1968,107 @@ def bake_rig_actions(arm_obj, body_obj, weapon_id=None, right_grip_rest=None):
     start_action("Zombie_Bite_Grab")
     for frame, stg in ((1, "reach"), (10, "reach"), (17, "bite"), (28, "reach")):
         apply_zombie_bite_pose(arm_obj, body_obj, stage=stg)
+        _keyframe_current_pose(arm_obj, frame)
+
+    arm_obj.animation_data.action = None
+    reset_pose(arm_obj.pose.bones)
+    bpy.context.view_layer.update()
+    bpy.ops.object.mode_set(mode="OBJECT")
+
+
+def bake_zombie_actions(arm_obj, body_obj):
+    """Bake 13 dedicated Zombie & Skill Actions (`use_fake_user=True`) and leave arm_obj in rest T-pose."""
+    set_live_ik(arm_obj, False)
+    bpy.context.view_layer.objects.active = arm_obj
+    bpy.ops.object.mode_set(mode="POSE")
+    if arm_obj.animation_data is None:
+        arm_obj.animation_data_create()
+
+    def start_action(name):
+        act = bpy.data.actions.new(name=name)
+        act.use_fake_user = True
+        arm_obj.animation_data.action = act
+        return act
+
+    start_action("Zombie_Idle_Sway")
+    for idx in range(9):
+        apply_zombie_idle_pose(arm_obj, body_obj, phase=(idx % 8) / 8.0)
+        _keyframe_current_pose(arm_obj, 1 + idx * 6)
+
+    start_action("Zombie_Walk_Shamble")
+    for idx in range(9):
+        apply_zombie_shamble_pose(arm_obj, body_obj, phase=(idx % 8) / 8.0)
+        _keyframe_current_pose(arm_obj, 1 + idx * 5)
+
+    start_action("Zombie_Run_Feral")
+    for idx in range(9):
+        apply_zombie_run_pose(arm_obj, body_obj, phase=(idx % 8) / 8.0)
+        _keyframe_current_pose(arm_obj, 1 + idx * 3)
+
+    start_action("Zombie_Attack_Swipe")
+    for frame, stg in ((1, "recover"), (8, "windup"), (14, "impact"), (21, "follow"), (28, "recover")):
+        apply_zombie_swipe_pose(arm_obj, body_obj, stage=stg)
+        _keyframe_current_pose(arm_obj, frame)
+
+    start_action("Zombie_Lunge")
+    for frame, stg in ((1, "recover"), (8, "windup"), (13, "launch"), (18, "lunge"), (26, "recover"), (32, "recover")):
+        apply_zombie_lunge_pose(arm_obj, body_obj, stage=stg)
+        _keyframe_current_pose(arm_obj, frame)
+
+    start_action("Zombie_Bite_Grab")
+    for frame, stg in ((1, "reach"), (10, "reach"), (17, "bite"), (28, "reach")):
+        apply_zombie_bite_pose(arm_obj, body_obj, stage=stg)
+        _keyframe_current_pose(arm_obj, frame)
+
+    start_action("Zombie_Hit_React")
+    for frame, stg in ((1, "recover"), (6, "peak"), (14, "recover"), (22, "recover")):
+        apply_hit_react_pose(arm_obj, body_obj, stage=stg)
+        _keyframe_current_pose(arm_obj, frame)
+
+    start_action("Zombie_Death_Fall")
+    for frame, stg in ((1, "stagger"), (9, "knees"), (18, "fall"), (28, "prone")):
+        apply_zombie_death_pose(arm_obj, body_obj, stage=stg)
+        _keyframe_current_pose(arm_obj, frame)
+
+    start_action("Skill_Sonic_Shriek")
+    for frame, stg in ((1, "recover"), (8, "inhale"), (16, "peak"), (28, "peak"), (36, "recover")):
+        apply_zombie_shriek_pose(arm_obj, body_obj, stage=stg)
+        _keyframe_current_pose(arm_obj, frame)
+
+    start_action("Skill_Acid_Spit")
+    for frame, stg in ((1, "recover"), (9, "charge"), (15, "spit"), (24, "spit"), (32, "recover")):
+        apply_zombie_spit_pose(arm_obj, body_obj, stage=stg)
+        _keyframe_current_pose(arm_obj, frame)
+
+    start_action("Skill_Volatile_Detonate")
+    for frame, stg in ((1, "swell"), (10, "swell"), (17, "burst"), (28, "collapse")):
+        apply_zombie_detonate_pose(arm_obj, body_obj, stage=stg)
+        _keyframe_current_pose(arm_obj, frame)
+
+    start_action("Skill_Ground_Slam")
+    for frame, stg in ((1, "recover"), (10, "windup"), (17, "impact"), (26, "impact"), (36, "recover")):
+        apply_zombie_slam_pose(arm_obj, body_obj, stage=stg)
+        _keyframe_current_pose(arm_obj, frame)
+
+    start_action("Skill_Echo_Click_Dash")
+    for frame, stg in ((1, "listen"), (12, "listen"), (19, "dash"), (26, "grab"), (36, "listen")):
+        apply_zombie_echo_click_pose(arm_obj, body_obj, stage=stg)
+        _keyframe_current_pose(arm_obj, frame)
+
+    start_action("Skill_Corpse_Bloom_Lash")
+    for frame, stg in ((1, "stalk"), (10, "stalk"), (18, "lash"), (28, "devour"), (38, "stalk")):
+        apply_zombie_rafflesia_pose(arm_obj, body_obj, stage=stg)
+        _keyframe_current_pose(arm_obj, frame)
+
+    start_action("Head_LookAt")
+    for frame, yaw, pitch in (
+        (1, 0.0, 0.0), (10, 55.0, 0.0), (20, -55.0, 0.0),
+        (30, 0.0, -24.0), (40, 0.0, 22.0), (49, 0.0, 0.0),
+    ):
+        reset_pose(arm_obj.pose.bones)
+        _apply_combat_lower_body(arm_obj.pose.bones, stance="neutral")
+        apply_head_look_at(arm_obj.pose.bones, yaw_deg=yaw, pitch_deg=pitch, torso_follow=True)
+        snap_feet_to_floor(arm_obj, body_obj, floor_z=0.0)
         _keyframe_current_pose(arm_obj, frame)
 
     arm_obj.animation_data.action = None
