@@ -70,6 +70,17 @@ Gunakan `.\build.ps1` (default `-Target pack`) untuk membangun **10 model surviv
   - Helper `spawn_weapon_vfx()` otomatis menempelkan efek sesuai pose & `MuzzleSocket` / `EjectSocket`; jalankan `.\build.ps1 -Target vfx` untuk build cepat VFX.
   - Render QA VFX: [weapon_vfx_sheet.png](renders/weapon_vfx_sheet.png), [weapon_vfx_action_qa.png](renders/weapon_vfx_action_qa.png)
 
+## Batch 2: 6 Rigged Faceless Horror Zombies (`output/zombies/`)
+6 arketipe zombie **faceless** (rongga mata cekung gelap tanpa bola mata agar konsisten dengan gaya pahatan manusia **Loomis/Asaro low-poly**), ukuran bervariasi ekstrem dari kecil hingga bos raksasa (`1.42 m` s/d `2.26 m`), menggunakan rig Mixamo identik (`55 deform` + `19 controls`) + **13 Zombie Actions & Skills**:
+- `zombie_crawler_stalker` (`1.42 m`, kecil bungkuk, kain compang-camping, cakar panjang — Skill: `Zombie_Lunge` *Pounce*)
+- `zombie_walker_shambler` (`1.78 m`, kemeja & dasi sobek, pipi kanan berlubang — Skill: `Zombie_Bite_Grab`)
+- `zombie_banshee_screamer` (`1.66 m`, siluet female kurus dengan rambut acak panjang & rahang ternganga — Skill: `Skill_Sonic_Shriek`)
+- `zombie_spitter_hazmat` (`1.76 m`, kantung racun bengkak di leher, setelan hazmat robek & tabung bocor — Skill: `Skill_Acid_Spit`)
+- `zombie_bloater_boomer` (`1.88 m`, perut bengkak meletup dipenuhi bisul gas kuning menyala — Skill: `Skill_Volatile_Detonate`)
+- `zombie_juggernaut_brute` (`2.26 m`, bos raksasa berzirah SWAT pecah, lengan kanan raksasa berduri tulang + besi beton di punggung — Skill: `Skill_Ground_Slam`)
+- Jalankan `.\build.ps1 -Target zombies` untuk build + render QA zombie.
+- Render QA Zombie: [zombies_head_sheet.png](renders/zombies_head_sheet.png), [zombies_lineup.png](renders/zombies_lineup.png), [zombie_mechanics_qa.png](renders/zombie_mechanics_qa.png)
+
 ## Cara Menjalankan Ulang
 ```powershell
 cd "c:\Mirza Personal\lowpoly-survivor"
