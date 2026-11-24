@@ -108,11 +108,103 @@ MATERIAL_SPECS = [
     ("Mat_VfxBloodDark",  "#4A0A0A", 0.45, 0.00),
     ("Mat_VfxBrassHot",   "#E0B850", 0.28, 0.88, "#FFB030",  0.8),
     ("Mat_VfxLaserRed",   "#FF2020", 0.15, 0.00, "#FF1818",  9.0),
+
+    # Batch 2: Undead / Zombie skins, facial trauma & torn outfits
+    ("Mat_ZSkinGreen",    "#5A634E", 0.80, 0.00),
+    ("Mat_ZSkinPale",     "#7A7A76", 0.78, 0.00),
+    ("Mat_ZSkinGrey",     "#54524C", 0.80, 0.00),
+    ("Mat_ZSkinBruised",  "#4E4952", 0.82, 0.00),
+    ("Mat_ZSkinToxic",    "#5A6A4E", 0.78, 0.00),
+    ("Mat_ZSkinDark",     "#393D33", 0.84, 0.00),
+    ("Mat_ZSocket",       "#1A1315", 0.90, 0.00),
+    ("Mat_ZEyeCloudy",    "#A4A898", 0.28, 0.00),
+    ("Mat_ZEyeBlood",     "#721A18", 0.25, 0.00),
+    ("Mat_ZMouth",        "#1F0709", 0.70, 0.00),
+    ("Mat_ZLipDead",      "#3D272A", 0.76, 0.00),
+    ("Mat_ZBone",         "#9E947E", 0.62, 0.00),
+    ("Mat_ZFlesh",        "#541417", 0.42, 0.00),
+    ("Mat_ZBloodDried",   "#2C0708", 0.54, 0.00),
+    ("Mat_ZBloodFresh",   "#640E10", 0.28, 0.00),
+    ("Mat_ZShirtTorn",    "#747269", 0.90, 0.00),
+    ("Mat_ZTieDark",      "#42181A", 0.86, 0.00),
+    ("Mat_ZClothDirty",   "#34322E", 0.90, 0.00),
+    ("Mat_ZNurseDress",   "#8E9690", 0.88, 0.00),
+    ("Mat_ZCardigan",     "#402B32", 0.90, 0.00),
+    ("Mat_ZTrackRed",     "#5E1E1D", 0.86, 0.00),
+    ("Mat_ZTrackDark",    "#1B1D21", 0.88, 0.00),
+    ("Mat_ZRiotNavy",     "#17202D", 0.74, 0.00),
+    ("Mat_ZRiotArmor",    "#1E2228", 0.50, 0.22),
+    ("Mat_ZRiotVisor",    "#3C525C", 0.18, 0.25),
+    ("Mat_ZHazmatYellow", "#8A721E", 0.74, 0.00),
+    ("Mat_ZHazmatTrim",   "#1C1E21", 0.70, 0.00),
+    ("Mat_ZAcidGlow",     "#8EE038", 0.25, 0.00, "#78D422", 3.2),
+    ("Mat_ZRebar",        "#4A2215", 0.62, 0.72),
+    ("Mat_ZBoilDark",     "#3A451B", 0.64, 0.00),
+    ("Mat_ZBoilGlow",     "#D4C438", 0.28, 0.00, "#C8B822", 2.6),
+    ("Mat_ZShroudDark",   "#221F23", 0.92, 0.00),
+    ("Mat_ZVeinDark",     "#2B1621", 0.72, 0.00),
+    ("Mat_ZSonicWave",    "#C6D8EE", 0.25, 0.00, "#9EC4F0", 4.0),
+
+    # Mutants Batch: Cordyceps / Fungal Bloom
+    ("Mat_ZFungusCap",    "#7A6449", 0.86, 0.00),
+    ("Mat_ZFungusPale",   "#A4967B", 0.84, 0.00),
+    ("Mat_ZFungusGill",   "#542A1E", 0.82, 0.00),
+    ("Mat_ZFungusDark",   "#2B1813", 0.88, 0.00),
+    ("Mat_ZFungusRoot",      "#433628", 0.88, 0.00),
+    ("Mat_ZSporeMote",       "#C8B874", 0.40, 0.00, "#B8A658", 1.8),
+
+    # Mutant #1 (Rafflesia Carnivorous Blood-Flower Monster)
+    ("Mat_ZRaffPetal",       "#7A100F", 0.54, 0.00),
+    ("Mat_ZRaffPetalDark",   "#380608", 0.68, 0.00),
+    ("Mat_ZRaffSpot",        "#B59B78", 0.82, 0.00),
+    ("Mat_ZRaffRing",        "#6E1C16", 0.60, 0.00),
+    ("Mat_ZLeafDark",        "#11200E", 0.78, 0.00),
+    ("Mat_ZLeafMid",         "#1F3B15", 0.72, 0.00),
+    ("Mat_ZVinePale",        "#324D27", 0.74, 0.00),
+    ("Mat_ZBarkDark",        "#1E1711", 0.88, 0.00),
+    ("Mat_ZHeartGlow",       "#98E042", 0.25, 0.00, "#7CD426", 3.2),
+    ("Mat_ZRaffPetalBright", "#9C1814", 0.48, 0.00),
+    ("Mat_ZRaffJawFlesh",    "#845946", 0.52, 0.00),
+    ("Mat_ZRaffStamen",      "#866022", 0.68, 0.00),
+    ("Mat_ZBarkMid",         "#34271B", 0.84, 0.00),
+
+    # Mutants #2-#4: Scythe Stalker, Thorn Shroud Seraph & Arachnid Maw
+    ("Mat_MChitinDark",      "#1A1716", 0.58, 0.14),
+    ("Mat_MChitinMid",       "#332924", 0.66, 0.08),
+    ("Mat_MScytheBone",      "#786B58", 0.50, 0.10),
+    ("Mat_MEyeAcid",         "#C8E82C", 0.18, 0.00, "#B2DC1E", 3.4),
+    ("Mat_MTongueWet",       "#5E131A", 0.24, 0.00),
+    ("Mat_MShroudBone",      "#7A7570", 0.56, 0.06),
+    ("Mat_MShroudDark",      "#231F26", 0.74, 0.05),
+    ("Mat_MShroudSkin",      "#524F56", 0.68, 0.00),
+    ("Mat_MArachChitin",     "#14181D", 0.52, 0.16),
+    ("Mat_MArachUnder",      "#3B1A1C", 0.62, 0.00),
+    ("Mat_MSaliva",          "#CFC6BE", 0.10, 0.05),
+
+    # Modular Mutant Combat VFX Materials
+    ("Mat_VfxBloodCore",     "#FF4236", 0.18, 0.00, "#FF261B", 4.6),
+    ("Mat_VfxBloodArc",      "#A81016", 0.25, 0.00, "#8E0A10", 2.8),
+    ("Mat_VfxSporeGlow",     "#AEF248", 0.20, 0.00, "#8CE024", 4.0),
+    ("Mat_VfxSporeMist",     "#46662C", 0.90, 0.00),
+    ("Mat_VfxShriekCore",    "#A8DCFF", 0.20, 0.00, "#7EC4FF", 2.8),
+    ("Mat_VfxAcidCore",      "#CCFF38", 0.16, 0.00, "#A6F214", 4.8),
+
+    # Mutant #5: Bile Juggernaut Heavy Tank
+    ("Mat_MTankSkin",        "#4A453D", 0.78, 0.00),
+    ("Mat_MTankBruise",      "#2E222A", 0.66, 0.00),
+    ("Mat_MTankArmor",       "#28241D", 0.86, 0.06),
+    ("Mat_MBileGlow",        "#D87A14", 0.22, 0.00, "#C8640A", 2.8),
+    ("Mat_VfxBileCore",      "#FFB833", 0.16, 0.00, "#FF8C14", 4.6),
 ]
 
 
-def create_materials():
+def create_materials(with_mutant_textures=False):
     """Create or return the survivor material list and index lookup."""
+    apply_tex_fn = None
+    if with_mutant_textures:
+        from mutant_textures import apply_mutant_pbr_texture
+        apply_tex_fn = apply_mutant_pbr_texture
+
     mats = []
     idx_map = {}
     for i, spec in enumerate(MATERIAL_SPECS):
@@ -136,6 +228,13 @@ def create_materials():
         col = rgba(color_hex)
         bsdf.inputs["Base Color"].default_value = col
         bsdf.inputs["Roughness"].default_value = roughness
+        if len(spec) < 6 and apply_tex_fn is not None:
+            apply_tex_fn(mat, name, color_hex, roughness)
+            for node in mat.node_tree.nodes:
+                if node.type == "BSDF_PRINCIPLED":
+                    bsdf = node
+                    break
+
         bsdf.inputs["Metallic"].default_value = metallic
         if "Specular IOR Level" in bsdf.inputs:
             bsdf.inputs["Specular IOR Level"].default_value = 0.35

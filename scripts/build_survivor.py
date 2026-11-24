@@ -91,6 +91,7 @@ def export_glb(filepath, selected_only=False):
         export_apply=False,
         export_yup=True,
         export_normals=True,
+        export_texcoords=True,
         export_materials="EXPORT",
         export_skins=True,
         export_all_influences=False,
@@ -99,7 +100,10 @@ def export_glb(filepath, selected_only=False):
     )
 
 
-def verify_glb_roundtrip(glb_path, expected_centroids, expected_sockets=None, min_h=1.60, max_h=1.95):
+def verify_glb_roundtrip(
+    glb_path, expected_centroids, expected_sockets=None,
+    min_h=1.60, max_h=1.95, require_mixamo=True, min_bones=25, min_images=0,
+):
     """Import GLB into a clean scene to confirm bones, meshes, sockets, height, and gear alignment."""
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.gltf(filepath=glb_path)
@@ -110,9 +114,14 @@ def verify_glb_roundtrip(glb_path, expected_centroids, expected_sockets=None, mi
     if not arms:
         raise RuntimeError("GLB round-trip check failed: missing Armature")
     arm = arms[0]
-    mixamo_bones = [b.name for b in arm.data.bones if b.name.startswith("mixamorig:")]
-    if len(mixamo_bones) < 25:
-        raise RuntimeError(f"GLB round-trip check failed: expected >=25 Mixamo bones, got {len(mixamo_bones)}")
+    if require_mixamo:
+        rig_bones = [b.name for b in arm.data.bones if b.name.startswith("mixamorig:")]
+        bone_label = "Mixamo bones"
+    else:
+        rig_bones = [b.name for b in arm.data.bones]
+        bone_label = "creature bones"
+    if len(rig_bones) < min_bones:
+        raise RuntimeError(f"GLB round-trip check failed: expected >={min_bones} {bone_label}, got {len(rig_bones)}")
 
     mins, maxs = world_bounds(meshes)
     height = maxs[2] - mins[2]
@@ -141,8 +150,14 @@ def verify_glb_roundtrip(glb_path, expected_centroids, expected_sockets=None, mi
                 raise RuntimeError(f"GLB socket shift on {sname}: {dist:.4f}m (expected {exp_p}, got {tuple(got_p)})")
         sock_tag = ", sockets=OK"
 
-    print(f"[GLB CHECK OK] {os.path.basename(glb_path)}: {len(mixamo_bones)} Mixamo bones, "
-          f"meshes={[m.name for m in meshes]}, height={height:.3f}m{sock_tag}, max centroid drift < 1.5cm")
+    if min_images > 0:
+        n_imgs = len(bpy.data.images)
+        if n_imgs < min_images:
+            raise RuntimeError(f"GLB missing embedded images: expected >={min_images}, got {n_imgs}")
+    img_tag = f", images={len(bpy.data.images)}" if min_images > 0 else ""
+
+    print(f"[GLB CHECK OK] {os.path.basename(glb_path)}: {len(rig_bones)} {bone_label}, "
+          f"meshes={[m.name for m in meshes]}, height={height:.3f}m{sock_tag}{img_tag}, max centroid drift < 1.5cm")
 
 
 def main():

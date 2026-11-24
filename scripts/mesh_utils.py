@@ -345,3 +345,31 @@ def finalize_mesh(name, bm, materials, collection=None, triangulate=True):
         collection.objects.link(obj)
 
     return obj, count_tris(obj)
+
+
+def apply_box_uvs(mesh_obj, tex_scale=1.7):
+    """Apply fast distortion-free triplanar/box UV projection per polygon for PBR textures."""
+    mesh = mesh_obj.data
+    uv_layer = mesh.uv_layers.get("UVMap") or mesh.uv_layers.new(name="UVMap")
+    uv_data = uv_layer.data
+    verts = mesh.vertices
+    s = float(tex_scale)
+
+    for poly in mesh.polygons:
+        nx = abs(poly.normal.x)
+        ny = abs(poly.normal.y)
+        nz = abs(poly.normal.z)
+        if nx >= ny and nx >= nz and nx > 1e-6:
+            mode = 0
+        elif ny >= nx and ny >= nz and ny > 1e-6:
+            mode = 1
+        else:
+            mode = 2
+        for li in poly.loop_indices:
+            co = verts[mesh.loops[li].vertex_index].co
+            if mode == 0:
+                uv_data[li].uv = (co.y * s, co.z * s)
+            elif mode == 1:
+                uv_data[li].uv = (co.x * s, co.z * s)
+            else:
+                uv_data[li].uv = (co.x * s, co.y * s)
