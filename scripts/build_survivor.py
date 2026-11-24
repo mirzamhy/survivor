@@ -83,8 +83,8 @@ def mesh_centroid(obj):
     return tuple(a / n for a in acc)
 
 
-def export_glb(filepath, selected_only=False):
-    bpy.ops.export_scene.gltf(
+def export_glb(filepath, selected_only=False, export_animations=False):
+    kwargs = dict(
         filepath=filepath,
         export_format="GLB",
         use_selection=selected_only,
@@ -96,8 +96,16 @@ def export_glb(filepath, selected_only=False):
         export_skins=True,
         export_all_influences=False,
         export_def_bones=True,
-        export_animations=False,
+        export_animations=bool(export_animations),
     )
+    if export_animations:
+        kwargs.update(
+            export_animation_mode="ACTIONS",
+            export_anim_slide_to_zero=True,
+            export_bake_animation=True,
+            export_anim_single_armature=True,
+        )
+    bpy.ops.export_scene.gltf(**kwargs)
 
 
 def verify_glb_roundtrip(

@@ -242,85 +242,133 @@ def apply_rafflesia_creature_pose(arm_obj, body_obj, stage="idle", phase=0.0):
 
         for side, sx in (("L", 1.0), ("R", -1.0)):
             _pose_vine_chain(pb, f"Vine_Main_{side}", 6, sx,
-                             base_deg=(12.0, 6.0, 14.0),
-                             wave_deg=(10.0 * stride, 8.0 * lift, 12.0 * stride),
-                             curl_deg=(8.0, 14.0, 10.0))
+                             base_deg=(12.0, -6.0, 16.0),
+                             wave_deg=(14.0 * stride, -10.0 * lift, 16.0 * stride),
+                             curl_deg=(10.0, -16.0, 12.0))
             _pose_vine_chain(pb, f"Vine_Mid_{side}", 5, sx,
-                             base_deg=(10.0, 4.0, 18.0),
-                             wave_deg=(12.0 * lift, 6.0, 10.0 * stride),
-                             curl_deg=(4.0, 12.0, 12.0))
+                             base_deg=(12.0, -4.0, 18.0),
+                             wave_deg=(14.0 * lift, -8.0, 14.0 * stride),
+                             curl_deg=(6.0, -12.0, 12.0))
             _pose_vine_chain(pb, f"Vine_Back_{side}", 4, sx,
-                             base_deg=(8.0, 2.0, 8.0),
-                             wave_deg=(8.0 * stride, 8.0, 8.0),
-                             curl_deg=(6.0, 10.0, 6.0))
+                             base_deg=(10.0, -4.0, 10.0),
+                             wave_deg=(10.0 * stride, -8.0, 10.0),
+                             curl_deg=(8.0, -10.0, 8.0))
+
+    elif stage == "bite_windup":
+        _rot_bone_world(pb, "Pelvis",   (-10.0, 0.0, -8.0))
+        _rot_bone_world(pb, "Stalk_01", (-12.0, 0.0, -6.0))
+        _rot_bone_world(pb, "Stalk_02", (-8.0, 0.0, -4.0))
+        _rot_bone_world(pb, "Neck",     (12.0, 0.0, 6.0))
+        _rot_bone_world(pb, "Head",     (10.0, 0.0, 8.0))
+        _rot_bone_world(pb, "Jaw_Top", (-12.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Jaw_Bot", ( 14.0, 0.0, 0.0))
+        for side, sx in (("L", 1.0), ("R", -1.0)):
+            _pose_vine_chain(pb, f"Vine_Main_{side}", 6, sx, (-12.0, -14.0, -10.0), (6.0, -6.0, 6.0), (4.0, -12.0, -8.0))
+            _pose_vine_chain(pb, f"Vine_Mid_{side}",  5, sx, (-10.0, -12.0, -8.0),  (6.0, -6.0, 6.0), (4.0, -10.0, -6.0))
+            _pose_vine_chain(pb, f"Vine_Back_{side}", 4, sx, (-8.0, -10.0, -6.0),   (4.0, -4.0, 4.0), (4.0, -8.0, -4.0))
 
     elif stage == "lunge_bite":
         # Explosive forward crouch with 4-lobed fanged beak-maw gaping WIDE OPEN
-        _rot_bone_world(pb, "Pelvis",   (16.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Stalk_01", (20.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Stalk_02", (18.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Neck",     (-14.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Head",     (-22.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Pelvis",   (18.0, 0.0, 4.0))
+        _rot_bone_world(pb, "Stalk_01", (24.0, 0.0, 4.0))
+        _rot_bone_world(pb, "Stalk_02", (20.0, 0.0, 2.0))
+        _rot_bone_world(pb, "Neck",     (-18.0, 0.0, -4.0))
+        _rot_bone_world(pb, "Head",     (-26.0, 0.0, -4.0))
 
-        _rot_bone_world(pb, "Jaw_Top", (-28.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Jaw_Bot", ( 34.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Jaw_L",   (0.0, 0.0,  26.0))
-        _rot_bone_world(pb, "Jaw_R",   (0.0, 0.0, -26.0))
-
-        for leg, sx in (("Leg_FL", 1.0), ("Leg_FR", -1.0)):
-            _rot_bone_world(pb, f"{leg}_Thigh", (-10.0, -10.0 * sx, -12.0 * sx))
-            _rot_bone_world(pb, f"{leg}_Shin",  (  8.0,  14.0 * sx,   6.0 * sx))
-        for leg, sx in (("Leg_BL", 1.0), ("Leg_BR", -1.0)):
-            _rot_bone_world(pb, f"{leg}_Thigh", (-16.0,  10.0 * sx,  10.0 * sx))
-            _rot_bone_world(pb, f"{leg}_Shin",  ( 14.0, -12.0 * sx,  -6.0 * sx))
-
-        for side, sx in (("L", 1.0), ("R", -1.0)):
-            _pose_vine_chain(pb, f"Vine_Main_{side}", 6, sx,
-                             base_deg=(10.0, 4.0, 20.0),
-                             wave_deg=(12.0, 10.0, 14.0),
-                             curl_deg=(8.0, 16.0, 16.0))
-            _pose_vine_chain(pb, f"Vine_Mid_{side}", 5, sx,
-                             base_deg=(14.0, 6.0, 22.0),
-                             wave_deg=(10.0, 8.0, 12.0),
-                             curl_deg=(6.0, 12.0, 14.0))
-            _pose_vine_chain(pb, f"Vine_Back_{side}", 4, sx,
-                             base_deg=(12.0, -6.0, 14.0),
-                             wave_deg=(8.0, 6.0, 10.0),
-                             curl_deg=(10.0, 10.0, 10.0))
-
-    elif stage == "vine_thrash":
-        # Massive predatory rear-up + 6 thorny tentacles whipping violently forward & flaring around roaring maw
-        _rot_bone_world(pb, "Pelvis",   (-8.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Stalk_01", (16.0, 0.0, -6.0))
-        _rot_bone_world(pb, "Stalk_02", (14.0, 0.0, -4.0))
-        _rot_bone_world(pb, "Neck",     (-18.0, 0.0, 6.0))
-        _rot_bone_world(pb, "Head",     (-12.0, 0.0, 6.0))
-
-        _rot_bone_world(pb, "Jaw_Top", (-30.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Jaw_Bot", ( 34.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Jaw_Top", (-32.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Jaw_Bot", ( 36.0, 0.0, 0.0))
         _rot_bone_world(pb, "Jaw_L",   (0.0, 0.0,  28.0))
         _rot_bone_world(pb, "Jaw_R",   (0.0, 0.0, -28.0))
 
         for leg, sx in (("Leg_FL", 1.0), ("Leg_FR", -1.0)):
-            _rot_bone_world(pb, f"{leg}_Thigh", ( 6.0,  8.0 * sx, 18.0 * sx))
-            _rot_bone_world(pb, f"{leg}_Shin",  (-4.0, -10.0 * sx, -6.0 * sx))
+            _rot_bone_world(pb, f"{leg}_Thigh", (-14.0, -12.0 * sx, -16.0 * sx))
+            _rot_bone_world(pb, f"{leg}_Shin",  ( 10.0,  16.0 * sx,   8.0 * sx))
         for leg, sx in (("Leg_BL", 1.0), ("Leg_BR", -1.0)):
-            _rot_bone_world(pb, f"{leg}_Thigh", (-12.0, -8.0 * sx, -14.0 * sx))
-            _rot_bone_world(pb, f"{leg}_Shin",  ( 10.0, 10.0 * sx,   4.0 * sx))
+            _rot_bone_world(pb, f"{leg}_Thigh", (-18.0,  12.0 * sx,  12.0 * sx))
+            _rot_bone_world(pb, f"{leg}_Shin",  ( 16.0, -14.0 * sx,  -6.0 * sx))
 
         for side, sx in (("L", 1.0), ("R", -1.0)):
             _pose_vine_chain(pb, f"Vine_Main_{side}", 6, sx,
-                             base_deg=(24.0, -8.0, 26.0),
-                             wave_deg=(14.0, -8.0, 12.0),
-                             curl_deg=(10.0, -14.0, 14.0))
+                             base_deg=(18.0, -4.0, 26.0),
+                             wave_deg=(14.0, -8.0, 14.0),
+                             curl_deg=(10.0, -14.0, 18.0))
             _pose_vine_chain(pb, f"Vine_Mid_{side}", 5, sx,
-                             base_deg=(26.0, -6.0, 22.0),
-                             wave_deg=(12.0, -6.0, 10.0),
-                             curl_deg=(8.0, -12.0, 12.0))
+                             base_deg=(20.0, -4.0, 26.0),
+                             wave_deg=(12.0, -6.0, 12.0),
+                             curl_deg=(8.0, -10.0, 16.0))
             _pose_vine_chain(pb, f"Vine_Back_{side}", 4, sx,
-                             base_deg=(18.0, -6.0, 24.0),
-                             wave_deg=(10.0, -4.0, 12.0),
-                             curl_deg=(6.0, -10.0, 14.0))
+                             base_deg=(14.0, -6.0, 16.0),
+                             wave_deg=(8.0, -6.0, 10.0),
+                             curl_deg=(10.0, -10.0, 10.0))
+
+    elif stage == "bite_follow":
+        _rot_bone_world(pb, "Pelvis",   (12.0, 0.0, 10.0))
+        _rot_bone_world(pb, "Stalk_01", (14.0, 0.0, 8.0))
+        _rot_bone_world(pb, "Stalk_02", (10.0, 0.0, 6.0))
+        _rot_bone_world(pb, "Neck",     (-8.0, 0.0, -8.0))
+        _rot_bone_world(pb, "Head",     (6.0, 0.0, -10.0))
+        _rot_bone_world(pb, "Jaw_Top", (-4.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Jaw_Bot", ( 6.0, 0.0, 0.0))
+        for side, sx in (("L", 1.0), ("R", -1.0)):
+            _pose_vine_chain(pb, f"Vine_Main_{side}", 6, sx, (8.0, -10.0, 12.0), (10.0, -6.0, 10.0), (6.0, -12.0, 8.0))
+            _pose_vine_chain(pb, f"Vine_Mid_{side}",  5, sx, (10.0, -8.0, 14.0), (8.0, -4.0, 8.0),  (6.0, -10.0, 8.0))
+            _pose_vine_chain(pb, f"Vine_Back_{side}", 4, sx, (6.0, -6.0, 8.0),   (6.0, -4.0, 6.0),  (4.0, -8.0, 6.0))
+
+    elif stage == "thrash_windup":
+        _rot_bone_world(pb, "Pelvis",   (-10.0, 0.0, -10.0))
+        _rot_bone_world(pb, "Stalk_01", (-10.0, 0.0, -8.0))
+        _rot_bone_world(pb, "Head",     (12.0, 0.0, 10.0))
+        _rot_bone_world(pb, "Jaw_Top", (-16.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Jaw_Bot", ( 18.0, 0.0, 0.0))
+        for side, sx in (("L", 1.0), ("R", -1.0)):
+            _pose_vine_chain(pb, f"Vine_Main_{side}", 6, sx, (-16.0, -16.0, -18.0), (8.0, -8.0, -8.0), (6.0, -14.0, -12.0))
+            _pose_vine_chain(pb, f"Vine_Mid_{side}",  5, sx, (-14.0, -14.0, -16.0), (6.0, -6.0, -6.0), (6.0, -12.0, -10.0))
+            _pose_vine_chain(pb, f"Vine_Back_{side}", 4, sx, (-10.0, -12.0, -12.0), (6.0, -4.0, -4.0), (4.0, -10.0, -8.0))
+
+    elif stage == "vine_thrash":
+        # Massive predatory rear-up + 6 thorny tentacles whipping violently forward & flaring around roaring maw
+        _rot_bone_world(pb, "Pelvis",   (-8.0, 0.0, 8.0))
+        _rot_bone_world(pb, "Stalk_01", (18.0, 0.0, 8.0))
+        _rot_bone_world(pb, "Stalk_02", (16.0, 0.0, 6.0))
+        _rot_bone_world(pb, "Neck",     (-20.0, 0.0, -8.0))
+        _rot_bone_world(pb, "Head",     (-16.0, 0.0, -8.0))
+
+        _rot_bone_world(pb, "Jaw_Top", (-32.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Jaw_Bot", ( 36.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Jaw_L",   (0.0, 0.0,  30.0))
+        _rot_bone_world(pb, "Jaw_R",   (0.0, 0.0, -30.0))
+
+        for leg, sx in (("Leg_FL", 1.0), ("Leg_FR", -1.0)):
+            _rot_bone_world(pb, f"{leg}_Thigh", ( 8.0,  10.0 * sx, 20.0 * sx))
+            _rot_bone_world(pb, f"{leg}_Shin",  (-6.0, -12.0 * sx, -8.0 * sx))
+        for leg, sx in (("Leg_BL", 1.0), ("Leg_BR", -1.0)):
+            _rot_bone_world(pb, f"{leg}_Thigh", (-14.0, -10.0 * sx, -16.0 * sx))
+            _rot_bone_world(pb, f"{leg}_Shin",  ( 12.0, 12.0 * sx,   6.0 * sx))
+
+        for side, sx in (("L", 1.0), ("R", -1.0)):
+            _pose_vine_chain(pb, f"Vine_Main_{side}", 6, sx,
+                             base_deg=(28.0, -8.0, 30.0),
+                             wave_deg=(16.0, -8.0, 14.0),
+                             curl_deg=(12.0, -16.0, 16.0))
+            _pose_vine_chain(pb, f"Vine_Mid_{side}", 5, sx,
+                             base_deg=(28.0, -6.0, 26.0),
+                             wave_deg=(14.0, -6.0, 12.0),
+                             curl_deg=(10.0, -14.0, 14.0))
+            _pose_vine_chain(pb, f"Vine_Back_{side}", 4, sx,
+                             base_deg=(20.0, -6.0, 26.0),
+                             wave_deg=(12.0, -4.0, 14.0),
+                             curl_deg=(8.0, -12.0, 14.0))
+
+    elif stage == "thrash_follow":
+        _rot_bone_world(pb, "Pelvis",   (10.0, 0.0, 14.0))
+        _rot_bone_world(pb, "Stalk_01", (14.0, 0.0, 10.0))
+        _rot_bone_world(pb, "Head",     (-8.0, 0.0, -12.0))
+        _rot_bone_world(pb, "Jaw_Top", (-18.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Jaw_Bot", ( 20.0, 0.0, 0.0))
+        for side, sx in (("L", 1.0), ("R", -1.0)):
+            _pose_vine_chain(pb, f"Vine_Main_{side}", 6, sx, (16.0, -12.0, 14.0), (10.0, -6.0, 10.0), (8.0, -12.0, 10.0))
+            _pose_vine_chain(pb, f"Vine_Mid_{side}",  5, sx, (14.0, -10.0, 12.0), (8.0, -4.0, 8.0),   (6.0, -10.0, 8.0))
+            _pose_vine_chain(pb, f"Vine_Back_{side}", 4, sx, (10.0, -8.0, 10.0),  (6.0, -4.0, 6.0),   (6.0, -8.0, 6.0))
 
     else:  # death
         _rot_bone_world(pb, "Pelvis",   (22.0, 8.0, 0.0))
@@ -374,61 +422,112 @@ def apply_scythe_stalker_pose(arm_obj, body_obj, stage="idle", phase=0.0):
         for leg, s_s in (("Leg_L", 1.0), ("Leg_R", -1.0)):
             step = sway * s_s
             lift = max(0.0, br * s_s)
-            _rot_bone_world(pb, f"{leg}_Thigh", (18.0 * step + 10.0 * lift, 0.0, 0.0))
-            _rot_bone_world(pb, f"{leg}_Shin",  (-12.0 * step - 14.0 * lift, 0.0, 0.0))
-            _rot_bone_world(pb, f"{leg}_Ankle", (12.0 * lift, 0.0, 0.0))
-        _rot_bone_world(pb, "Pelvis",          (8.0, 4.0 * sway, 6.0 * sway))
-        _rot_bone_world(pb, "Spine_01",        (10.0, -4.0 * sway, -4.0 * sway))
-        _rot_bone_world(pb, "Spine_02",        (10.0, -3.0 * sway, 0.0))
-        _rot_bone_world(pb, "Hunch_Neck",      (-16.0, 0.0, 6.0))
-        _rot_bone_world(pb, "Head",            (-10.0, 0.0, 12.0 * sway))
-        _rot_bone_world(pb, "Mandible_L",      (0.0, 0.0,  22.0))
-        _rot_bone_world(pb, "Mandible_R",      (0.0, 0.0, -22.0))
-        _rot_bone_world(pb, "Jaw_Bot",         (22.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Tongue_01",       (12.0, 0.0, 10.0 * sway))
-        _rot_bone_world(pb, "Scythe_Upper",    (-18.0 * sway - 14.0, -10.0, 16.0))
-        _rot_bone_world(pb, "Scythe_Fore",     (-18.0, 8.0, 22.0))
-        _rot_bone_world(pb, "Scythe_Blade",    (-16.0, 4.0, 14.0))
-        _rot_bone_world(pb, "Clutch_Upper",    (-24.0, 12.0, -18.0))
-        _rot_bone_world(pb, "Clutch_Fore",     (-30.0, 8.0, -22.0))
+            _rot_bone_world(pb, f"{leg}_Thigh", (30.0 * step + 16.0 * lift, 0.0, 0.0))
+            _rot_bone_world(pb, f"{leg}_Shin",  (-18.0 * step - 26.0 * lift, 0.0, 0.0))
+            _rot_bone_world(pb, f"{leg}_Ankle", (18.0 * lift - 6.0 * step, 0.0, 0.0))
+        _rot_bone_world(pb, "Pelvis",          (12.0 + 4.0 * abs(sway), 6.0 * sway, 8.0 * sway))
+        _rot_bone_world(pb, "Spine_01",        (12.0, -6.0 * sway, -6.0 * sway))
+        _rot_bone_world(pb, "Spine_02",        (12.0, -4.0 * sway, -2.0 * sway))
+        _rot_bone_world(pb, "Hunch_Neck",      (-18.0, 4.0 * sway, 8.0))
+        _rot_bone_world(pb, "Head",            (-12.0 + 4.0 * abs(br), 0.0, 14.0 * sway))
+        _rot_bone_world(pb, "Mandible_L",      (0.0, 0.0,  22.0 + 6.0 * br))
+        _rot_bone_world(pb, "Mandible_R",      (0.0, 0.0, -22.0 - 6.0 * br))
+        _rot_bone_world(pb, "Jaw_Bot",         (22.0 + 6.0 * abs(sway), 0.0, 0.0))
+        _rot_bone_world(pb, "Tongue_01",       (12.0, 0.0, 12.0 * sway))
+        _rot_bone_world(pb, "Scythe_Upper",    (-26.0 * sway - 16.0, -12.0, 18.0))
+        _rot_bone_world(pb, "Scythe_Fore",     (-22.0 + 8.0 * br, 10.0, 24.0))
+        _rot_bone_world(pb, "Scythe_Blade",    (-18.0, 6.0, 16.0))
+        _rot_bone_world(pb, "Clutch_Upper",    (-26.0 + 18.0 * sway, 14.0, -20.0))
+        _rot_bone_world(pb, "Clutch_Fore",     (-34.0, 10.0, -24.0))
+    elif stage == "cleave_windup":
+        _rot_bone_world(pb, "Pelvis",          (-4.0, 0.0, -24.0))
+        _rot_bone_world(pb, "Spine_01",        (-6.0, -6.0, -18.0))
+        _rot_bone_world(pb, "Spine_02",        (-6.0, -8.0, -14.0))
+        _rot_bone_world(pb, "Hunch_Neck",      (6.0, 8.0, 26.0))
+        _rot_bone_world(pb, "Head",            (4.0, 12.0, 28.0))
+        _rot_bone_world(pb, "Leg_L_Thigh",     (-12.0, 0.0, 6.0))
+        _rot_bone_world(pb, "Leg_R_Thigh",     (18.0, 0.0, -6.0))
+        _rot_bone_world(pb, "Leg_R_Shin",      (-22.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Scythe_Shoulder", (6.0, 16.0, -28.0))
+        _rot_bone_world(pb, "Scythe_Upper",    (24.0, -28.0, -36.0))
+        _rot_bone_world(pb, "Scythe_Fore",     (-14.0, -16.0, -24.0))
+        _rot_bone_world(pb, "Scythe_Blade",    (-8.0, -10.0, -12.0))
+        _rot_bone_world(pb, "Clutch_Upper",    (-30.0, 14.0, -28.0))
+        _rot_bone_world(pb, "Clutch_Fore",     (-38.0, 10.0, -24.0))
     elif stage == "slash":
-        _rot_bone_world(pb, "Pelvis",          (10.0, 0.0, 18.0))
-        _rot_bone_world(pb, "Spine_01",        (10.0, 4.0, 14.0))
-        _rot_bone_world(pb, "Spine_02",        (10.0, 6.0, 12.0))
-        _rot_bone_world(pb, "Hunch_Neck",      (-18.0, 0.0, -22.0))
-        _rot_bone_world(pb, "Head",            (-12.0, 6.0, -18.0))
-        _rot_bone_world(pb, "Mandible_L",      (0.0, 0.0,  32.0))
-        _rot_bone_world(pb, "Mandible_R",      (0.0, 0.0, -32.0))
-        _rot_bone_world(pb, "Jaw_Bot",         (28.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Tongue_01",       (18.0, 0.0, 12.0))
-        _rot_bone_world(pb, "Tongue_02",       (16.0, 0.0, -14.0))
-        _rot_bone_world(pb, "Scythe_Shoulder", (0.0, -14.0, 28.0))
-        _rot_bone_world(pb, "Scythe_Upper",    (-44.0, 10.0, 32.0))
-        _rot_bone_world(pb, "Scythe_Fore",     (-28.0, 14.0, 24.0))
-        _rot_bone_world(pb, "Scythe_Blade",    (-22.0, 10.0, 16.0))
-        _rot_bone_world(pb, "Clutch_Upper",    (-28.0, 16.0, -24.0))
-        _rot_bone_world(pb, "Clutch_Fore",     (-32.0, 10.0, -18.0))
-    elif stage == "reaper_lunge":
-        _rot_bone_world(pb, "Pelvis",          (16.0, 0.0, -20.0))
-        _rot_bone_world(pb, "Spine_01",        (14.0, -6.0, -14.0))
-        _rot_bone_world(pb, "Spine_02",        (12.0, -6.0, -12.0))
-        _rot_bone_world(pb, "Hunch_Neck",      (-20.0, 0.0, 24.0))
-        _rot_bone_world(pb, "Head",            (-16.0, -8.0, 20.0))
+        _rot_bone_world(pb, "Pelvis",          (14.0, 0.0, 24.0))
+        _rot_bone_world(pb, "Spine_01",        (14.0, 6.0, 18.0))
+        _rot_bone_world(pb, "Spine_02",        (14.0, 8.0, 16.0))
+        _rot_bone_world(pb, "Hunch_Neck",      (-20.0, 0.0, -26.0))
+        _rot_bone_world(pb, "Head",            (-14.0, 8.0, -22.0))
+        _rot_bone_world(pb, "Leg_L_Thigh",     (24.0, 0.0, 8.0))
+        _rot_bone_world(pb, "Leg_L_Shin",      (-22.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Leg_R_Thigh",     (-18.0, 0.0, -8.0))
         _rot_bone_world(pb, "Mandible_L",      (0.0, 0.0,  34.0))
         _rot_bone_world(pb, "Mandible_R",      (0.0, 0.0, -34.0))
-        _rot_bone_world(pb, "Jaw_Bot",         (32.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Jaw_Bot",         (30.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Tongue_01",       (20.0, 0.0, 14.0))
+        _rot_bone_world(pb, "Tongue_02",       (18.0, 0.0, -16.0))
+        _rot_bone_world(pb, "Scythe_Shoulder", (0.0, -16.0, 32.0))
+        _rot_bone_world(pb, "Scythe_Upper",    (-52.0, 14.0, 38.0))
+        _rot_bone_world(pb, "Scythe_Fore",     (-32.0, 18.0, 28.0))
+        _rot_bone_world(pb, "Scythe_Blade",    (-24.0, 12.0, 20.0))
+        _rot_bone_world(pb, "Clutch_Upper",    (-32.0, 18.0, -28.0))
+        _rot_bone_world(pb, "Clutch_Fore",     (-36.0, 12.0, -20.0))
+    elif stage == "cleave_follow":
+        _rot_bone_world(pb, "Pelvis",          (10.0, 0.0, 14.0))
+        _rot_bone_world(pb, "Spine_01",        (10.0, 4.0, 10.0))
+        _rot_bone_world(pb, "Spine_02",        (10.0, 4.0, 8.0))
+        _rot_bone_world(pb, "Hunch_Neck",      (-14.0, 0.0, -14.0))
+        _rot_bone_world(pb, "Head",            (-10.0, 4.0, -12.0))
+        _rot_bone_world(pb, "Scythe_Shoulder", (0.0, -10.0, 20.0))
+        _rot_bone_world(pb, "Scythe_Upper",    (-38.0, 24.0, 44.0))
+        _rot_bone_world(pb, "Scythe_Fore",     (-22.0, 14.0, 20.0))
+        _rot_bone_world(pb, "Clutch_Upper",    (-26.0, 12.0, -18.0))
+    elif stage == "lunge_windup":
+        _rot_bone_world(pb, "Pelvis",          (22.0, 0.0, -10.0))
+        _rot_bone_world(pb, "Spine_01",        (16.0, 0.0, -6.0))
+        _rot_bone_world(pb, "Spine_02",        (14.0, 0.0, -4.0))
+        _rot_bone_world(pb, "Hunch_Neck",      (-24.0, 0.0, 8.0))
+        _rot_bone_world(pb, "Head",            (-20.0, 0.0, 10.0))
+        _rot_bone_world(pb, "Leg_L_Thigh",     (34.0, 0.0, 8.0))
+        _rot_bone_world(pb, "Leg_L_Shin",      (-48.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Leg_R_Thigh",     (28.0, 0.0, -8.0))
+        _rot_bone_world(pb, "Leg_R_Shin",      (-44.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Scythe_Upper",    (14.0, -24.0, -24.0))
+        _rot_bone_world(pb, "Scythe_Fore",     (-12.0, -14.0, -16.0))
+        _rot_bone_world(pb, "Clutch_Upper",    (-18.0, 18.0, -24.0))
+    elif stage == "reaper_lunge":
+        _rot_bone_world(pb, "Pelvis",          (18.0, 0.0, -22.0))
+        _rot_bone_world(pb, "Spine_01",        (16.0, -8.0, -16.0))
+        _rot_bone_world(pb, "Spine_02",        (14.0, -6.0, -12.0))
+        _rot_bone_world(pb, "Hunch_Neck",      (-22.0, 0.0, 26.0))
+        _rot_bone_world(pb, "Head",            (-18.0, -8.0, 22.0))
+        _rot_bone_world(pb, "Mandible_L",      (0.0, 0.0,  36.0))
+        _rot_bone_world(pb, "Mandible_R",      (0.0, 0.0, -36.0))
+        _rot_bone_world(pb, "Jaw_Bot",         (34.0, 0.0, 0.0))
         _rot_bone_world(pb, "Tongue_01",       (20.0, 0.0, -10.0))
         _rot_bone_world(pb, "Tongue_02",       (18.0, 0.0, 14.0))
-        _rot_bone_world(pb, "Leg_L_Thigh",     (-22.0, 0.0, 10.0))
-        _rot_bone_world(pb, "Leg_L_Shin",      (18.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Leg_R_Thigh",     (24.0, 0.0, -10.0))
-        _rot_bone_world(pb, "Leg_R_Shin",      (-16.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Scythe_Shoulder", (0.0, -18.0, -24.0))
-        _rot_bone_world(pb, "Scythe_Upper",    (-58.0, -12.0, -24.0))
-        _rot_bone_world(pb, "Scythe_Fore",     (-36.0, 8.0, 14.0))
-        _rot_bone_world(pb, "Scythe_Blade",    (-24.0, 6.0, 18.0))
-        _rot_bone_world(pb, "Clutch_Upper",    (-34.0, 16.0, -28.0))
-        _rot_bone_world(pb, "Clutch_Fore",     (-36.0, 10.0, -20.0))
+        _rot_bone_world(pb, "Leg_L_Thigh",     (-26.0, 0.0, 12.0))
+        _rot_bone_world(pb, "Leg_L_Shin",      (22.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Leg_R_Thigh",     (28.0, 0.0, -12.0))
+        _rot_bone_world(pb, "Leg_R_Shin",      (-20.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Scythe_Shoulder", (0.0, -18.0, -26.0))
+        _rot_bone_world(pb, "Scythe_Upper",    (-62.0, -14.0, -26.0))
+        _rot_bone_world(pb, "Scythe_Fore",     (-38.0, 10.0, 16.0))
+        _rot_bone_world(pb, "Scythe_Blade",    (-26.0, 8.0, 20.0))
+        _rot_bone_world(pb, "Clutch_Upper",    (-38.0, 18.0, -30.0))
+        _rot_bone_world(pb, "Clutch_Fore",     (-38.0, 12.0, -22.0))
+    elif stage == "lunge_follow":
+        _rot_bone_world(pb, "Pelvis",          (14.0, 0.0, 16.0))
+        _rot_bone_world(pb, "Spine_01",        (12.0, 4.0, 12.0))
+        _rot_bone_world(pb, "Head",            (-12.0, 6.0, -14.0))
+        _rot_bone_world(pb, "Leg_L_Thigh",     (24.0, 0.0, 6.0))
+        _rot_bone_world(pb, "Leg_L_Shin",      (-24.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Leg_R_Thigh",     (-16.0, 0.0, -6.0))
+        _rot_bone_world(pb, "Scythe_Upper",    (-36.0, 18.0, 32.0))
+        _rot_bone_world(pb, "Scythe_Fore",     (-24.0, 12.0, 20.0))
+        _rot_bone_world(pb, "Clutch_Upper",    (-22.0, 12.0, -18.0))
     else:  # death
         _rot_bone_world(pb, "Pelvis",          (36.0, 14.0, 0.0))
         _rot_bone_world(pb, "Spine_01",        (24.0, 8.0, 0.0))
@@ -444,7 +543,7 @@ def apply_scythe_stalker_pose(arm_obj, body_obj, stage="idle", phase=0.0):
 
 
 def apply_thorn_shroud_pose(arm_obj, body_obj, stage="idle", phase=0.0):
-    """Apply eerie tri-stilt Thorn Shroud Seraph poses (`idle`, `stalk`, `sweep`, `razor_bloom`, `death`)."""
+    """Apply eerie tri-stilt Thorn Shroud Seraph poses (`idle`, `stalk`, `sweep*`, `razor_bloom*`, `death`)."""
     bpy.context.view_layer.objects.active = arm_obj
     bpy.ops.object.mode_set(mode="POSE")
     pb = arm_obj.pose.bones
@@ -471,45 +570,91 @@ def apply_thorn_shroud_pose(arm_obj, body_obj, stage="idle", phase=0.0):
         _rot_bone_world(pb, "Arm_R_Hand",  (18.0, -12.0, -22.0))
         wing_b = 4.0 * br
     elif stage == "stalk":
-        _rot_bone_world(pb, "Pelvis",      (6.0, 4.0 * sway, 8.0 * sway))
-        _rot_bone_world(pb, "Spine_01",    (6.0, -4.0 * sway, -4.0 * sway))
-        _rot_bone_world(pb, "Spine_02",    (6.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Head",        (-14.0, 0.0, 12.0 * sway))
-        _rot_bone_world(pb, "Jaw_Scream",  (24.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Stilt_FL_01", (16.0 * sway, 0.0, 0.0))
-        _rot_bone_world(pb, "Stilt_FR_01", (-16.0 * sway, 0.0, 0.0))
-        _rot_bone_world(pb, "Stilt_Rear_01", (-12.0 * br, 0.0, 0.0))
-        _rot_bone_world(pb, "Arm_L_Upper", (28.0, -16.0, 22.0))
-        _rot_bone_world(pb, "Arm_L_Fore",  (32.0, 0.0, -18.0))
-        _rot_bone_world(pb, "Arm_R_Upper", (28.0, 16.0, -22.0))
-        _rot_bone_world(pb, "Arm_R_Fore",  (32.0, 0.0, 18.0))
-        wing_b = 8.0 * br
+        l_up = max(0.0, br)
+        r_up = max(0.0, -br)
+        rear_up = max(0.0, math.sin(tau))
+        _rot_bone_world(pb, "Pelvis",        (7.0, 6.0 * sway, 9.0 * sway))
+        _rot_bone_world(pb, "Spine_01",      (7.0, -5.0 * sway, -5.0 * sway))
+        _rot_bone_world(pb, "Spine_02",      (7.0, -3.0 * sway, 3.0 * sway))
+        _rot_bone_world(pb, "Head",          (-16.0, 0.0, 14.0 * sway))
+        _rot_bone_world(pb, "Jaw_Scream",    (24.0 + 5.0 * abs(sway), 0.0, 0.0))
+        _rot_bone_world(pb, "Stilt_FL_01",   (24.0 * sway + 12.0 * l_up, 0.0, 0.0))
+        _rot_bone_world(pb, "Stilt_FL_02",   (-22.0 * l_up - 8.0 * sway, 0.0, 0.0))
+        _rot_bone_world(pb, "Stilt_FL_03",   (14.0 * l_up, 0.0, 0.0))
+        _rot_bone_world(pb, "Stilt_FR_01",   (-24.0 * sway + 12.0 * r_up, 0.0, 0.0))
+        _rot_bone_world(pb, "Stilt_FR_02",   (-22.0 * r_up + 8.0 * sway, 0.0, 0.0))
+        _rot_bone_world(pb, "Stilt_FR_03",   (14.0 * r_up, 0.0, 0.0))
+        _rot_bone_world(pb, "Stilt_Rear_01", (-18.0 * br + 10.0 * rear_up, 0.0, 0.0))
+        _rot_bone_world(pb, "Stilt_Rear_02", (-18.0 * rear_up, 0.0, 0.0))
+        _rot_bone_world(pb, "Stilt_Rear_03", (12.0 * rear_up, 0.0, 0.0))
+        _rot_bone_world(pb, "Arm_L_Upper",   (32.0 + 18.0 * sway, -18.0, 26.0))
+        _rot_bone_world(pb, "Arm_L_Fore",    (36.0, 0.0, -22.0))
+        _rot_bone_world(pb, "Arm_R_Upper",   (32.0 - 18.0 * sway, 18.0, -26.0))
+        _rot_bone_world(pb, "Arm_R_Fore",    (36.0, 0.0, 22.0))
+        wing_b = 11.0 * br
+    elif stage == "sweep_windup":
+        _rot_bone_world(pb, "Pelvis",      (-4.0, 0.0, 20.0))
+        _rot_bone_world(pb, "Spine_01",    (-4.0, 0.0, 16.0))
+        _rot_bone_world(pb, "Spine_02",    (-6.0, 0.0, 14.0))
+        _rot_bone_world(pb, "Head",        (-8.0, 0.0, -20.0))
+        _rot_bone_world(pb, "Arm_L_Upper", (18.0, -34.0, -18.0))
+        _rot_bone_world(pb, "Arm_L_Fore",  (22.0, -14.0, -24.0))
+        _rot_bone_world(pb, "Arm_R_Upper", (18.0, 34.0, 18.0))
+        _rot_bone_world(pb, "Arm_R_Fore",  (22.0, 14.0, 24.0))
+        wing_b = -8.0
     elif stage == "sweep":
-        _rot_bone_world(pb, "Pelvis",      (8.0, 0.0, -18.0))
-        _rot_bone_world(pb, "Spine_01",    (8.0, 0.0, -14.0))
-        _rot_bone_world(pb, "Spine_02",    (10.0, 0.0, -12.0))
-        _rot_bone_world(pb, "Head",        (-16.0, 6.0, 22.0))
-        _rot_bone_world(pb, "Jaw_Scream",  (32.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Arm_L_Upper", (54.0, -28.0, 32.0))
-        _rot_bone_world(pb, "Arm_L_Fore",  (40.0, -10.0, 22.0))
-        _rot_bone_world(pb, "Arm_R_Upper", (46.0, 28.0, -32.0))
-        _rot_bone_world(pb, "Arm_R_Fore",  (36.0, 10.0, -20.0))
-        wing_b = 14.0
+        _rot_bone_world(pb, "Pelvis",      (10.0, 0.0, -24.0))
+        _rot_bone_world(pb, "Spine_01",    (10.0, 0.0, -18.0))
+        _rot_bone_world(pb, "Spine_02",    (12.0, 0.0, -16.0))
+        _rot_bone_world(pb, "Head",        (-18.0, 8.0, 24.0))
+        _rot_bone_world(pb, "Jaw_Scream",  (34.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Stilt_FL_01", (18.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Stilt_FR_01", (-16.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Arm_L_Upper", (60.0, -34.0, 38.0))
+        _rot_bone_world(pb, "Arm_L_Fore",  (44.0, -12.0, 26.0))
+        _rot_bone_world(pb, "Arm_R_Upper", (52.0, 34.0, -38.0))
+        _rot_bone_world(pb, "Arm_R_Fore",  (40.0, 12.0, -24.0))
+        wing_b = 18.0
+    elif stage == "sweep_follow":
+        _rot_bone_world(pb, "Pelvis",      (6.0, 0.0, -14.0))
+        _rot_bone_world(pb, "Spine_01",    (6.0, 0.0, -10.0))
+        _rot_bone_world(pb, "Head",        (-12.0, 4.0, 14.0))
+        _rot_bone_world(pb, "Arm_L_Upper", (46.0, -16.0, 48.0))
+        _rot_bone_world(pb, "Arm_R_Upper", (42.0, 16.0, -48.0))
+        wing_b = 10.0
+    elif stage == "bloom_windup":
+        _rot_bone_world(pb, "Pelvis",      (10.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Spine_01",    (12.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Spine_02",    (14.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Head",        (14.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Crown_L",     (12.0, 8.0, -8.0))
+        _rot_bone_world(pb, "Crown_C",     (14.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Crown_R",     (12.0, -8.0, 8.0))
+        _rot_bone_world(pb, "Arm_L_Upper", (28.0, 14.0, -32.0))
+        _rot_bone_world(pb, "Arm_R_Upper", (28.0, -14.0, 32.0))
+        wing_b = -16.0
     elif stage == "razor_bloom":
-        _rot_bone_world(pb, "Pelvis",      (-6.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Spine_01",    (-8.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Spine_02",    (-12.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Neck",        (-10.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Head",        (-22.0, 0.0, 8.0))
-        _rot_bone_world(pb, "Jaw_Scream",  (36.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Crown_L",     (-12.0, -22.0, 18.0))
-        _rot_bone_world(pb, "Crown_C",     (-18.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Crown_R",     (-12.0, 22.0, -18.0))
-        _rot_bone_world(pb, "Arm_L_Upper", (48.0, -44.0, 28.0))
-        _rot_bone_world(pb, "Arm_L_Fore",  (24.0, -16.0, 18.0))
-        _rot_bone_world(pb, "Arm_R_Upper", (48.0, 44.0, -28.0))
-        _rot_bone_world(pb, "Arm_R_Fore",  (24.0, 16.0, -18.0))
-        wing_b = 26.0
+        _rot_bone_world(pb, "Pelvis",      (-8.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Spine_01",    (-10.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Spine_02",    (-14.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Neck",        (-12.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Head",        (-26.0, 0.0, 8.0))
+        _rot_bone_world(pb, "Jaw_Scream",  (38.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Crown_L",     (-14.0, -26.0, 22.0))
+        _rot_bone_world(pb, "Crown_C",     (-22.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Crown_R",     (-14.0, 26.0, -22.0))
+        _rot_bone_world(pb, "Arm_L_Upper", (54.0, -48.0, 34.0))
+        _rot_bone_world(pb, "Arm_L_Fore",  (28.0, -18.0, 22.0))
+        _rot_bone_world(pb, "Arm_R_Upper", (54.0, 48.0, -34.0))
+        _rot_bone_world(pb, "Arm_R_Fore",  (28.0, 18.0, -22.0))
+        wing_b = 30.0
+    elif stage == "bloom_rebound":
+        _rot_bone_world(pb, "Pelvis",      (4.0, 0.0, 4.0))
+        _rot_bone_world(pb, "Spine_01",    (4.0, 0.0, -4.0))
+        _rot_bone_world(pb, "Head",        (-14.0, 0.0, -8.0))
+        _rot_bone_world(pb, "Arm_L_Upper", (34.0, -24.0, 22.0))
+        _rot_bone_world(pb, "Arm_R_Upper", (34.0, 24.0, -22.0))
+        wing_b = 14.0
     else:  # death
         _rot_bone_world(pb, "Pelvis",      (32.0, 12.0, 0.0))
         _rot_bone_world(pb, "Spine_01",    (22.0, 8.0, 0.0))
@@ -530,7 +675,7 @@ def apply_thorn_shroud_pose(arm_obj, body_obj, stage="idle", phase=0.0):
 
 
 def apply_arachnid_maw_pose(arm_obj, body_obj, stage="idle", phase=0.0):
-    """Apply 6-legged Arachnid Maw poses (`idle`, `scuttle`, `bite`, `acid_pounce`, `death`)."""
+    """Apply 6-legged Arachnid Maw poses (`idle`, `scuttle`, `bite*`, `pounce*`/`acid_pounce`, `death`)."""
     bpy.context.view_layer.objects.active = arm_obj
     bpy.ops.object.mode_set(mode="POSE")
     pb = arm_obj.pose.bones
@@ -551,41 +696,74 @@ def apply_arachnid_maw_pose(arm_obj, body_obj, stage="idle", phase=0.0):
         for ti, td in enumerate((8.0, 12.0, 14.0, 16.0), start=1):
             _rot_bone_world(pb, f"Tail_{ti:02d}", (td + 4.0 * br, 0.0, 3.0 * sway))
     elif stage == "scuttle":
-        _rot_bone_world(pb, "Pelvis",   (4.0, 3.0 * sway, 5.0 * sway))
-        _rot_bone_world(pb, "Abdomen",  (8.0, 0.0, -5.0 * sway))
-        _rot_bone_world(pb, "Maw_Top",  (-18.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Maw_Bot",  ( 22.0, 0.0, 0.0))
-        for ti, td in enumerate((10.0, 14.0, 16.0, 18.0), start=1):
-            _rot_bone_world(pb, f"Tail_{ti:02d}", (td, 0.0, -4.0 * sway))
+        _rot_bone_world(pb, "Pelvis",   (5.0, 4.0 * sway, 7.0 * sway))
+        _rot_bone_world(pb, "Abdomen",  (10.0 + 3.0 * br, 0.0, -7.0 * sway))
+        _rot_bone_world(pb, "Head",     (-6.0, 0.0, 5.0 * sway))
+        _rot_bone_world(pb, "Maw_Top",  (-20.0 - 4.0 * abs(sway), 0.0, 0.0))
+        _rot_bone_world(pb, "Maw_Bot",  ( 24.0 + 4.0 * abs(sway), 0.0, 0.0))
+        _rot_bone_world(pb, "Palp_L_01", (0.0, 0.0,  16.0 + 8.0 * sway))
+        _rot_bone_world(pb, "Palp_R_01", (0.0, 0.0, -16.0 + 8.0 * sway))
+        for ti, td in enumerate((12.0, 16.0, 18.0, 20.0), start=1):
+            _rot_bone_world(pb, f"Tail_{ti:02d}", (td + 5.0 * br, 0.0, -6.0 * sway))
         for lname, sgn in (("Leg_FL", 1.0), ("Leg_MR", 1.0), ("Leg_BL", 1.0), ("Leg_FR", -1.0), ("Leg_ML", -1.0), ("Leg_BR", -1.0)):
             sx = 1.0 if lname.endswith("L") else -1.0
             lift = max(0.0, br * sgn)
             step = sway * sgn
-            _rot_bone_world(pb, f"{lname}_Coxa",  (0.0, -14.0 * lift * sx, 16.0 * step))
-            _rot_bone_world(pb, f"{lname}_Femur", (0.0,  12.0 * lift * sx, 0.0))
+            _rot_bone_world(pb, f"{lname}_Coxa",   (0.0, -22.0 * lift * sx, 24.0 * step))
+            _rot_bone_world(pb, f"{lname}_Femur",  (0.0,  22.0 * lift * sx, 0.0))
+            _rot_bone_world(pb, f"{lname}_Tarsus", (0.0,  18.0 * lift * sx, 0.0))
+    elif stage == "bite_windup":
+        _rot_bone_world(pb, "Pelvis",    (-10.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Head",      (8.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Maw_Top",   (-10.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Maw_Bot",   ( 12.0, 0.0, 0.0))
+        for ti, td in enumerate((18.0, 24.0, 26.0, 28.0), start=1):
+            _rot_bone_world(pb, f"Tail_{ti:02d}", (td, 0.0, 0.0))
     elif stage == "bite":
-        _rot_bone_world(pb, "Pelvis",    (10.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Head",      (-10.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Maw_Top",   (-30.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Maw_Bot",   ( 34.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Palp_L_01", (0.0, 0.0,  26.0))
-        _rot_bone_world(pb, "Palp_L_02", (0.0, 0.0, -24.0))
-        _rot_bone_world(pb, "Palp_R_01", (0.0, 0.0, -26.0))
-        _rot_bone_world(pb, "Palp_R_02", (0.0, 0.0,  24.0))
+        _rot_bone_world(pb, "Pelvis",    (14.0, 0.0, 4.0))
+        _rot_bone_world(pb, "Head",      (-14.0, 0.0, -4.0))
+        _rot_bone_world(pb, "Maw_Top",   (-34.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Maw_Bot",   ( 38.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Palp_L_01", (0.0, 0.0,  30.0))
+        _rot_bone_world(pb, "Palp_L_02", (0.0, 0.0, -28.0))
+        _rot_bone_world(pb, "Palp_R_01", (0.0, 0.0, -30.0))
+        _rot_bone_world(pb, "Palp_R_02", (0.0, 0.0,  28.0))
         for ti, td in enumerate((14.0, 18.0, 22.0, 24.0), start=1):
             _rot_bone_world(pb, f"Tail_{ti:02d}", (td, 0.0, 0.0))
+    elif stage == "bite_follow":
+        _rot_bone_world(pb, "Pelvis",    (6.0, 0.0, -4.0))
+        _rot_bone_world(pb, "Head",      (4.0, 0.0, 6.0))
+        _rot_bone_world(pb, "Maw_Top",   (-4.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Maw_Bot",   ( 6.0, 0.0, 0.0))
+        for ti, td in enumerate((10.0, 14.0, 16.0, 18.0), start=1):
+            _rot_bone_world(pb, f"Tail_{ti:02d}", (td, 0.0, 0.0))
+    elif stage == "pounce_windup":
+        _rot_bone_world(pb, "Pelvis",    (14.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Abdomen",   (16.0, 0.0, 0.0))
+        for lname, sx in (("Leg_FL", 1.0), ("Leg_ML", 1.0), ("Leg_BL", 1.0), ("Leg_FR", -1.0), ("Leg_MR", -1.0), ("Leg_BR", -1.0)):
+            _rot_bone_world(pb, f"{lname}_Coxa",  (0.0, -24.0 * sx, 0.0))
+            _rot_bone_world(pb, f"{lname}_Femur", (0.0,  26.0 * sx, 0.0))
+        for ti, td in enumerate((22.0, 28.0, 30.0, 30.0), start=1):
+            _rot_bone_world(pb, f"Tail_{ti:02d}", (td, 0.0, 0.0))
     elif stage == "acid_pounce":
-        _rot_bone_world(pb, "Pelvis",    (-18.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Abdomen",   (12.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Head",      (-14.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Maw_Top",   (-32.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Maw_Bot",   ( 36.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Palp_L_01", (0.0, 0.0,  28.0))
-        _rot_bone_world(pb, "Palp_R_01", (0.0, 0.0, -28.0))
+        _rot_bone_world(pb, "Pelvis",    (-22.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Abdomen",   (14.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Head",      (-18.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Maw_Top",   (-34.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Maw_Bot",   ( 38.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Palp_L_01", (0.0, 0.0,  32.0))
+        _rot_bone_world(pb, "Palp_R_01", (0.0, 0.0, -32.0))
         for lname, sx in (("Leg_FL", 1.0), ("Leg_FR", -1.0)):
-            _rot_bone_world(pb, f"{lname}_Coxa",  (-16.0, -26.0 * sx, -18.0 * sx))
-            _rot_bone_world(pb, f"{lname}_Femur", ( 12.0,  18.0 * sx, 0.0))
-        for ti, td in enumerate((18.0, 24.0, 26.0, 26.0), start=1):
+            _rot_bone_world(pb, f"{lname}_Coxa",  (-18.0, -30.0 * sx, -22.0 * sx))
+            _rot_bone_world(pb, f"{lname}_Femur", ( 14.0,  22.0 * sx, 0.0))
+        for ti, td in enumerate((-8.0, -12.0, -14.0, -16.0), start=1):
+            _rot_bone_world(pb, f"Tail_{ti:02d}", (td, 0.0, 0.0))
+    elif stage == "pounce_follow":
+        _rot_bone_world(pb, "Pelvis",    (8.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Head",      (-6.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Maw_Top",   (-12.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Maw_Bot",   ( 14.0, 0.0, 0.0))
+        for ti, td in enumerate((10.0, 14.0, 18.0, 20.0), start=1):
             _rot_bone_world(pb, f"Tail_{ti:02d}", (td, 0.0, 0.0))
     else:  # death
         _rot_bone_world(pb, "Pelvis",    (14.0, 12.0, 0.0))
@@ -600,7 +778,7 @@ def apply_arachnid_maw_pose(arm_obj, body_obj, stage="idle", phase=0.0):
 
 
 def apply_bile_juggernaut_pose(arm_obj, body_obj, stage="idle", phase=0.0):
-    """Apply slow ponderous tank poses (`idle`, `walk_stomp`, `roar`, `swipe`, `seismic_slam`, `death`)."""
+    """Apply slow ponderous tank poses (`idle`, `walk_stomp`, `roar`, `swipe*`, `slam_windup`, `seismic_slam`, `slam_rebound`, `death`)."""
     bpy.context.view_layer.objects.active = arm_obj
     bpy.ops.object.mode_set(mode="POSE")
     pb = arm_obj.pose.bones
@@ -625,26 +803,25 @@ def apply_bile_juggernaut_pose(arm_obj, body_obj, stage="idle", phase=0.0):
         _rot_bone_world(pb, "Arm_R_Upper",   (-16.0, 6.0, 0.0))
         _rot_bone_world(pb, "Arm_R_Fore",    (-20.0, 0.0, 12.0))
     elif stage == "walk_stomp":
-        # Ponderous waddling tank march
-        _rot_bone_world(pb, "Pelvis",        (6.0, 7.0 * sway, 8.0 * sway))
-        _rot_bone_world(pb, "Belly_Gut",     (6.0 + 3.0 * abs(sway), -4.0 * sway, -5.0 * sway))
-        _rot_bone_world(pb, "Belly_Maw_Top", (-14.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Belly_Maw_Bot", ( 16.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Spine_01",      (8.0, -4.0 * sway, -6.0 * sway))
-        _rot_bone_world(pb, "Spine_02",      (8.0, -3.0 * sway, -4.0 * sway))
-        _rot_bone_world(pb, "Head",          (-10.0, 0.0, 6.0 * sway))
-        _rot_bone_world(pb, "Jaw_L",         (16.0, 0.0,  14.0))
-        _rot_bone_world(pb, "Jaw_R",         (16.0, 0.0, -14.0))
+        _rot_bone_world(pb, "Pelvis",        (8.0, 9.0 * sway, 10.0 * sway))
+        _rot_bone_world(pb, "Belly_Gut",     (7.0 + 4.0 * abs(sway), -6.0 * sway, -7.0 * sway))
+        _rot_bone_world(pb, "Belly_Maw_Top", (-16.0 - 4.0 * abs(br), 0.0, 0.0))
+        _rot_bone_world(pb, "Belly_Maw_Bot", ( 18.0 + 4.0 * abs(br), 0.0, 0.0))
+        _rot_bone_world(pb, "Spine_01",      (10.0, -6.0 * sway, -8.0 * sway))
+        _rot_bone_world(pb, "Spine_02",      (10.0, -4.0 * sway, -6.0 * sway))
+        _rot_bone_world(pb, "Head",          (-12.0, 0.0, 8.0 * sway))
+        _rot_bone_world(pb, "Jaw_L",         (18.0, 0.0,  16.0))
+        _rot_bone_world(pb, "Jaw_R",         (18.0, 0.0, -16.0))
         for leg, s_s in (("Leg_L", 1.0), ("Leg_R", -1.0)):
             step = sway * s_s
             lift = max(0.0, br * s_s)
-            _rot_bone_world(pb, f"{leg}_Thigh", (-18.0 * step - 12.0 * lift, 0.0, 0.0))
-            _rot_bone_world(pb, f"{leg}_Shin",  (14.0 * step + 16.0 * lift, 0.0, 0.0))
-            _rot_bone_world(pb, f"{leg}_Foot",  (-10.0 * lift, 0.0, 0.0))
-        _rot_bone_world(pb, "Arm_L_Upper",   (-16.0 - 18.0 * sway, -8.0, 0.0))
-        _rot_bone_world(pb, "Arm_L_Fore",    (-22.0, 0.0, -10.0))
-        _rot_bone_world(pb, "Arm_R_Upper",   (-16.0 + 18.0 * sway, 8.0, 0.0))
-        _rot_bone_world(pb, "Arm_R_Fore",    (-24.0, 0.0, 12.0))
+            _rot_bone_world(pb, f"{leg}_Thigh", (-26.0 * step - 18.0 * lift, 0.0, 0.0))
+            _rot_bone_world(pb, f"{leg}_Shin",  (18.0 * step + 28.0 * lift, 0.0, 0.0))
+            _rot_bone_world(pb, f"{leg}_Foot",  (-16.0 * lift, 0.0, 0.0))
+        _rot_bone_world(pb, "Arm_L_Upper",   (-18.0 - 28.0 * sway, -10.0, 0.0))
+        _rot_bone_world(pb, "Arm_L_Fore",    (-26.0 - 8.0 * abs(sway), 0.0, -12.0))
+        _rot_bone_world(pb, "Arm_R_Upper",   (-18.0 + 28.0 * sway, 10.0, 0.0))
+        _rot_bone_world(pb, "Arm_R_Fore",    (-28.0 - 8.0 * abs(sway), 0.0, 14.0))
     elif stage == "roar":
         _rot_bone_world(pb, "Pelvis",        (-4.0, 0.0, 0.0))
         _rot_bone_world(pb, "Belly_Gut",     (-4.0, 0.0, 0.0))
@@ -659,39 +836,76 @@ def apply_bile_juggernaut_pose(arm_obj, body_obj, stage="idle", phase=0.0):
         _rot_bone_world(pb, "Tongue_02",     (18.0, 0.0, 0.0))
         _rot_bone_world(pb, "Arm_L_Upper",   (-28.0, -22.0, 16.0))
         _rot_bone_world(pb, "Arm_R_Upper",   (-28.0,  22.0, -16.0))
+    elif stage == "swipe_windup":
+        _rot_bone_world(pb, "Pelvis",        (-4.0, 0.0, -24.0))
+        _rot_bone_world(pb, "Spine_01",      (-4.0, 0.0, -18.0))
+        _rot_bone_world(pb, "Spine_02",      (-4.0, 0.0, -16.0))
+        _rot_bone_world(pb, "Head",          (6.0, 0.0, 26.0))
+        _rot_bone_world(pb, "Arm_R_Shoulder",(6.0, 14.0, -26.0))
+        _rot_bone_world(pb, "Arm_R_Upper",   (18.0, -28.0, -34.0))
+        _rot_bone_world(pb, "Arm_R_Fore",    (-24.0, -10.0, -20.0))
+        _rot_bone_world(pb, "Arm_L_Upper",   (-26.0, 12.0, 14.0))
     elif stage == "swipe":
-        _rot_bone_world(pb, "Pelvis",        (10.0, 0.0, 22.0))
-        _rot_bone_world(pb, "Spine_01",      (10.0, 0.0, 18.0))
-        _rot_bone_world(pb, "Spine_02",      (10.0, 0.0, 16.0))
-        _rot_bone_world(pb, "Head",          (-12.0, 0.0, -24.0))
-        _rot_bone_world(pb, "Jaw_L",         (24.0, 0.0,  20.0))
-        _rot_bone_world(pb, "Jaw_R",         (24.0, 0.0, -20.0))
-        _rot_bone_world(pb, "Belly_Maw_Top", (-22.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Belly_Maw_Bot", ( 24.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Arm_R_Shoulder",(0.0, -14.0, 26.0))
-        _rot_bone_world(pb, "Arm_R_Upper",   (-54.0, 18.0, 34.0))
-        _rot_bone_world(pb, "Arm_R_Fore",    (-32.0, 8.0, 22.0))
-        _rot_bone_world(pb, "Arm_L_Upper",   (-20.0, -16.0, -18.0))
+        _rot_bone_world(pb, "Pelvis",        (12.0, 0.0, 26.0))
+        _rot_bone_world(pb, "Spine_01",      (12.0, 0.0, 20.0))
+        _rot_bone_world(pb, "Spine_02",      (12.0, 0.0, 18.0))
+        _rot_bone_world(pb, "Head",          (-14.0, 0.0, -28.0))
+        _rot_bone_world(pb, "Jaw_L",         (26.0, 0.0,  22.0))
+        _rot_bone_world(pb, "Jaw_R",         (26.0, 0.0, -22.0))
+        _rot_bone_world(pb, "Belly_Maw_Top", (-24.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Belly_Maw_Bot", ( 26.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Arm_R_Shoulder",(0.0, -16.0, 30.0))
+        _rot_bone_world(pb, "Arm_R_Upper",   (-62.0, 20.0, 40.0))
+        _rot_bone_world(pb, "Arm_R_Fore",    (-36.0, 10.0, 24.0))
+        _rot_bone_world(pb, "Arm_L_Upper",   (-22.0, -18.0, -22.0))
+    elif stage == "swipe_follow":
+        _rot_bone_world(pb, "Pelvis",        (8.0, 0.0, 16.0))
+        _rot_bone_world(pb, "Spine_01",      (8.0, 0.0, 12.0))
+        _rot_bone_world(pb, "Head",          (-8.0, 0.0, -16.0))
+        _rot_bone_world(pb, "Arm_R_Upper",   (-42.0, 26.0, 48.0))
+        _rot_bone_world(pb, "Arm_R_Fore",    (-24.0, 8.0, 16.0))
+    elif stage == "slam_windup":
+        _rot_bone_world(pb, "Pelvis",        (-8.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Belly_Gut",     (-8.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Belly_Maw_Top", (-28.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Belly_Maw_Bot", ( 32.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Spine_01",      (-10.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Spine_02",      (-10.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Head",          (-18.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Jaw_L",         (30.0, 0.0,  28.0))
+        _rot_bone_world(pb, "Jaw_R",         (30.0, 0.0, -28.0))
+        _rot_bone_world(pb, "Arm_L_Shoulder",(10.0, 0.0, 12.0))
+        _rot_bone_world(pb, "Arm_L_Upper",   (-148.0, -18.0, -14.0))
+        _rot_bone_world(pb, "Arm_L_Fore",    (-18.0, 0.0, -12.0))
+        _rot_bone_world(pb, "Arm_R_Shoulder",(10.0, 0.0, -12.0))
+        _rot_bone_world(pb, "Arm_R_Upper",   (-148.0,  18.0,  14.0))
+        _rot_bone_world(pb, "Arm_R_Fore",    (-18.0, 0.0,  12.0))
     elif stage == "seismic_slam":
         # Heavy forward smash slamming both boulder fists violently down at ground crater
-        _rot_bone_world(pb, "Pelvis",        (18.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Belly_Gut",     (10.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Belly_Maw_Top", (-26.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Belly_Maw_Bot", ( 28.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Spine_01",      (16.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Spine_02",      (14.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Head",          (-18.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Jaw_L",         (28.0, 0.0,  26.0))
-        _rot_bone_world(pb, "Jaw_R",         (28.0, 0.0, -26.0))
+        _rot_bone_world(pb, "Pelvis",        (22.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Belly_Gut",     (12.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Belly_Maw_Top", (-28.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Belly_Maw_Bot", ( 30.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Spine_01",      (18.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Spine_02",      (16.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Head",          (-20.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Jaw_L",         (30.0, 0.0,  28.0))
+        _rot_bone_world(pb, "Jaw_R",         (30.0, 0.0, -28.0))
         _rot_bone_world(pb, "Tongue_01",     (18.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Leg_L_Thigh",   (-26.0, 0.0, 8.0))
-        _rot_bone_world(pb, "Leg_L_Shin",    ( 28.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Leg_R_Thigh",   (-26.0, 0.0, -8.0))
-        _rot_bone_world(pb, "Leg_R_Shin",    ( 28.0, 0.0, 0.0))
-        _rot_bone_world(pb, "Arm_L_Upper",   (-48.0, -10.0, -18.0))
-        _rot_bone_world(pb, "Arm_L_Fore",    (-22.0, 0.0, -10.0))
-        _rot_bone_world(pb, "Arm_R_Upper",   (-52.0, 10.0, 18.0))
-        _rot_bone_world(pb, "Arm_R_Fore",    (-22.0, 0.0, 10.0))
+        _rot_bone_world(pb, "Leg_L_Thigh",   (-30.0, 0.0, 10.0))
+        _rot_bone_world(pb, "Leg_L_Shin",    ( 34.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Leg_R_Thigh",   (-30.0, 0.0, -10.0))
+        _rot_bone_world(pb, "Leg_R_Shin",    ( 34.0, 0.0, 0.0))
+        _rot_bone_world(pb, "Arm_L_Upper",   (-54.0, -10.0, -18.0))
+        _rot_bone_world(pb, "Arm_L_Fore",    (-24.0, 0.0, -10.0))
+        _rot_bone_world(pb, "Arm_R_Upper",   (-56.0, 10.0, 18.0))
+        _rot_bone_world(pb, "Arm_R_Fore",    (-24.0, 0.0, 10.0))
+    elif stage == "slam_rebound":
+        _rot_bone_world(pb, "Pelvis",        (12.0, 0.0, 4.0))
+        _rot_bone_world(pb, "Spine_01",      (10.0, 0.0, -4.0))
+        _rot_bone_world(pb, "Head",          (-12.0, 0.0, 6.0))
+        _rot_bone_world(pb, "Arm_L_Upper",   (-32.0, -16.0, -12.0))
+        _rot_bone_world(pb, "Arm_R_Upper",   (-32.0, 16.0, 12.0))
     else:  # death
         _rot_bone_world(pb, "Pelvis",        (48.0, 8.0, 0.0))
         _rot_bone_world(pb, "Spine_01",      (22.0, 6.0, 0.0))
@@ -736,38 +950,38 @@ def _keyframe_creature_pose(arm_obj, frame):
 
 CREATURE_ACTION_SPECS = {
     "rafflesia": (
-        ("Idle_Sway",         "loop", "idle",        6, 6),
-        ("Crawl_Stalk",       "loop", "stalk",       8, 4),
-        ("Attack_Lunge_Bite", "seq",  [(1, "idle"), (8, "stalk"), (14, "lunge_bite"), (21, "lunge_bite"), (28, "idle")], 0.0, None),
-        ("Skill_Vine_Thrash", "seq",  [(1, "idle"), (10, "stalk"), (18, "vine_thrash"), (28, "vine_thrash"), (36, "idle")], 0.25, None),
+        ("Idle_Sway",         "loop", "idle",        8, 5),
+        ("Crawl_Stalk",       "loop", "stalk",       12, 3),
+        ("Attack_Lunge_Bite", "seq",  [(1, "idle"), (7, "bite_windup"), (13, "lunge_bite"), (19, "bite_follow"), (26, "idle")], 0.0, None),
+        ("Skill_Vine_Thrash", "seq",  [(1, "idle"), (8, "thrash_windup"), (15, "vine_thrash"), (23, "thrash_follow"), (32, "idle")], 0.25, None),
         ("Death_Wilt",        "seq",  [(1, "idle"), (10, "stalk"), (20, "death"), (30, "death")], 0.0, None),
     ),
     "scythe_stalker": (
-        ("Idle_Hunch",         "loop", "idle",        6, 6),
-        ("Run_Limp_Stalk",     "loop", "stalk",       8, 4),
-        ("Attack_Scythe_Clef", "seq",  [(1, "idle"), (7, "stalk"), (13, "slash"), (21, "slash"), (28, "idle")], 0.0, None),
-        ("Skill_Reaper_Lunge", "seq",  [(1, "idle"), (9, "stalk"), (16, "reaper_lunge"), (26, "reaper_lunge"), (36, "idle")], 0.0, None),
+        ("Idle_Hunch",         "loop", "idle",        8, 5),
+        ("Run_Limp_Stalk",     "loop", "stalk",       12, 3),
+        ("Attack_Scythe_Clef", "seq",  [(1, "idle"), (6, "cleave_windup"), (11, "slash"), (17, "cleave_follow"), (24, "idle")], 0.0, None),
+        ("Skill_Reaper_Lunge", "seq",  [(1, "idle"), (8, "lunge_windup"), (14, "reaper_lunge"), (22, "lunge_follow"), (30, "idle")], 0.0, None),
         ("Death_Collapse",     "seq",  [(1, "idle"), (10, "stalk"), (20, "death"), (30, "death")], 0.0, None),
     ),
     "thorn_shroud": (
-        ("Idle_Veil_Sway",    "loop", "idle",         6, 6),
-        ("Glide_Stilt_Stalk", "loop", "stalk",        8, 4),
-        ("Attack_Blade_Sweep","seq",  [(1, "idle"), (8, "stalk"), (15, "sweep"), (23, "sweep"), (30, "idle")], 0.0, None),
-        ("Skill_Razor_Bloom", "seq",  [(1, "idle"), (10, "stalk"), (18, "razor_bloom"), (28, "razor_bloom"), (38, "idle")], 0.0, None),
+        ("Idle_Veil_Sway",    "loop", "idle",         8, 5),
+        ("Glide_Stilt_Stalk", "loop", "stalk",        12, 3),
+        ("Attack_Blade_Sweep","seq",  [(1, "idle"), (7, "sweep_windup"), (13, "sweep"), (20, "sweep_follow"), (27, "idle")], 0.0, None),
+        ("Skill_Razor_Bloom", "seq",  [(1, "idle"), (8, "bloom_windup"), (15, "razor_bloom"), (23, "bloom_rebound"), (32, "idle")], 0.0, None),
         ("Death_Shatter",     "seq",  [(1, "idle"), (10, "stalk"), (20, "death"), (30, "death")], 0.0, None),
     ),
     "arachnid_maw": (
-        ("Idle_Acid_Throb",   "loop", "idle",         6, 6),
-        ("Skitter_Scuttle",   "loop", "scuttle",      8, 3),
-        ("Attack_Mandible",   "seq",  [(1, "idle"), (6, "scuttle"), (12, "bite"), (19, "bite"), (26, "idle")], 0.0, None),
-        ("Skill_Acid_Pounce", "seq",  [(1, "idle"), (9, "scuttle"), (16, "acid_pounce"), (26, "acid_pounce"), (36, "idle")], 0.0, None),
+        ("Idle_Acid_Throb",   "loop", "idle",         8, 5),
+        ("Skitter_Scuttle",   "loop", "scuttle",      12, 2),
+        ("Attack_Mandible",   "seq",  [(1, "idle"), (5, "bite_windup"), (10, "bite"), (16, "bite_follow"), (22, "idle")], 0.0, None),
+        ("Skill_Acid_Pounce", "seq",  [(1, "idle"), (7, "pounce_windup"), (13, "acid_pounce"), (21, "pounce_follow"), (29, "idle")], 0.0, None),
         ("Death_Curl",        "seq",  [(1, "idle"), (10, "scuttle"), (20, "death"), (30, "death")], 0.0, None),
     ),
     "bile_juggernaut": (
-        ("Idle_Lumber",           "loop", "idle",         6, 8),
-        ("Walk_Stomp_Slow",       "loop", "walk_stomp",   8, 6),
-        ("Attack_Crusher_Swipe",  "seq",  [(1, "idle"), (10, "walk_stomp"), (20, "swipe"), (29, "swipe"), (40, "idle")], 0.0, None),
-        ("Skill_Seismic_Bile_Slam","seq", [(1, "idle"), (12, "roar"), (24, "seismic_slam"), (36, "seismic_slam"), (48, "idle")], 0.0, None),
+        ("Idle_Lumber",           "loop", "idle",         8, 6),
+        ("Walk_Stomp_Slow",       "loop", "walk_stomp",   12, 4),
+        ("Attack_Crusher_Swipe",  "seq",  [(1, "idle"), (9, "swipe_windup"), (16, "swipe"), (24, "swipe_follow"), (34, "idle")], 0.0, None),
+        ("Skill_Seismic_Bile_Slam","seq", [(1, "idle"), (10, "slam_windup"), (18, "seismic_slam"), (27, "slam_rebound"), (38, "idle")], 0.0, None),
         ("Death_Timber",          "seq",  [(1, "idle"), (14, "roar"), (28, "death"), (42, "death")], 0.0, None),
     ),
 }
