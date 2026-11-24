@@ -112,16 +112,16 @@ MATERIAL_SPECS = [
     # Batch 2: Undead / Zombie skins, facial trauma & torn outfits
     ("Mat_ZSkinGreen",    "#5A634E", 0.80, 0.00),
     ("Mat_ZSkinPale",     "#7A7A76", 0.78, 0.00),
-    ("Mat_ZSkinGrey",     "#54524C", 0.80, 0.00),
-    ("Mat_ZSkinBruised",  "#4E4952", 0.82, 0.00),
-    ("Mat_ZSkinToxic",    "#5A6A4E", 0.78, 0.00),
-    ("Mat_ZSkinDark",     "#393D33", 0.84, 0.00),
-    ("Mat_ZSocket",       "#1A1315", 0.90, 0.00),
-    ("Mat_ZEyeCloudy",    "#A4A898", 0.28, 0.00),
-    ("Mat_ZEyeBlood",     "#721A18", 0.25, 0.00),
-    ("Mat_ZMouth",        "#1F0709", 0.70, 0.00),
-    ("Mat_ZLipDead",      "#3D272A", 0.76, 0.00),
-    ("Mat_ZBone",         "#9E947E", 0.62, 0.00),
+    ("Mat_ZSkinGrey",     "#7A746A", 0.62, 0.00),
+    ("Mat_ZSkinBruised",  "#4E4952", 0.68, 0.00),
+    ("Mat_ZSkinToxic",    "#5A6A4E", 0.64, 0.00),
+    ("Mat_ZSkinDark",     "#393D33", 0.68, 0.00),
+    ("Mat_ZSocket",       "#1A1315", 0.84, 0.00),
+    ("Mat_ZEyeCloudy",    "#A4A898", 0.14, 0.00),
+    ("Mat_ZEyeBlood",     "#721A18", 0.12, 0.00),
+    ("Mat_ZMouth",        "#160508", 0.56, 0.00),
+    ("Mat_ZLipDead",      "#4A2A2E", 0.52, 0.00),
+    ("Mat_ZBone",         "#C8BCA4", 0.60, 0.00),
     ("Mat_ZFlesh",        "#541417", 0.42, 0.00),
     ("Mat_ZBloodDried",   "#2C0708", 0.54, 0.00),
     ("Mat_ZBloodFresh",   "#640E10", 0.28, 0.00),
@@ -164,22 +164,22 @@ MATERIAL_SPECS = [
     ("Mat_ZBarkDark",        "#1E1711", 0.88, 0.00),
     ("Mat_ZHeartGlow",       "#98E042", 0.25, 0.00, "#7CD426", 3.2),
     ("Mat_ZRaffPetalBright", "#9C1814", 0.48, 0.00),
-    ("Mat_ZRaffJawFlesh",    "#845946", 0.52, 0.00),
+    ("Mat_ZRaffJawFlesh",    "#B88B72", 0.46, 0.00),
     ("Mat_ZRaffStamen",      "#866022", 0.68, 0.00),
     ("Mat_ZBarkMid",         "#34271B", 0.84, 0.00),
 
     # Mutants #2-#4: Scythe Stalker, Thorn Shroud Seraph & Arachnid Maw
-    ("Mat_MChitinDark",      "#1A1716", 0.58, 0.14),
-    ("Mat_MChitinMid",       "#332924", 0.66, 0.08),
-    ("Mat_MScytheBone",      "#786B58", 0.50, 0.10),
-    ("Mat_MEyeAcid",         "#C8E82C", 0.18, 0.00, "#B2DC1E", 3.4),
-    ("Mat_MTongueWet",       "#5E131A", 0.24, 0.00),
-    ("Mat_MShroudBone",      "#7A7570", 0.56, 0.06),
-    ("Mat_MShroudDark",      "#231F26", 0.74, 0.05),
-    ("Mat_MShroudSkin",      "#524F56", 0.68, 0.00),
-    ("Mat_MArachChitin",     "#14181D", 0.52, 0.16),
+    ("Mat_MChitinDark",      "#221C19", 0.66, 0.00),
+    ("Mat_MChitinMid",       "#3E332C", 0.68, 0.00),
+    ("Mat_MScytheBone",      "#CBBFA6", 0.54, 0.00),
+    ("Mat_MEyeAcid",         "#C8E82C", 0.12, 0.00, "#B2DC1E", 3.4),
+    ("Mat_MTongueWet",       "#6A141B", 0.14, 0.00),
+    ("Mat_MShroudBone",      "#6E6776", 0.64, 0.00),
+    ("Mat_MShroudDark",      "#211C28", 0.76, 0.00),
+    ("Mat_MShroudSkin",      "#9E98A6", 0.54, 0.00),
+    ("Mat_MArachChitin",     "#14181D", 0.52, 0.14),
     ("Mat_MArachUnder",      "#3B1A1C", 0.62, 0.00),
-    ("Mat_MSaliva",          "#CFC6BE", 0.10, 0.05),
+    ("Mat_MSaliva",          "#CFC6BE", 0.08, 0.00),
 
     # Modular Mutant Combat VFX Materials
     ("Mat_VfxBloodCore",     "#FF4236", 0.18, 0.00, "#FF261B", 4.6),
@@ -192,7 +192,7 @@ MATERIAL_SPECS = [
     # Mutant #5: Bile Juggernaut Heavy Tank
     ("Mat_MTankSkin",        "#4A453D", 0.78, 0.00),
     ("Mat_MTankBruise",      "#2E222A", 0.66, 0.00),
-    ("Mat_MTankArmor",       "#28241D", 0.86, 0.06),
+    ("Mat_MTankArmor",       "#28241D", 0.86, 0.05),
     ("Mat_MBileGlow",        "#D87A14", 0.22, 0.00, "#C8640A", 2.8),
     ("Mat_VfxBileCore",      "#FFB833", 0.16, 0.00, "#FF8C14", 4.6),
 ]
@@ -228,15 +228,16 @@ def create_materials(with_mutant_textures=False):
         col = rgba(color_hex)
         bsdf.inputs["Base Color"].default_value = col
         bsdf.inputs["Roughness"].default_value = roughness
+        applied_tex = False
         if len(spec) < 6 and apply_tex_fn is not None:
-            apply_tex_fn(mat, name, color_hex, roughness)
+            applied_tex = bool(apply_tex_fn(mat, name, color_hex, roughness))
             for node in mat.node_tree.nodes:
                 if node.type == "BSDF_PRINCIPLED":
                     bsdf = node
                     break
 
         bsdf.inputs["Metallic"].default_value = metallic
-        if "Specular IOR Level" in bsdf.inputs:
+        if not applied_tex and "Specular IOR Level" in bsdf.inputs:
             bsdf.inputs["Specular IOR Level"].default_value = 0.35
         if len(spec) >= 6 and "Emission Color" in bsdf.inputs:
             bsdf.inputs["Emission Color"].default_value = rgba(spec[4])

@@ -347,6 +347,94 @@ def finalize_mesh(name, bm, materials, collection=None, triangulate=True):
     return obj, count_tris(obj)
 
 
+def bake_mutant_vertex_shading(
+    mesh_obj,
+    cavity_tint=(0.40, 0.26, 0.34),
+    ridge_tint=(1.00, 0.95, 0.86),
+    ground_tint=(0.54, 0.48, 0.44),
+    countershade=True,
+):
+    """Bake geometric Countershading (dorsal dark vs ventral light), colored cavity occlusion, and ridge highlights into 'Col'."""
+    mesh = mesh_obj.data
+    bm = bmesh.new()
+    bm.from_mesh(mesh)
+    bm.verts.ensure_lookup_table()
+    bm.normal_update()
+
+    zs = [v.co.z for v in bm.verts]
+    z_min = min(zs) if zs else 0.0
+    z_span = max(1e-4, (max(zs) if zs else 1.0) - z_min)
+
+    vert_rgb = []
+    for v in bm.verts:
+        # Mean neighbor normal curvature: + -> concave cavity, - -> convex ridge
+        acc = 0.0
+        cnt = 0
+        vn = v.normal
+        for e in v.link_edges:
+            nb = e.other_vert(v)
+            dv = nb.co - v.co
+            ln = dv.length
+            if ln > 1e-6:
+                acc += vn.dot(dv / ln)
+                cnt += 1
+        curv = math.tanh((acc / max(1, cnt)) * 4.2)
+
+        z_norm = max(0.0, min(1.0, (v.co.z - z_min) / z_span))
+        base_mul = 0.78 + 0.12 * z_norm
+        if countershade:
+            # Rule #1 Countershading: dorsal (+Y back / +Z crown) darker; ventral (-Y front chest/belly/throat) +24..30% lighter!
+            dorsal_f = max(-1.0, min(1.0, 0.68 * vn.y + 0.42 * max(0.0, vn.z) - 0.15 * abs(vn.x)))
+            cs_scale = 0.88 - 0.15 * dorsal_f  # ~0.73 dorsal .. ~1.03 ventral
+            base_mul *= cs_scale
+            if dorsal_f < -0.12:
+                vf = min(1.0, (-dorsal_f - 0.12) * 0.50)
+                r = base_mul * (1.0 - vf) + 0.98 * vf
+                g = base_mul * (1.0 - vf) + 0.95 * vf
+                b = base_mul * (1.0 - vf) + 0.89 * vf
+            else:
+                r, g, b = base_mul, base_mul, base_mul
+        else:
+            r, g, b = base_mul, base_mul, base_mul
+
+        if z_norm < 0.24:
+            gf = (0.24 - z_norm) / 0.24
+            gf = gf * gf * 0.58
+            r = r * (1.0 - gf) + ground_tint[0] * gf
+            g = g * (1.0 - gf) + ground_tint[1] * gf
+            b = b * (1.0 - gf) + ground_tint[2] * gf
+
+        if curv > 0.0:
+            # Rule #4: Deep colored cavity occlusion at part seams & muscle folds (never dead pure black!)
+            cf = min(1.0, (curv ** 0.85) * 0.86)
+            r = r * (1.0 - cf) + cavity_tint[0] * cf
+            g = g * (1.0 - cf) + cavity_tint[1] * cf
+            b = b * (1.0 - cf) + cavity_tint[2] * cf
+        elif curv < 0.0:
+            # Strong crisp ridge & part-edge highlight so dark armor, limbs, petals & fingers pop cleanly!
+            rf = min(1.0, ((-curv) ** 0.82) * 0.68)
+            r = r * (1.0 - rf) + ridge_tint[0] * rf
+            g = g * (1.0 - rf) + ridge_tint[1] * rf
+            b = b * (1.0 - rf) + ridge_tint[2] * rf
+
+        vert_rgb.append((
+            max(0.0, min(1.0, r)),
+            max(0.0, min(1.0, g)),
+            max(0.0, min(1.0, b)),
+            1.0,
+        ))
+    bm.free()
+
+    col_attr = mesh.color_attributes.get("Col")
+    if col_attr is None:
+        col_attr = mesh.color_attributes.new(name="Col", type="BYTE_COLOR", domain="CORNER")
+    col_data = col_attr.data
+    loops = mesh.loops
+    for poly in mesh.polygons:
+        for li in poly.loop_indices:
+            col_data[li].color = vert_rgb[loops[li].vertex_index]
+
+
 def apply_box_uvs(mesh_obj, tex_scale=1.7):
     """Apply fast distortion-free triplanar/box UV projection per polygon for PBR textures."""
     mesh = mesh_obj.data

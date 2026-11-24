@@ -783,24 +783,33 @@ def build_head_scythe_stalker(bm, mat_idx, regions, center=(0.0, -0.28, 1.56), f
         bevel=0.004 * s, mat_idx=mat_idx["Mat_ZFlesh"],
     ))
 
-    # 2. Asymmetric Bulging Toxic Yellow Pustule Eye w/ Brow Hood + Jagged Scarred Right Socket
-    head_verts.extend(add_box(
-        bm, center=tuple(_pt(0.066, 0.044, 0.092)), size=(0.038 * s, 0.036 * s, 0.036 * s),
-        rot=(0.25, -0.30, 0.20), bevel=0.012 * s, mat_idx=mat_idx["Mat_MEyeAcid"],
+    # 2. Blind Armored V-Crest Chitin Visor & Swept Cranial Horn-Spurs (100% Eyeless Predator Skull!)
+    head_verts.extend(_add_tapered_ribbon(
+        bm, mat_idx,
+        [
+            _pt(-0.088, 0.052, 0.064),
+            _pt(-0.048, 0.044, 0.112),
+            _pt( 0.000, 0.030, 0.148),
+            _pt( 0.048, 0.044, 0.112),
+            _pt( 0.088, 0.052, 0.064),
+        ],
+        [0.028 * s, 0.038 * s, 0.044 * s, 0.038 * s, 0.028 * s],
+        [0.016 * s, 0.020 * s, 0.022 * s, 0.020 * s, 0.016 * s],
+        up_hint=tuple(side_v), mat_front="Mat_MChitinMid", mat_back="Mat_MChitinDark",
     ))
-    head_verts.extend(add_box(
-        bm, center=tuple(_pt(0.062, 0.064, 0.092)), size=(0.042 * s, 0.036 * s, 0.016 * s),
-        rot=(-0.15, 0.15, -0.10), mat_idx=mat_idx["Mat_MChitinMid"],
+    head_verts.extend(_add_tapered_ribbon(
+        bm, mat_idx,
+        [_pt(0.0, 0.102, -0.025), _pt(0.0, 0.082, 0.055), _pt(0.0, 0.046, 0.138)],
+        [0.024 * s, 0.030 * s, 0.014 * s],
+        [0.018 * s, 0.020 * s, 0.010 * s],
+        up_hint=tuple(side_v), mat_front="Mat_MScytheBone", mat_back="Mat_MChitinMid",
     ))
-    head_verts.extend(add_box(
-        bm, center=tuple(_pt(-0.064, 0.042, 0.082)), size=(0.036 * s, 0.028 * s, 0.028 * s),
-        rot=(0.10, 0.35, -0.20), bevel=0.006 * s, mat_idx=mat_idx["Mat_ZBloodDried"],
-    ))
-    for sb, st in (
-        (_pt(-0.055, 0.056, 0.094), _pt(-0.072, 0.068, 0.125)),
-        (_pt(-0.068, 0.026, 0.096), _pt(-0.088, 0.022, 0.122)),
-    ):
-        head_verts.extend(add_cone(bm, tuple(sb), tuple(st), 0.0055 * s, segments=4, mat_idx=mat_idx["Mat_MScytheBone"]))
+    for sx_h in (1.0, -1.0):
+        head_verts.extend(add_cone(
+            bm, tuple(_pt(0.062 * sx_h, 0.052, 0.092)),
+            tuple(_pt(0.092 * sx_h, 0.078, 0.042)),
+            0.010 * s, segments=4, mat_idx=mat_idx["Mat_MScytheBone"],
+        ))
 
     # 3. 5 Crooked Dorsal Bone Quills / Antennae bursting backward-upward from skull crest
     for q_u, q_v, q_f, du, dv, df, qlen in (
@@ -889,8 +898,63 @@ def build_head_scythe_stalker(bm, mat_idx, regions, center=(0.0, -0.28, 1.56), f
     regions.setdefault("head", []).extend(head_verts)
 
 
-def build_head_thorn_shroud(bm, mat_idx, regions, center=(0.0, -0.04, 1.66), fwd_dir=(0.0, -0.98, 0.18), scale=1.0):
-    """Build Ref-1 eyeless face veiled by lotus petal collar & 14 towering sinuous bone-blade tendrils."""
+def _add_cupped_shroud_frond(
+    bm, mat_idx, spine_pts, width_list, thick_list, normal_hint=(0.0, -1.0, 0.0),
+    cup_depth=0.010, twist_total=0.0, mat_front="Mat_MShroudBone", mat_back="Mat_MShroudDark",
+):
+    """Loft a sculpted 6-vertex concave/cupped organic bone-petal frond with crisp central keel ridge."""
+    vecs = [Vector(p) for p in spine_pts]
+    m = len(vecs)
+    rings = []
+    nh = Vector(normal_hint)
+    fwd_base = (vecs[-1] - vecs[0]).normalized() if (vecs[-1] - vecs[0]).length > 1e-5 else Vector((0.0, 0.0, 1.0))
+
+    for k in range(m):
+        if k == 0:
+            tan = vecs[1] - vecs[0]
+        elif k == m - 1:
+            tan = vecs[-1] - vecs[-2]
+        else:
+            tan = vecs[k + 1] - vecs[k - 1]
+        if tan.length < 1e-6:
+            tan = fwd_base
+        tan.normalize()
+        nrm = nh - tan * nh.dot(tan)
+        if nrm.length < 1e-6:
+            fb = Vector((0.0, -1.0, 0.0)) if abs(tan.y) < 0.9 else Vector((1.0, 0.0, 0.0))
+            nrm = fb - tan * fb.dot(tan)
+        nrm.normalize()
+        side = nrm.cross(tan).normalized()
+
+        t = k / max(1, m - 1)
+        ang = twist_total * t
+        ca, sa = math.cos(ang), math.sin(ang)
+        n_rot = nrm * ca + side * sa
+        s_rot = -nrm * sa + side * ca
+
+        hw = 0.5 * width_list[k]
+        ht = 0.5 * thick_list[k]
+        cup = cup_depth * math.sin(math.pi * min(1.0, t * 1.15))
+        # 6-point cupped petal section: outer convex keel -> R wing -> inner concave R -> inner center -> inner L -> L wing
+        rings.append([
+            tuple(vecs[k] + n_rot * (ht * 1.15)),
+            tuple(vecs[k] + s_rot * hw - n_rot * cup),
+            tuple(vecs[k] + s_rot * (hw * 0.45) - n_rot * (ht * 0.85 + cup * 0.55)),
+            tuple(vecs[k] - n_rot * (ht * 0.95 + cup * 0.35)),
+            tuple(vecs[k] - s_rot * (hw * 0.45) - n_rot * (ht * 0.85 + cup * 0.55)),
+            tuple(vecs[k] - s_rot * hw - n_rot * cup),
+        ])
+
+    verts = loft_rings(bm, rings, close_caps=(True, True), mat_idx=mat_idx[mat_front])
+    for f in {f for v in verts for f in v.link_faces}:
+        f.normal_update()
+        if f.normal.dot(nh) < -0.18:
+            f.material_index = mat_idx[mat_back]
+    return verts
+
+
+def build_head_thorn_shroud(bm, mat_idx, regions, center=(0.0, -0.04, 1.65), fwd_dir=(0.0, -0.96, 0.26), scale=1.0):
+    """Build Ref-1 eyeless gothic sculpture head: lower nose/fanged mouth emerging from blooming lotus collar & S-curved face-veiling flame fronds."""
     s = scale
     c0 = Vector(center)
     fwd = Vector(fwd_dir).normalized()
@@ -902,12 +966,12 @@ def build_head_thorn_shroud(bm, mat_idx, regions, center=(0.0, -0.04, 1.66), fwd
         return c0 + side_u * (u * s) + side_v * (v * s) + fwd * (f * s)
 
     head_verts = []
-    # 1. Eyeless pale gaunt skull core (sharp nose bridge + hollow shadowed eye socket shelf + screaming upper teeth)
+    # 1. Eyeless Sculpted Lower Facial Mask & Shadowed Upper Cranium Core (ZERO eyes, ZERO sockets, ZERO bald skull!)
     head_specs = (
-        (-0.068, -0.020, 0.048, 0.054),
-        (-0.012,  0.012, 0.072, 0.078),
-        ( 0.056,  0.026, 0.068, 0.074),
-        ( 0.088,  0.012, 0.046, 0.044),
+        (-0.062, -0.028, 0.050, 0.056),
+        (-0.004,  0.002, 0.072, 0.076),
+        ( 0.058,  0.004, 0.066, 0.070),
+        ( 0.098, -0.014, 0.048, 0.048),
     )
     h_rings = []
     for f_off, v_off, rx, ry in head_specs:
@@ -917,119 +981,174 @@ def build_head_thorn_shroud(bm, mat_idx, regions, center=(0.0, -0.04, 1.66), fwd
                      + side_v * (math.sin(2.0 * math.pi * i / 10) * ry * s))
             for i in range(10)
         ])
-    v_hd = loft_rings(bm, h_rings, close_caps=(True, True), mat_idx=mat_idx["Mat_MShroudSkin"])
+    v_hd = loft_rings(bm, h_rings, close_caps=(True, True), mat_idx=mat_idx["Mat_MShroudDark"])
     for f in {f for v in v_hd for f in v.link_faces}:
         cen = f.calc_center_median()
-        if (cen - c0).dot(fwd) < 0.0 * s or (cen - c0).dot(side_v) > 0.055 * s:
-            f.material_index = mat_idx["Mat_MShroudDark"]
+        rel = cen - c0
+        # Expose sculpted pale ash skin cleanly on the eyeless lower nose/cheek/maxilla V-window!
+        if rel.dot(fwd) > 0.030 * s and rel.dot(side_v) < 0.030 * s and abs(rel.dot(side_u)) < 0.056 * s:
+            f.material_index = mat_idx["Mat_MShroudSkin"]
     head_verts.extend(v_hd)
 
-    # Sharp gaunt nose ridge peeking between shrouding veils + open dark mouth + bruised lips & crimson palate
-    head_verts.extend(add_cone(
-        bm, tuple(_pt(0.0, 0.020, 0.070)), tuple(_pt(0.0, -0.006, 0.114)),
-        0.016 * s, segments=4, mat_idx=mat_idx["Mat_MShroudSkin"],
+    # Prominent sculpted lower nose tip & nostrils emerging cleanly beneath the crossing eye-veil fronds
+    head_verts.extend(_add_tapered_ribbon(
+        bm, mat_idx,
+        [_pt(0.0, 0.028, 0.088), _pt(0.0, 0.008, 0.116), _pt(0.0, -0.008, 0.130), _pt(0.0, -0.018, 0.108)],
+        [0.016 * s, 0.022 * s, 0.028 * s, 0.032 * s],
+        [0.012 * s, 0.016 * s, 0.020 * s, 0.014 * s],
+        up_hint=tuple(fwd), mat_front="Mat_MShroudSkin", mat_back="Mat_MShroudSkin",
     ))
-    head_verts.extend(add_box(
-        bm, center=tuple(_pt(0.0, -0.036, 0.074)), size=(0.052 * s, 0.044 * s, 0.038 * s),
-        mat_idx=mat_idx["Mat_ZMouth"],
-    ))
-    head_verts.extend(add_box(
-        bm, center=tuple(_pt(0.0, -0.020, 0.094)), size=(0.054 * s, 0.024 * s, 0.012 * s),
-        bevel=0.003 * s, mat_idx=mat_idx["Mat_ZLipDead"],
-    ))
-    # 8 dramatic uneven upper fangs (oversized twin vampire canines + ragged incisors) + saliva threads
-    u_shroud_specs = []
-    for i, ux in enumerate((-0.020, -0.013, -0.007, -0.002, 0.002, 0.007, 0.013, 0.020)):
-        is_canine = (i in (1, 6))
-        flen = (0.026 if is_canine else 0.014) * s
-        bp = _pt(ux, -0.023, 0.096 - 0.18 * abs(ux))
-        tp = bp - side_v * flen - fwd * (0.002 * s)
-        u_shroud_specs.append((bp, tp, (0.0044 if is_canine else 0.0030) * s, -fwd * (0.002 * s)))
-    head_verts.extend(_add_irregular_fang_row(bm, mat_idx, u_shroud_specs, mat_fang="Mat_ZBone", mat_tip="Mat_ZBloodDried"))
-    head_verts.extend(_add_saliva_strands(bm, mat_idx, [
-        (_pt(-0.014, -0.024, 0.093), _pt(0.0, -0.027, 0.095), 0.7),
-        (_pt( 0.000, -0.027, 0.095), _pt(0.014, -0.024, 0.093), 0.7),
-    ], drop_vec=tuple(-side_v * (0.018 * s)), rad=0.0018 * s))
 
-    # Articulated screaming lower jaw (`jaw_scream`) + wet crimson inner lip + 6 jagged lower fangs
+    # Deep dark recessed mouth cavern + sculpted parted upper lip & sharp vampire canines (100% unobstructed above collar!)
+    head_verts.extend(loft_rings(bm, [
+        [tuple(_pt(math.cos(2 * math.pi * i / 8) * 0.030, -0.038 + math.sin(2 * math.pi * i / 8) * 0.020, 0.056)) for i in range(8)],
+        [tuple(_pt(math.cos(2 * math.pi * i / 8) * 0.032, -0.038 + math.sin(2 * math.pi * i / 8) * 0.021, 0.098)) for i in range(8)],
+    ], close_caps=(True, False), mat_idx=mat_idx["Mat_ZMouth"]))
+    head_verts.extend(_add_tapered_ribbon(
+        bm, mat_idx,
+        [
+            _pt(-0.032, -0.030, 0.090),
+            _pt(-0.014, -0.020, 0.110),
+            _pt( 0.000, -0.022, 0.116),
+            _pt( 0.014, -0.020, 0.110),
+            _pt( 0.032, -0.030, 0.090),
+        ],
+        [0.007 * s, 0.011 * s, 0.010 * s, 0.011 * s, 0.007 * s],
+        [0.007 * s, 0.009 * s, 0.009 * s, 0.009 * s, 0.007 * s],
+        up_hint=tuple(side_v), mat_front="Mat_ZLipDead", mat_back="Mat_ZMouth",
+    ))
+    u_shroud_specs = []
+    for i, ux in enumerate((-0.024, -0.017, -0.010, -0.0035, 0.0035, 0.010, 0.017, 0.024)):
+        is_canine = (i in (1, 6))
+        flen = (0.026 if is_canine else 0.012) * s
+        bp = _pt(ux, -0.023, 0.110 - 0.22 * abs(ux))
+        tp = bp - side_v * flen - fwd * (0.002 * s)
+        u_shroud_specs.append((bp, tp, (0.0046 if is_canine else 0.0028) * s, -fwd * (0.002 * s)))
+    head_verts.extend(_add_irregular_fang_row(bm, mat_idx, u_shroud_specs, mat_fang="Mat_ZBone", mat_tip="Mat_ZBone"))
+
+    # Articulated agonized lower jaw & chin (`jaw_scream`) resting cleanly ABOVE the lotus collar!
     j_verts = loft_rings(bm, [
-        [tuple(_pt(math.cos(2.0 * math.pi * i / 6) * 0.040, -0.068 + math.sin(2.0 * math.pi * i / 6) * 0.018, 0.032)) for i in range(6)],
-        [tuple(_pt(math.cos(2.0 * math.pi * i / 6) * 0.030, -0.084 + math.sin(2.0 * math.pi * i / 6) * 0.015, 0.092)) for i in range(6)],
-        [tuple(_pt(math.cos(2.0 * math.pi * i / 6) * 0.014, -0.090 + math.sin(2.0 * math.pi * i / 6) * 0.009, 0.106)) for i in range(6)],
+        [tuple(_pt(math.cos(2.0 * math.pi * i / 8) * 0.038, -0.060 + math.sin(2.0 * math.pi * i / 8) * 0.016, 0.040)) for i in range(8)],
+        [tuple(_pt(math.cos(2.0 * math.pi * i / 8) * 0.030, -0.070 + math.sin(2.0 * math.pi * i / 8) * 0.015, 0.094)) for i in range(8)],
+        [tuple(_pt(math.cos(2.0 * math.pi * i / 8) * 0.017, -0.074 + math.sin(2.0 * math.pi * i / 8) * 0.011, 0.112)) for i in range(8)],
     ], close_caps=(True, True), mat_idx=mat_idx["Mat_MShroudSkin"])
-    j_verts.extend(add_box(
-        bm, center=tuple(_pt(0.0, -0.072, 0.092)), size=(0.044 * s, 0.022 * s, 0.010 * s),
-        bevel=0.003 * s, mat_idx=mat_idx["Mat_ZLipDead"],
+    j_verts.extend(_add_tapered_ribbon(
+        bm, mat_idx,
+        [_pt(-0.025, -0.056, 0.090), _pt(0.0, -0.060, 0.108), _pt(0.025, -0.056, 0.090)],
+        [0.007 * s, 0.010 * s, 0.007 * s], [0.006 * s, 0.008 * s, 0.006 * s],
+        up_hint=tuple(side_v), mat_front="Mat_ZLipDead", mat_back="Mat_ZMouth",
     ))
     l_shroud_specs = []
-    for i, ux in enumerate((-0.016, -0.010, -0.003, 0.003, 0.010, 0.016)):
-        is_c = (i in (1, 4))
-        bp = _pt(ux, -0.072, 0.096 - 0.18 * abs(ux))
-        tp = bp + side_v * ((0.022 if is_c else 0.013) * s) - fwd * (0.002 * s)
-        l_shroud_specs.append((bp, tp, (0.0038 if is_c else 0.0028) * s, -fwd * (0.002 * s)))
-    j_verts.extend(_add_irregular_fang_row(bm, mat_idx, l_shroud_specs, mat_fang="Mat_ZBone"))
+    for i, ux in enumerate((-0.017, -0.010, -0.0035, 0.0035, 0.010, 0.017)):
+        is_c = (i in (0, 5))
+        bp = _pt(ux, -0.059, 0.104 - 0.20 * abs(ux))
+        tp = bp + side_v * ((0.018 if is_c else 0.010) * s) - fwd * (0.002 * s)
+        l_shroud_specs.append((bp, tp, (0.0036 if is_c else 0.0025) * s, -fwd * (0.002 * s)))
+    j_verts.extend(_add_irregular_fang_row(bm, mat_idx, l_shroud_specs, mat_fang="Mat_ZBone", mat_tip="Mat_ZBone"))
     regions.setdefault("jaw_scream", []).extend(j_verts)
 
-    # 2. Two Staggered Tiers of 18 Curved Lotus Collar Petals cradling chin/jaw/neck/back (parted in front under chin so screaming face reads clearly)
-    for tier, n_pet, v_base, f_rad, p_len, p_w, lift_v in (
-        (0, 10, -0.095, 0.068, 0.125, 0.040, 0.095),
-        (1,  8, -0.066, 0.072, 0.145, 0.036, 0.120),
-    ):
+    # 2. Lush 3-Tier Cupped Lotus/Calyx Collar Cradling UNDER the Chin & Jawline (never blocking the mouth/nose!)
+    collar_tiers = (
+        # (n_pet, angle_offset, v_base, f_rad, out_reach, up_lift, p_width)
+        (10, 0.00, -0.118, 0.056, 0.150, 0.048, 0.056),
+        (10, 0.31, -0.102, 0.050, 0.128, 0.058, 0.050),
+        ( 6, 0.16, -0.094, 0.048, 0.106, 0.028, 0.046),
+    )
+    for t_idx, (n_pet, a_off, v_base, f_rad, out_r, lift_v, p_w) in enumerate(collar_tiers):
         for k in range(n_pet):
-            ang = (2.0 * math.pi * k) / n_pet + tier * 0.32
+            if t_idx == 2:
+                ang = -0.5 * math.pi + ((k / max(1, n_pet - 1)) - 0.5) * 1.90
+            else:
+                ang = (2.0 * math.pi * k) / n_pet + a_off
             ca, sa = math.cos(ang), math.sin(ang)
-            r_out = side_u * ca + fwd * (-sa * 0.85)
-            bp = _pt(0.0, v_base, 0.0) + r_out * (f_rad * s)
-            # Front-center petals curve lower so nose & screaming fanged mouth stand out dramatically!
-            front_dip = 0.48 if r_out.dot(fwd) > 0.55 else 1.0
+            r_out = (side_u * ca + fwd * (-sa * 0.94)).normalized()
+            is_front = max(0.0, r_out.dot(fwd))
+            # Keep front-center petals cupped strictly UNDER the chin (`v <= -0.068`) so chin, mouth & nose read 100% clearly!
+            chin_cup = (0.32 if is_front > 0.45 else 1.0)
+            reach = out_r * (0.94 if is_front > 0.45 else 1.0)
+            bp = _pt(0.0, v_base, 0.015) + r_out * (f_rad * s)
             pts = [
                 tuple(bp),
-                tuple(bp + r_out * (p_len * 0.45 * s) + side_v * (lift_v * 0.35 * front_dip * s)),
-                tuple(bp + r_out * (p_len * 0.88 * s) + side_v * (lift_v * 0.78 * front_dip * s)),
-                tuple(bp + r_out * (p_len * 0.72 * s) + side_v * (lift_v * 1.10 * front_dip * s)),
+                tuple(bp + r_out * (reach * 0.38 * s) + side_v * (lift_v * 0.16 * chin_cup * s)),
+                tuple(bp + r_out * (reach * 0.78 * s) + side_v * (lift_v * 0.52 * chin_cup * s)),
+                tuple(bp + r_out * (reach * 1.00 * s) + side_v * (lift_v * 0.88 * chin_cup * s)),
+                tuple(bp + r_out * (reach * 0.90 * s) + side_v * (lift_v * 1.12 * chin_cup * s)),
             ]
-            head_verts.extend(_add_tapered_ribbon(
+            head_verts.extend(_add_cupped_shroud_frond(
                 bm, mat_idx, pts,
-                [p_w * 0.55 * s, p_w * s, p_w * 0.72 * s, 0.006 * s],
-                [0.016 * s, 0.014 * s, 0.010 * s, 0.004 * s],
-                up_hint=tuple(r_out), mat_front="Mat_MShroudBone", mat_back="Mat_MShroudDark",
+                [p_w * 0.52 * s, p_w * 0.96 * s, p_w * 1.08 * s, p_w * 0.70 * s, 0.008 * s],
+                [0.016 * s, 0.015 * s, 0.012 * s, 0.009 * s, 0.004 * s],
+                normal_hint=tuple((r_out * 0.72 - side_v * 0.58).normalized()),
+                cup_depth=0.010 * s, twist_total=0.18 * ca,
+                mat_front="Mat_MShroudBone", mat_back="Mat_MShroudDark",
             ))
 
-    # 3. 14 Towering Sweeping Sinuous Blade-Tendrils veiling upper face & soaring skyward (`crown_L/C/R`)
+    # 3. Inner Face-Shrouding S-Curve Veil Fronds: frame outer cheeks (`|u|>=0.048` below nose), then sweep INWARD above `v>=0.032` to consume eyes/forehead!
+    veil_specs = (
+        # Left cheek -> sweeps over left eye/brow -> curls gracefully right-upward (Ref Image 1 signature S-frond!)
+        ( 0.062, -0.072, 0.075,   0.054, -0.005, 0.108,   0.026, 0.068, 0.128,  -0.008, 0.165, 0.106,  -0.048, 0.275, 0.072,  0.056,  0.45),
+        ( 0.084, -0.062, 0.048,   0.078,  0.016, 0.092,   0.056, 0.098, 0.106,   0.032, 0.195, 0.086,   0.078, 0.305, 0.052,  0.060, -0.40),
+        ( 0.036,  0.034, 0.106,   0.014,  0.078, 0.132,  -0.012, 0.145, 0.120,   0.016, 0.230, 0.092,   0.052, 0.325, 0.058,  0.046,  0.36),
+        # Right cheek -> sweeps over right eye/brow -> curls gracefully left-upward
+        (-0.060, -0.072, 0.076,  -0.052, -0.004, 0.110,  -0.024, 0.072, 0.130,   0.012, 0.172, 0.108,   0.054, 0.285, 0.074,  0.054, -0.46),
+        (-0.084, -0.060, 0.046,  -0.080,  0.018, 0.090,  -0.058, 0.102, 0.104,  -0.034, 0.198, 0.084,  -0.082, 0.298, 0.048,  0.058,  0.38),
+        (-0.034,  0.036, 0.108,  -0.010,  0.082, 0.134,   0.018, 0.150, 0.122,  -0.012, 0.238, 0.090,  -0.046, 0.332, 0.056,  0.044, -0.34),
+        # Temple-wrapping side cowl petals sealing left & right profile silhouettes
+        ( 0.094, -0.048, 0.010,   0.102,  0.032, 0.038,   0.088, 0.122, 0.048,   0.068, 0.215, 0.028,   0.108, 0.305,-0.005,  0.056, -0.32),
+        (-0.094, -0.048, 0.010,  -0.102,  0.032, 0.038,  -0.088, 0.122, 0.048,  -0.068, 0.215, 0.028,  -0.108, 0.305,-0.005,  0.056,  0.32),
+    )
+    for u0, v0, f0, u1, v1, f1, u2, v2, f2, u3, v3, f3, u4, v4, f4, mw, tw in veil_specs:
+        v_pts = [_pt(u0, v0, f0), _pt(u1, v1, f1), _pt(u2, v2, f2), _pt(u3, v3, f3), _pt(u4, v4, f4)]
+        n_dir = (fwd * 0.85 + side_u * (0.45 if u0 >= 0 else -0.45)).normalized()
+        head_verts.extend(_add_cupped_shroud_frond(
+            bm, mat_idx, v_pts,
+            [mw * 0.56 * s, mw * 0.98 * s, mw * 0.94 * s, mw * 0.56 * s, 0.006 * s],
+            [0.015 * s, 0.016 * s, 0.013 * s, 0.009 * s, 0.004 * s],
+            normal_hint=tuple(n_dir), cup_depth=0.010 * s, twist_total=tw,
+            mat_front="Mat_MShroudBone", mat_back="Mat_MShroudDark",
+        ))
+
+    # 4. 14 Flowing Flame-Crown S-Curved Fronds (`crown_L`, `crown_C`, `crown_R` — wide S-waves like Ref Image 1!)
     regions.setdefault("crown_L", [])
     regions.setdefault("crown_C", [])
     regions.setdefault("crown_R", [])
-    for k in range(14):
-        frac = (k / 13.0) - 0.5
-        ang_u = frac * 2.35
-        cu = math.sin(ang_u) * 0.075
-        cf = (0.088 if k % 3 == 0 else (0.062 * math.cos(ang_u))) - 0.015 * abs(frac)
-        if abs(cu) < 0.036 and k % 3 != 0:
-            # Part most center tendrils around nose/mouth, keep high-brow center tendrils above eye shelf!
-            cu = (0.040 if k % 2 == 0 else -0.040)
-        base_v = 0.048 if abs(cu) < 0.036 else -0.068
-        h_tip = 0.34 + 0.16 * (1.0 - abs(frac)) + 0.07 * math.sin(k * 2.1)
-        sway_u = math.sin(k * 1.7) * 0.085 + frac * 0.15
-        sway_f = 0.045 * math.cos(k * 2.3) - 0.06 * abs(frac)
-        pts = [
-            _pt(cu, base_v, cf),
-            _pt(cu * 1.1 + sway_u * 0.25, base_v + 0.14, cf + 0.025 + sway_f * 0.3),
-            _pt(cu * 1.2 + sway_u * 0.70, base_v + 0.28, cf + 0.015 + sway_f * 0.8),
-            _pt(cu * 0.9 + sway_u * 1.00, base_v + h_tip, cf - 0.020 + sway_f),
-        ]
-        rib = _add_tapered_ribbon(
-            bm, mat_idx, pts,
-            [0.032 * s, 0.038 * s, 0.024 * s, 0.004 * s],
-            [0.014 * s, 0.012 * s, 0.008 * s, 0.003 * s],
-            up_hint=tuple(fwd), twist_total=0.8 * (1.0 if k % 2 == 0 else -1.0),
+    crown_specs = (
+        # (u_base, v_base, f_base,  s_amp_u, s_amp_f, h_total, max_w, phase, bucket)
+        ( 0.000, 0.058,  0.062,  -0.065,  0.036, 0.48, 0.058, 0.4, "crown_C"),
+        ( 0.026, 0.055,  0.044,   0.072,  0.026, 0.53, 0.050, 1.8, "crown_C"),
+        (-0.028, 0.052,  0.046,  -0.078,  0.030, 0.45, 0.064, 0.9, "crown_C"),
+        ( 0.010, 0.044, -0.018,   0.056, -0.034, 0.50, 0.058, 2.4, "crown_C"),
+        (-0.014, 0.040, -0.052,  -0.052, -0.048, 0.41, 0.056, 3.1, "crown_C"),
+        # Left sweeping S-flame fronds (lush outward-and-upward S-curls!)
+        ( 0.060, 0.030,  0.046,   0.115,  0.022, 0.46, 0.066, 0.2, "crown_L"),
+        ( 0.082, 0.020,  0.006,   0.145, -0.018, 0.43, 0.060, 1.3, "crown_L"),
+        ( 0.070, 0.024, -0.042,   0.120, -0.048, 0.38, 0.054, 2.2, "crown_L"),
+        ( 0.044, 0.048,  0.020,   0.088,  0.012, 0.50, 0.042, 2.9, "crown_L"),
+        # Right sweeping S-flame fronds
+        (-0.060, 0.030,  0.046,  -0.120,  0.024, 0.44, 0.068, 0.7, "crown_R"),
+        (-0.084, 0.020,  0.006,  -0.150, -0.020, 0.41, 0.060, 1.7, "crown_R"),
+        (-0.070, 0.024, -0.042,  -0.125, -0.050, 0.37, 0.054, 2.6, "crown_R"),
+        (-0.046, 0.048,  0.020,  -0.092,  0.014, 0.51, 0.040, 3.5, "crown_R"),
+        ( 0.000, 0.026, -0.068,   0.045, -0.062, 0.35, 0.058, 1.1, "crown_C"),
+    )
+    for ub, vb, fb, au, af, ht, mw, ph, bkt in crown_specs:
+        c_pts = []
+        for st in range(6):
+            t = st / 5.0
+            # Authentic Ref-1 S-flame wave: sweeps across belly, flares outward, and curls skyward at tip!
+            s_wave = 0.55 * au * math.sin(1.25 * math.pi * t) + 0.65 * au * (t ** 1.5) + 0.032 * math.sin(t * 5.0 + ph)
+            f_wave = 0.030 * math.sin(math.pi * t) + af * (t ** 1.4)
+            c_pts.append(_pt(ub + s_wave, vb + ht * t, fb + f_wave))
+        n_hint = (fwd * (0.75 if fb >= -0.02 else -0.65) + side_u * (0.55 if ub > 0.02 else (-0.55 if ub < -0.02 else 0.0))).normalized()
+        rib = _add_cupped_shroud_frond(
+            bm, mat_idx, c_pts,
+            [mw * 0.56 * s, mw * 0.98 * s, mw * 1.06 * s, mw * 0.74 * s, mw * 0.36 * s, 0.006 * s],
+            [0.016 * s, 0.016 * s, 0.013 * s, 0.010 * s, 0.006 * s, 0.003 * s],
+            normal_hint=tuple(n_hint), cup_depth=0.012 * s,
+            twist_total=0.58 * (1.0 if ph % 1.0 > 0.5 else -1.0),
             mat_front="Mat_MShroudBone", mat_back="Mat_MShroudDark",
         )
-        if cu > 0.028:
-            regions.setdefault("crown_L", []).extend(rib)
-        elif cu < -0.028:
-            regions.setdefault("crown_R", []).extend(rib)
-        else:
-            regions.setdefault("crown_C", []).extend(rib)
+        regions[bkt].extend(rib)
 
     regions.setdefault("head", []).extend(head_verts)
 
@@ -1073,18 +1192,26 @@ def build_head_arachnid_maw(bm, mat_idx, regions, center=(0.0, -0.34, 0.48), fwd
         [tuple(_pt(math.cos(2.0 * math.pi * i / 8) * 0.092, 0.026 + math.sin(2.0 * math.pi * i / 8) * 0.022,  0.24)) for i in range(8)],
     ], close_caps=(True, True), mat_idx=mat_idx["Mat_MArachChitin"])
 
-    for eu, ev, ef, er in (
-        (-0.042, 0.048, 0.228, 0.028), ( 0.042, 0.048, 0.228, 0.028),
-        (-0.090, 0.052, 0.198, 0.022), ( 0.090, 0.052, 0.198, 0.022),
-        (-0.134, 0.052, 0.152, 0.018), ( 0.134, 0.052, 0.152, 0.018),
-    ):
-        top_verts.extend(add_box(
-            bm, center=tuple(_pt(eu, ev, ef)), size=(er * s, er * s, er * s),
-            rot=(0.2, 0.3, 0.1), bevel=er * 0.30 * s, mat_idx=mat_idx["Mat_MEyeAcid"],
+    # Blind Armored Chitin Carapace Crests & Sensory Horn-Spurs (ZERO spider eyes!)
+    top_verts.extend(_add_tapered_ribbon(
+        bm, mat_idx,
+        [_pt(0.0, 0.118, -0.04), _pt(0.0, 0.105, 0.09), _pt(0.0, 0.056, 0.228)],
+        [0.046 * s, 0.054 * s, 0.020 * s],
+        [0.024 * s, 0.026 * s, 0.012 * s],
+        up_hint=tuple(side_v), mat_front="Mat_MChitinMid", mat_back="Mat_MArachChitin",
+    ))
+    for sx_r in (1.0, -1.0):
+        top_verts.extend(_add_tapered_ribbon(
+            bm, mat_idx,
+            [_pt(0.115 * sx_r, 0.086, 0.02), _pt(0.096 * sx_r, 0.072, 0.14), _pt(0.054 * sx_r, 0.042, 0.224)],
+            [0.036 * s, 0.042 * s, 0.016 * s],
+            [0.020 * s, 0.022 * s, 0.010 * s],
+            up_hint=tuple(side_v), mat_front="Mat_MChitinMid", mat_back="Mat_MArachChitin",
         ))
-        top_verts.extend(add_box(
-            bm, center=tuple(_pt(eu, ev + er * 0.85, ef - 0.012)), size=(er * 1.45 * s, er * 0.8 * s, er * 0.55 * s),
-            rot=(-0.22, 0.0, 0.0), mat_idx=mat_idx["Mat_MChitinMid"],
+        top_verts.extend(add_cone(
+            bm, tuple(_pt(0.125 * sx_r, 0.068, 0.145)),
+            tuple(_pt(0.168 * sx_r, 0.098, 0.085)),
+            0.014 * s, segments=4, mat_idx=mat_idx["Mat_MScytheBone"],
         ))
 
     # Wet crimson upper gum ridge + 10 uneven jagged fangs + 2 HUGE curved venom-tipped saber-canines
@@ -1243,20 +1370,23 @@ def build_head_bile_juggernaut(bm, mat_idx, regions, center=(0.0, -0.35, 1.84), 
         return loft_rings(bm, rings, close_caps=(True, True), mat_idx=mat_idx["Mat_MTankArmor"])
 
     for su, sv, sf, ru, rv, rf, tu, tv, sd in (
-        (-0.072, 0.088, 0.105, 0.072, 0.042, 0.036,  0.22,  0.18, 1.2),
-        ( 0.075, 0.092, 0.100, 0.076, 0.045, 0.038, -0.20,  0.20, 2.4),
-        ( 0.000, 0.132, 0.035, 0.112, 0.056, 0.052,  0.04, -0.22, 3.6),
+        ( 0.000, 0.084, 0.126, 0.102, 0.042, 0.042,  0.00,  0.22, 0.6),
+        (-0.074, 0.086, 0.105, 0.076, 0.044, 0.038,  0.22,  0.18, 1.2),
+        ( 0.076, 0.090, 0.102, 0.078, 0.046, 0.040, -0.20,  0.20, 2.4),
+        ( 0.000, 0.132, 0.035, 0.114, 0.058, 0.054,  0.04, -0.22, 3.6),
         ( 0.000, 0.118,-0.075, 0.128, 0.068, 0.058, -0.05, -0.35, 4.8),
-        (-0.115, 0.048, 0.055, 0.058, 0.046, 0.042,  0.30,  0.05, 5.5),
-        ( 0.118, 0.052, 0.050, 0.060, 0.048, 0.044, -0.30,  0.05, 6.2),
+        (-0.115, 0.050, 0.058, 0.060, 0.048, 0.044,  0.30,  0.05, 5.5),
+        ( 0.118, 0.054, 0.054, 0.062, 0.050, 0.046, -0.30,  0.05, 6.2),
     ):
         head_verts.extend(_brow_shell(su, sv, sf, ru, rv, rf, tilt_u=tu, tilt_v=tv, seed=sd))
 
-    # Asymmetric scarred eye-pits: left pit crusted shut, right pit weeping a sunken glowing amber bile boil
-    head_verts.extend(loft_rings(bm, [
-        _organic_head_ring(0.115, 0.065, 0.032, 0.022, n=8, seed=7.1),
-        _organic_head_ring(0.135, 0.065, 0.018, 0.012, n=8, seed=7.4),
-    ], close_caps=(True, True), mat_idx=mat_idx["Mat_ZBloodFresh"]))
+    # Asymmetric glowing amber bile pustule boils on crown/snout/temples (ZERO eye-pits / ZERO eyes!)
+    for sx_b, u_b, v_b, f_b in ((1.0, 0.092, 0.096, 0.095), (-1.0, -0.090, 0.092, 0.098)):
+        head_verts.extend(add_cone(
+            bm, tuple(_pt(u_b, v_b, f_b)),
+            tuple(_pt(u_b + 0.032 * sx_b, v_b + 0.038, f_b + 0.022)),
+            0.018 * s, segments=5, mat_idx=mat_idx["Mat_MScytheBone"],
+        ))
     for bu, bv, bf, br in (
         (-0.082, 0.062, 0.108, 0.028),
         ( 0.116, 0.078, 0.064, 0.034),

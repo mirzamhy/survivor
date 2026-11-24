@@ -826,7 +826,7 @@ def render_mutant_showcase(slug, out_path, tile_size=560):
     configure_renderer(scene)
     add_studio_lights(bg_color=(0.11, 0.12, 0.14))
     add_ground_disc(radius=2.5)
-    materials, idx_map = create_materials()
+    materials, idx_map = create_materials(with_mutant_textures=True)
     body_m, _, arm_m, _ = builder(materials, idx_map, scene.collection, scene.collection, scene.collection)
 
     cd = bpy.data.cameras.new("MutCam")
@@ -967,7 +967,7 @@ def render_mutant_combat_vfx_qa(out_path, tile_size=640):
         configure_renderer(scene)
         add_studio_lights(bg_color=(0.06, 0.07, 0.09))
         add_ground_disc(radius=2.5)
-        materials, idx_map = create_materials()
+        materials, idx_map = create_materials(with_mutant_textures=True)
 
         body_m, _, arm_m, _ = builder_map[slug](materials, idx_map, scene.collection, scene.collection, scene.collection)
         meta = MUTANT_META[slug]
@@ -995,7 +995,7 @@ def render_mutant_combat_vfx_qa(out_path, tile_size=640):
     configure_renderer(scene)
     add_studio_lights(bg_color=(0.08, 0.09, 0.11))
     add_ground_disc(radius=4.8)
-    materials, idx_map = create_materials()
+    materials, idx_map = create_materials(with_mutant_textures=True)
     for s_id, xp in (
         ("arachnid_maw",    -2.90),
         ("rafflesia",       -1.35),

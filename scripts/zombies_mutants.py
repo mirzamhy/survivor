@@ -8,6 +8,7 @@ from mesh_utils import (
     add_cone,
     add_cylinder,
     apply_box_uvs,
+    bake_mutant_vertex_shading,
     finalize_mesh,
     loft_rings,
     ring_ellipse,
@@ -475,7 +476,8 @@ def build_mutant_rafflesia(materials, idx_map, col_char, col_gear, col_rig):
             chain_assignments.append((v_bones, _idx_set(chain_verts[vprefix])))
 
     body_obj, body_tris = finalize_mesh("Mutant_Rafflesia_Body", bm, materials, collection=col_char)
-    apply_box_uvs(body_obj, tex_scale=1.7)
+    apply_box_uvs(body_obj, tex_scale=2.4)
+    bake_mutant_vertex_shading(body_obj, cavity_tint=(0.28, 0.08, 0.10), ridge_tint=(1.00, 0.92, 0.78), ground_tint=(0.45, 0.42, 0.36))
     arm_obj = create_creature_armature("Mutant_Rafflesia_Rig", bone_specs, collection=col_rig)
     skin_creature_to_armature(
         body_obj, arm_obj, chain_assignments, single_assignments, fallback_bone="Pelvis",
@@ -733,7 +735,8 @@ def build_mutant_scythe_stalker(materials, idx_map, col_char, col_gear, col_rig)
         chain_assignments.append(([b1, b2, b3, b4], _idx_set(chain_verts[lname])))
 
     body_obj, body_tris = finalize_mesh("Mutant_Scythe_Stalker_Body", bm, materials, collection=col_char)
-    apply_box_uvs(body_obj, tex_scale=1.7)
+    apply_box_uvs(body_obj, tex_scale=2.5)
+    bake_mutant_vertex_shading(body_obj, cavity_tint=(0.30, 0.16, 0.18), ridge_tint=(1.00, 0.94, 0.84), ground_tint=(0.48, 0.44, 0.42))
     arm_obj = create_creature_armature("Mutant_Scythe_Stalker_Rig", bone_specs, collection=col_rig)
     skin_creature_to_armature(body_obj, arm_obj, chain_assignments, single_assignments, fallback_bone="Pelvis")
     return body_obj, body_tris, arm_obj, []
@@ -826,16 +829,16 @@ def build_mutant_thorn_shroud(materials, idx_map, col_char, col_gear, col_rig):
             mat_idx=idx_map["Mat_MShroudBone"], n=6, seed=2.4, crag=0.18,
         ))
 
-    # 3. 6 Articulated Sweeping Razor-Blade Wings (3 per side behind shoulder/scapula)
+    # 3. 6 Articulated Sweeping S-Curved Razor-Petal Wings (3 per side behind shoulder/scapula — graceful Ref-1 curve!)
     wing_defs = []
     for side, sx in (("L", 1.0), ("R", -1.0)):
         wing_defs.extend([
-            (f"Wing_{side}1", [(0.11 * sx, 0.05, 1.46), (0.34 * sx, 0.10, 1.62), (0.60 * sx, 0.06, 1.84), (0.82 * sx, -0.02, 2.02)],
-             [0.048, 0.068, 0.046, 0.008]),
-            (f"Wing_{side}2", [(0.12 * sx, 0.06, 1.38), (0.36 * sx, 0.14, 1.48), (0.64 * sx, 0.12, 1.60), (0.86 * sx,  0.04, 1.72)],
-             [0.044, 0.062, 0.042, 0.008]),
-            (f"Wing_{side}3", [(0.10 * sx, 0.07, 1.28), (0.32 * sx, 0.16, 1.30), (0.54 * sx, 0.14, 1.36), (0.72 * sx,  0.06, 1.44)],
-             [0.040, 0.052, 0.036, 0.007]),
+            (f"Wing_{side}1", [(0.11 * sx, 0.05, 1.46), (0.36 * sx, 0.12, 1.56), (0.58 * sx, 0.08, 1.78), (0.76 * sx, -0.02, 2.04)],
+             [0.054, 0.078, 0.052, 0.008]),
+            (f"Wing_{side}2", [(0.12 * sx, 0.06, 1.38), (0.38 * sx, 0.15, 1.42), (0.64 * sx, 0.12, 1.56), (0.84 * sx,  0.04, 1.76)],
+             [0.048, 0.070, 0.046, 0.008]),
+            (f"Wing_{side}3", [(0.10 * sx, 0.07, 1.28), (0.34 * sx, 0.16, 1.25), (0.56 * sx, 0.14, 1.33), (0.72 * sx,  0.06, 1.48)],
+             [0.042, 0.058, 0.038, 0.007]),
         ])
     for wname, wpts, ww in wing_defs:
         _cadd(wname, _add_tapered_ribbon(
@@ -884,7 +887,7 @@ def build_mutant_thorn_shroud(materials, idx_map, col_char, col_gear, col_rig):
         ))
 
     # 5. Eyeless Shrouded Head + Screaming Jaw + Towering Blade Crown (`crown_L/C/R`)
-    build_head_thorn_shroud(bm, idx_map, regions, center=(0.0, -0.04, 1.66), fwd_dir=(0.0, -0.98, 0.18), scale=1.08)
+    build_head_thorn_shroud(bm, idx_map, regions, center=(0.0, -0.04, 1.65), fwd_dir=(0.0, -0.96, 0.26), scale=1.08)
 
     bm.verts.ensure_lookup_table()
     bm.verts.index_update()
@@ -942,7 +945,8 @@ def build_mutant_thorn_shroud(materials, idx_map, col_char, col_gear, col_rig):
         chain_assignments.append(([b1, b2, b3], _idx_set(chain_verts[aname])))
 
     body_obj, body_tris = finalize_mesh("Mutant_Thorn_Shroud_Body", bm, materials, collection=col_char)
-    apply_box_uvs(body_obj, tex_scale=1.7)
+    apply_box_uvs(body_obj, tex_scale=2.2)
+    bake_mutant_vertex_shading(body_obj, cavity_tint=(0.24, 0.20, 0.30), ridge_tint=(1.00, 0.98, 0.95), ground_tint=(0.38, 0.35, 0.42))
     arm_obj = create_creature_armature("Mutant_Thorn_Shroud_Rig", bone_specs, collection=col_rig)
     skin_creature_to_armature(body_obj, arm_obj, chain_assignments, single_assignments, fallback_bone="Pelvis")
     return body_obj, body_tris, arm_obj, []
@@ -1089,7 +1093,8 @@ def build_mutant_arachnid_maw(materials, idx_map, col_char, col_gear, col_rig):
         chain_assignments.append(([b1, b2, b3], _idx_set(chain_verts[lname])))
 
     body_obj, body_tris = finalize_mesh("Mutant_Arachnid_Maw_Body", bm, materials, collection=col_char)
-    apply_box_uvs(body_obj, tex_scale=1.7)
+    apply_box_uvs(body_obj, tex_scale=2.6)
+    bake_mutant_vertex_shading(body_obj, cavity_tint=(0.14, 0.22, 0.16), ridge_tint=(0.94, 1.00, 0.86), ground_tint=(0.40, 0.44, 0.40), countershade=False)
     arm_obj = create_creature_armature("Mutant_Arachnid_Maw_Rig", bone_specs, collection=col_rig)
     skin_creature_to_armature(body_obj, arm_obj, chain_assignments, single_assignments, fallback_bone="Pelvis")
     return body_obj, body_tris, arm_obj, []
@@ -1740,7 +1745,8 @@ def build_mutant_bile_juggernaut(materials, idx_map, col_char, col_gear, col_rig
         chain_assignments.append(([b1, b2, b3], _idx_set(chain_verts[lname])))
 
     body_obj, body_tris = finalize_mesh("Mutant_Bile_Juggernaut_Body", bm, materials, collection=col_char)
-    apply_box_uvs(body_obj, tex_scale=2.6)
+    apply_box_uvs(body_obj, tex_scale=1.55)
+    bake_mutant_vertex_shading(body_obj, cavity_tint=(0.36, 0.24, 0.34), ridge_tint=(1.00, 0.94, 0.82), ground_tint=(0.50, 0.44, 0.40), countershade=False)
     arm_obj = create_creature_armature("Mutant_Bile_Juggernaut_Rig", bone_specs, collection=col_rig)
     skin_creature_to_armature(body_obj, arm_obj, chain_assignments, single_assignments, fallback_bone="Pelvis")
     return body_obj, body_tris, arm_obj, []
@@ -1782,7 +1788,7 @@ MUTANT_META = {
         "idle_stage": "idle",
         "head_stage": "slash",
         "skill_stage": "reaper_lunge",
-        "vfx_mat": "Mat_MEyeAcid",
+        "vfx_mat": "Mat_VfxBloodCore",
     },
     "thorn_shroud": {
         "index": 3,
