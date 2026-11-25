@@ -195,15 +195,41 @@ MATERIAL_SPECS = [
     ("Mat_MTankArmor",       "#28241D", 0.86, 0.05),
     ("Mat_MBileGlow",        "#D87A14", 0.22, 0.00, "#C8640A", 2.8),
     ("Mat_VfxBileCore",      "#FFB833", 0.16, 0.00, "#FF8C14", 4.6),
+
+    # Apocalypse Environment Kit (19 PBR materials)
+    ("Mat_Env_AsphaltCracked",  "#2E3238", 0.88, 0.00),
+    ("Mat_Env_SoilCracked",     "#524436", 0.92, 0.00),
+    ("Mat_Env_ConcreteCracked", "#74726C", 0.88, 0.00),
+    ("Mat_Env_ConcreteDark",    "#4C4E4C", 0.90, 0.00),
+    ("Mat_Env_BrickRuined",     "#723D2F", 0.88, 0.00),
+    ("Mat_Env_PlasterDamaged",  "#8E8776", 0.88, 0.00),
+    ("Mat_Env_RustHeavy",       "#6E3724", 0.76, 0.35),
+    ("Mat_Env_CarPaintFaded",   "#415663", 0.62, 0.18),
+    ("Mat_Env_MetalScrap",      "#32363C", 0.52, 0.78),
+    ("Mat_Env_WoodPlank",       "#624932", 0.86, 0.00),
+    ("Mat_Env_GrassDry",        "#6E783B", 0.84, 0.00),
+    ("Mat_Env_GrassLush",       "#36582A", 0.78, 0.00),
+    ("Mat_Env_RoadStripe",      "#C29C32", 0.84, 0.00),
+    ("Mat_Env_HazardYellow",    "#C89A24", 0.76, 0.00),
+    ("Mat_Env_Sandbag",         "#928164", 0.92, 0.00),
+    ("Mat_Env_GlassBroken",     "#223640", 0.14, 0.25),
+    ("Mat_Env_BarrelRed",       "#922C24", 0.62, 0.32),
+    ("Mat_Env_EmberGlow",       "#FF6A1A", 0.25, 0.00, "#FF5210", 4.5),
+    ("Mat_Env_FireCore",        "#FFD44D", 0.18, 0.00, "#FFA820", 6.5),
 ]
 
 
-def create_materials(with_mutant_textures=False):
+def create_materials(with_mutant_textures=False, with_env_textures=False):
     """Create or return the survivor material list and index lookup."""
     apply_tex_fn = None
     if with_mutant_textures:
         from mutant_textures import apply_mutant_pbr_texture
         apply_tex_fn = apply_mutant_pbr_texture
+
+    apply_env_fn = None
+    if with_env_textures:
+        from environment_textures import apply_env_pbr_texture
+        apply_env_fn = apply_env_pbr_texture
 
     mats = []
     idx_map = {}
@@ -229,12 +255,16 @@ def create_materials(with_mutant_textures=False):
         bsdf.inputs["Base Color"].default_value = col
         bsdf.inputs["Roughness"].default_value = roughness
         applied_tex = False
-        if len(spec) < 6 and apply_tex_fn is not None:
-            applied_tex = bool(apply_tex_fn(mat, name, color_hex, roughness))
-            for node in mat.node_tree.nodes:
-                if node.type == "BSDF_PRINCIPLED":
-                    bsdf = node
-                    break
+        if len(spec) < 6:
+            if apply_env_fn is not None and name.startswith("Mat_Env_"):
+                applied_tex = bool(apply_env_fn(mat, name, color_hex, roughness))
+            elif apply_tex_fn is not None:
+                applied_tex = bool(apply_tex_fn(mat, name, color_hex, roughness))
+            if applied_tex:
+                for node in mat.node_tree.nodes:
+                    if node.type == "BSDF_PRINCIPLED":
+                        bsdf = node
+                        break
 
         bsdf.inputs["Metallic"].default_value = metallic
         if not applied_tex and "Specular IOR Level" in bsdf.inputs:
