@@ -283,6 +283,13 @@
             <option value="immortal">Uji Animasi Abadi (Tak Bisa Mati)</option>
           </select>
         </div>
+        <div>
+          <label for="sel-env-mode">Lingkungan Arena</label>
+          <select id="sel-env-mode">
+            <option value="apocalypse">Jalanan Apocalypse 3D (Bangunan, Tanah Retak &amp; Rumput)</option>
+            <option value="studio">Grid Studio Polos</option>
+          </select>
+        </div>
         <label class="check-row"><input id="chk-vfx" type="checkbox" checked /> Tampilkan Efek 3D (VFX Serangan &amp; Tembakan)</label>
         <label class="check-row"><input id="chk-hud" type="checkbox" checked /> Tampilkan Bar HP &amp; Status di Atas Kepala</label>
         <label class="check-row"><input id="chk-ruler" type="checkbox" checked /> Tampilkan Garis Ukur Jarak</label>
@@ -585,15 +592,15 @@
     scene.add(hemi);
 
     const keyLight = new THREE.DirectionalLight(0xfff4e0, 2.35);
-    keyLight.position.set(8, 16, 10);
+    keyLight.position.set(10, 18, 12);
     keyLight.castShadow = true;
     keyLight.shadow.mapSize.set(2048, 2048);
     keyLight.shadow.camera.near = 1;
-    keyLight.shadow.camera.far = 48;
-    keyLight.shadow.camera.left = -16;
-    keyLight.shadow.camera.right = 16;
-    keyLight.shadow.camera.top = 16;
-    keyLight.shadow.camera.bottom = -16;
+    keyLight.shadow.camera.far = 56;
+    keyLight.shadow.camera.left = -22;
+    keyLight.shadow.camera.right = 22;
+    keyLight.shadow.camera.top = 22;
+    keyLight.shadow.camera.bottom = -22;
     keyLight.shadow.bias = -0.0005;
     scene.add(keyLight);
 
@@ -601,7 +608,18 @@
     rimLight.position.set(-10, 8, -12);
     scene.add(rimLight);
 
-    // Arena Ground + Grid + Distance Ruler Line
+    // Warm fire barrel accent lights (active in Apocalypse Street mode)
+    const fireLightW = new THREE.PointLight(0xff7722, 4.5, 11.0, 1.4);
+    fireLightW.position.set(-4.4, 1.45, -3.65);
+    fireLightW.visible = false;
+    scene.add(fireLightW);
+
+    const fireLightE = new THREE.PointLight(0xff7722, 4.5, 11.0, 1.4);
+    fireLightE.position.set(4.6, 1.45, -3.75);
+    fireLightE.visible = false;
+    scene.add(fireLightE);
+
+    // Arena Ground + Grid + Apocalypse Street Environment Group + Distance Ruler Line
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(46, 34),
       new THREE.MeshStandardMaterial({ color: 0x1d2430, roughness: 0.92, metalness: 0.04 })
@@ -613,6 +631,10 @@
     const grid = new THREE.GridHelper(40, 40, 0x334155, 0x242e3d);
     grid.position.y = 0.004;
     scene.add(grid);
+
+    const envGroup = new THREE.Group();
+    envGroup.visible = false;
+    scene.add(envGroup);
 
     // Distance meter 3D line between Survivor frontline & Monster frontline
     const rulerGeo = new THREE.BufferGeometry().setFromPoints([
@@ -635,7 +657,7 @@
     // -----------------------------------------------------------------------
     // 3. GLB ASSET CACHE & WEAPON/VFX LOADER (cache-busted for freshly baked animations)
     // -----------------------------------------------------------------------
-    const ASSET_VER = '?v=3';
+    const ASSET_VER = '?v=5';
     const loader = new GLTFLoader();
     const gltfCache = new Map();
 
@@ -657,6 +679,45 @@
       });
     }
 
+    let envLoaded = false;
+    async function setEnvironmentMode(mode) {
+      if (mode === 'studio') {
+        envGroup.visible = false;
+        ground.visible = true;
+        grid.visible = true;
+        fireLightW.visible = false;
+        fireLightE.visible = false;
+        scene.background.setHex(0x161b24);
+        scene.fog.color.setHex(0x161b24);
+        scene.fog.density = 0.016;
+        return;
+      }
+
+      if (!envLoaded) {
+        try {
+          const gltf = await loadGLB('../output/environment/apocalypse_street_scene.glb');
+          const envScene = gltf.scene.clone(true);
+          prepShadows(envScene);
+          envGroup.add(envScene);
+          envLoaded = true;
+        } catch (err) {
+          console.error('Gagal memuat lingkungan apocalypse:', err);
+          showToast('Gagal memuat lingkungan apocalypse_street_scene.glb', '#ef4444', 3200);
+          return;
+        }
+      }
+
+      if (document.getElementById('sel-env-mode').value !== 'apocalypse') return;
+      envGroup.visible = true;
+      ground.visible = false;
+      grid.visible = false;
+      fireLightW.visible = true;
+      fireLightE.visible = true;
+      scene.background.setHex(0x1b1e26);
+      scene.fog.color.setHex(0x1b1e26);
+      scene.fog.density = 0.011;
+    }
+
     // -----------------------------------------------------------------------
     // 4. STATE & SIMULATION DATA
     // -----------------------------------------------------------------------
@@ -675,6 +736,8 @@
     const distVal = document.getElementById('dist-val');
     const selSurvBehavior = document.getElementById('sel-surv-behavior');
     const selCombatMode = document.getElementById('sel-combat-mode');
+    const selEnvMode = document.getElementById('sel-env-mode');
+    selEnvMode.addEventListener('change', () => setEnvironmentMode(selEnvMode.value));
     const chkVfx = document.getElementById('chk-vfx');
     const chkHud = document.getElementById('chk-hud');
     const chkRuler = document.getElementById('chk-ruler');
@@ -1595,14 +1658,21 @@
         fd.el.style.opacity = `${Math.max(0, fd.life / fd.maxLife)}`;
       }
 
+      if (fireLightW.visible) {
+        const t = performance.now() * 0.008;
+        fireLightW.intensity = 4.2 + Math.sin(t) * 0.75 + Math.sin(t * 2.3) * 0.35;
+        fireLightE.intensity = 4.2 + Math.cos(t * 1.1) * 0.75 + Math.sin(t * 2.7) * 0.35;
+      }
+
       controls.update();
       renderer.render(scene, camera);
     }
 
     animate();
 
-    // Boot with default duel: Jake vs Bile Juggernaut at 12m distance
+    // Boot with default duel: Jake vs Bile Juggernaut in Apocalypse Street at 12m distance
     if (window.location.protocol !== 'file:') {
+      setEnvironmentMode('apocalypse');
       loadPreset('jake_vs_bile');
     }
   </script>
