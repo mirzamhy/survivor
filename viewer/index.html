@@ -27,6 +27,10 @@
     #canvas-wrap {
       position: fixed; inset: 0; z-index: 1;
     }
+    #vignette-overlay {
+      position: fixed; inset: 0; z-index: 2; pointer-events: none;
+      background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 62%, rgba(10, 14, 22, 0.22) 100%);
+    }
     canvas { display: block; width: 100%; height: 100%; }
 
     /* Floating HTML Labels over 3D units */
@@ -225,6 +229,7 @@
 </head>
 <body>
   <div id="canvas-wrap"></div>
+  <div id="vignette-overlay"></div>
   <div id="labels-layer"></div>
 
   <button id="toggle-sidebar" title="Buka Panel Kontrol">☰ Menu</button>
@@ -290,9 +295,27 @@
             <option value="studio">Grid Studio Polos</option>
           </select>
         </div>
+        <div>
+          <label for="sel-weather">Suasana &amp; Pencahayaan Dunia</label>
+          <select id="sel-weather">
+            <option value="apoc_morning" selected>Pagi Berkabut Apocalypse (Terang &amp; Jelas)</option>
+            <option value="apoc_noon">Siang Cerah Berdebu (Detail Maksimal)</option>
+            <option value="apoc_overcast">Siang Mendung Berkabut (Silent Hill)</option>
+            <option value="apoc_sunset">Sore Senja Emas (Golden Hour)</option>
+            <option value="storm_rain">Mendung Hujan Ringan (Storm Terang)</option>
+          </select>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <label for="slider-brightness" style="margin-bottom:0;">Kecerahan (Brightness)</label>
+            <span id="bright-val" style="font-size:11px;font-weight:700;color:#f8fafc;">1.12x</span>
+          </div>
+          <input id="slider-brightness" type="range" min="0.75" max="1.75" step="0.05" value="1.12" />
+        </div>
         <label class="check-row"><input id="chk-vfx" type="checkbox" checked /> Tampilkan Efek 3D (VFX Serangan &amp; Tembakan)</label>
         <label class="check-row"><input id="chk-hud" type="checkbox" checked /> Tampilkan Bar HP &amp; Status di Atas Kepala</label>
         <label class="check-row"><input id="chk-ruler" type="checkbox" checked /> Tampilkan Garis Ukur Jarak</label>
+        <label class="check-row"><input id="chk-weather" type="checkbox" checked /> Efek Cuaca, Kabut &amp; Partikel Ringan</label>
       </div>
 
       <!-- 3. Tambah Karakter -->
@@ -443,35 +466,40 @@
       {
         id: 'mutant_bile_juggernaut', kind: 'mutant', label: '[Mutant] Bile Juggernaut (Tank Lambat)',
         glb: '../output/zombies/mutant_bile_juggernaut.glb', vfxGlb: '../output/vfx/vfx_mutant_bile_juggernaut.glb',
-        hp: 680, speed: 0.92, range: 2.25, skillRange: 3.1, cd: 1.85, dmg: 52, skillDmg: 75,
+        hp: 680, speed: 0.92, walkStride: 1.23, range: 2.85, skillRange: 3.9, cd: 1.85, dmg: 52, skillDmg: 75,
+        scale: [1.54, 1.44, 1.54], height: 3.35, shadowRad: 1.95, ringScale: 1.65, vfxScale: 1.45, bodyRadius: 0.80,
         vfxMode: 'ground_slam',
         anims: { idle: 'Idle_Lumber', walk: 'Walk_Stomp_Slow', run: 'Walk_Stomp_Slow', attack: 'Attack_Crusher_Swipe', skill: 'Skill_Seismic_Bile_Slam', hit: 'Attack_Crusher_Swipe', death: 'Death_Timber' }
       },
       {
         id: 'mutant_rafflesia', kind: 'mutant', label: '[Mutant] Rafflesia Blood-Flower',
         glb: '../output/zombies/mutant_rafflesia.glb', vfxGlb: '../output/vfx/vfx_mutant_rafflesia.glb',
-        hp: 360, speed: 1.38, range: 2.0, skillRange: 5.5, cd: 1.55, dmg: 32, skillDmg: 42,
+        hp: 360, speed: 1.18, walkStride: 0.91, range: 2.45, skillRange: 5.8, cd: 1.55, dmg: 32, skillDmg: 42,
+        scale: [1.32, 1.32, 1.32], height: 2.02, shadowRad: 1.50, ringScale: 1.50, vfxScale: 1.30, bodyRadius: 0.70,
         vfxMode: 'head_forward', vfxProjColor: 0x98e042,
         anims: { idle: 'Idle_Sway', walk: 'Crawl_Stalk', run: 'Crawl_Stalk', attack: 'Attack_Lunge_Bite', skill: 'Skill_Vine_Thrash', hit: 'Attack_Lunge_Bite', death: 'Death_Wilt' }
       },
       {
         id: 'mutant_scythe_stalker', kind: 'mutant', label: '[Mutant] Scythe Stalker (Cepat)',
         glb: '../output/zombies/mutant_scythe_stalker.glb', vfxGlb: '../output/vfx/vfx_mutant_scythe_stalker.glb',
-        hp: 290, speed: 2.55, range: 2.05, skillRange: 3.2, cd: 1.15, dmg: 36, skillDmg: 52,
+        hp: 290, speed: 2.55, walkStride: 1.94, range: 2.45, skillRange: 3.6, cd: 1.15, dmg: 36, skillDmg: 52,
+        scale: [1.22, 1.28, 1.26], height: 2.38, shadowRad: 1.05, ringScale: 1.22, vfxScale: 1.25, bodyRadius: 0.55,
         vfxMode: 'scythe_forward',
         anims: { idle: 'Idle_Hunch', walk: 'Run_Limp_Stalk', run: 'Run_Limp_Stalk', attack: 'Attack_Scythe_Clef', skill: 'Skill_Reaper_Lunge', hit: 'Attack_Scythe_Clef', death: 'Death_Collapse' }
       },
       {
         id: 'mutant_thorn_shroud', kind: 'mutant', label: '[Mutant] Thorn Shroud Seraph',
         glb: '../output/zombies/mutant_thorn_shroud.glb', vfxGlb: '../output/vfx/vfx_mutant_thorn_shroud.glb',
-        hp: 330, speed: 1.75, range: 2.1, skillRange: 6.2, cd: 1.45, dmg: 30, skillDmg: 44,
+        hp: 330, speed: 1.25, walkStride: 0.78, range: 2.45, skillRange: 6.5, cd: 1.45, dmg: 30, skillDmg: 44,
+        scale: [1.26, 1.30, 1.26], height: 3.05, shadowRad: 1.05, ringScale: 1.25, vfxScale: 1.25, bodyRadius: 0.55,
         vfxMode: 'head_forward', vfxProjColor: 0xa8dcff,
         anims: { idle: 'Idle_Veil_Sway', walk: 'Glide_Stilt_Stalk', run: 'Glide_Stilt_Stalk', attack: 'Attack_Blade_Sweep', skill: 'Skill_Razor_Bloom', hit: 'Attack_Blade_Sweep', death: 'Death_Shatter' }
       },
       {
         id: 'mutant_arachnid_maw', kind: 'mutant', label: '[Mutant] Arachnid Maw (Cepat + Asam)',
         glb: '../output/zombies/mutant_arachnid_maw.glb', vfxGlb: '../output/vfx/vfx_mutant_arachnid_maw.glb',
-        hp: 270, speed: 2.85, range: 1.85, skillRange: 6.5, cd: 1.10, dmg: 28, skillDmg: 38,
+        hp: 270, speed: 2.75, walkStride: 1.52, range: 2.25, skillRange: 6.8, cd: 1.10, dmg: 28, skillDmg: 38,
+        scale: [1.26, 1.24, 1.26], height: 1.55, shadowRad: 1.80, ringScale: 1.60, vfxScale: 1.25, bodyRadius: 0.70,
         vfxMode: 'head_forward', vfxProjColor: 0xa6f214,
         anims: { idle: 'Idle_Acid_Throb', walk: 'Skitter_Scuttle', run: 'Skitter_Scuttle', attack: 'Attack_Mandible', skill: 'Skill_Acid_Pounce', hit: 'Attack_Mandible', death: 'Death_Curl' }
       },
@@ -479,42 +507,48 @@
       {
         id: 'zombie_walker_shambler', kind: 'zombie', label: '[Zombie] Walker Shambler',
         glb: '../output/zombies/zombie_walker_shambler.glb', vfxGlb: '../output/vfx/vfx_impact_blood.glb',
-        hp: 150, speed: 1.15, range: 1.55, skillRange: 1.75, cd: 1.30, dmg: 18, skillDmg: 24,
+        hp: 150, speed: 0.98, walkStride: 0.97, range: 1.55, skillRange: 1.75, cd: 1.30, dmg: 18, skillDmg: 24,
+        scale: [1.0, 1.0, 1.0], height: 1.82, shadowRad: 0.78, ringScale: 1.0, vfxScale: 1.0, bodyRadius: 0.35,
         vfxMode: 'melee_bite',
         anims: { idle: 'Zombie_Idle_Sway', walk: 'Zombie_Walk_Shamble', run: 'Zombie_Walk_Shamble', attack: 'Zombie_Attack_Swipe', skill: 'Zombie_Bite_Grab', hit: 'Zombie_Hit_React', death: 'Zombie_Death_Fall' }
       },
       {
         id: 'zombie_crawler_stalker', kind: 'zombie', label: '[Zombie] Crawler Stalker (Feral Cepat)',
         glb: '../output/zombies/zombie_crawler_stalker.glb', vfxGlb: '../output/vfx/vfx_melee_slash.glb',
-        hp: 120, speed: 2.65, range: 1.50, skillRange: 2.6, cd: 1.00, dmg: 20, skillDmg: 28,
+        hp: 120, speed: 1.05, walkStride: 0.97, runStride: 1.48, sprintSpeed: 2.55, range: 1.50, skillRange: 2.6, cd: 1.00, dmg: 20, skillDmg: 28,
+        scale: [1.0, 1.0, 1.0], height: 1.82, shadowRad: 0.78, ringScale: 1.0, vfxScale: 1.0, bodyRadius: 0.35,
         vfxMode: 'melee_bite',
         anims: { idle: 'Zombie_Idle_Sway', walk: 'Zombie_Walk_Shamble', run: 'Zombie_Run_Feral', attack: 'Zombie_Attack_Swipe', skill: 'Zombie_Lunge', hit: 'Zombie_Hit_React', death: 'Zombie_Death_Fall' }
       },
       {
         id: 'zombie_banshee_screamer', kind: 'zombie', label: '[Zombie] Banshee Screamer (Sonic)',
         glb: '../output/zombies/zombie_banshee_screamer.glb', vfxGlb: '../output/vfx/vfx_mutant_thorn_shroud.glb',
-        hp: 140, speed: 2.25, range: 1.55, skillRange: 5.5, cd: 1.40, dmg: 16, skillDmg: 26,
+        hp: 140, speed: 1.05, walkStride: 0.97, runStride: 1.48, sprintSpeed: 2.30, range: 1.55, skillRange: 5.5, cd: 1.40, dmg: 16, skillDmg: 26,
+        scale: [1.0, 1.0, 1.0], height: 1.82, shadowRad: 0.78, ringScale: 1.0, vfxScale: 1.0, bodyRadius: 0.35,
         vfxMode: 'head_forward', vfxProjColor: 0x9ec4f0,
         anims: { idle: 'Zombie_Idle_Sway', walk: 'Zombie_Walk_Shamble', run: 'Zombie_Run_Feral', attack: 'Zombie_Attack_Swipe', skill: 'Skill_Sonic_Shriek', hit: 'Zombie_Hit_React', death: 'Zombie_Death_Fall' }
       },
       {
         id: 'zombie_spitter_hazmat', kind: 'zombie', label: '[Zombie] Spitter Hazmat (Ludah Asam)',
         glb: '../output/zombies/zombie_spitter_hazmat.glb', vfxGlb: '../output/vfx/vfx_mutant_arachnid_maw.glb',
-        hp: 165, speed: 1.25, range: 1.60, skillRange: 6.8, cd: 1.50, dmg: 16, skillDmg: 30,
+        hp: 165, speed: 1.02, walkStride: 0.97, range: 1.60, skillRange: 6.8, cd: 1.50, dmg: 16, skillDmg: 30,
+        scale: [1.0, 1.0, 1.0], height: 1.82, shadowRad: 0.78, ringScale: 1.0, vfxScale: 1.0, bodyRadius: 0.35,
         vfxMode: 'head_forward', vfxProjColor: 0x8ee038,
         anims: { idle: 'Zombie_Idle_Sway', walk: 'Zombie_Walk_Shamble', run: 'Zombie_Walk_Shamble', attack: 'Zombie_Attack_Swipe', skill: 'Skill_Acid_Spit', hit: 'Zombie_Hit_React', death: 'Zombie_Death_Fall' }
       },
       {
         id: 'zombie_bloater_boomer', kind: 'zombie', label: '[Zombie] Bloater Boomer (Gas Meledak)',
         glb: '../output/zombies/zombie_bloater_boomer.glb', vfxGlb: '../output/vfx/vfx_mutant_bile_juggernaut.glb',
-        hp: 260, speed: 0.95, range: 1.85, skillRange: 2.3, cd: 1.65, dmg: 24, skillDmg: 48,
+        hp: 260, speed: 0.90, walkStride: 1.16, range: 1.95, skillRange: 2.5, cd: 1.65, dmg: 24, skillDmg: 48,
+        scale: [1.14, 1.08, 1.14], height: 2.08, shadowRad: 0.98, ringScale: 1.18, vfxScale: 1.15, bodyRadius: 0.46,
         vfxMode: 'ground_slam',
         anims: { idle: 'Zombie_Idle_Sway', walk: 'Zombie_Walk_Shamble', run: 'Zombie_Walk_Shamble', attack: 'Zombie_Attack_Swipe', skill: 'Skill_Volatile_Detonate', hit: 'Zombie_Hit_React', death: 'Zombie_Death_Fall' }
       },
       {
         id: 'zombie_juggernaut_brute', kind: 'zombie', label: '[Zombie] Juggernaut Brute SWAT',
         glb: '../output/zombies/zombie_juggernaut_brute.glb', vfxGlb: '../output/vfx/vfx_mutant_bile_juggernaut.glb',
-        hp: 460, speed: 1.05, range: 2.05, skillRange: 2.7, cd: 1.75, dmg: 40, skillDmg: 58,
+        hp: 460, speed: 0.98, walkStride: 1.32, range: 2.25, skillRange: 2.9, cd: 1.75, dmg: 40, skillDmg: 58,
+        scale: [1.08, 1.08, 1.08], height: 2.48, shadowRad: 1.15, ringScale: 1.25, vfxScale: 1.18, bodyRadius: 0.46,
         vfxMode: 'ground_slam',
         anims: { idle: 'Zombie_Idle_Sway', walk: 'Zombie_Walk_Shamble', run: 'Zombie_Walk_Shamble', attack: 'Zombie_Attack_Swipe', skill: 'Skill_Ground_Slam', hit: 'Zombie_Hit_React', death: 'Zombie_Death_Fall' }
       },
@@ -563,11 +597,11 @@
     }
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.35));
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    renderer.toneMappingExposure = 1.08;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     wrap.appendChild(renderer.domElement);
@@ -576,7 +610,7 @@
     scene.background = new THREE.Color(0x161b24);
     scene.fog = new THREE.FogExp2(0x161b24, 0.016);
 
-    const camera = new THREE.PerspectiveCamera(44, window.innerWidth / window.innerHeight, 0.1, 140);
+    const camera = new THREE.PerspectiveCamera(44, window.innerWidth / window.innerHeight, 0.1, 280);
     camera.position.set(0, 6.2, 13.5);
 
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -585,39 +619,457 @@
     controls.target.set(0, 1.0, 0);
     controls.maxPolarAngle = Math.PI * 0.485;
     controls.minDistance = 2.0;
-    controls.maxDistance = 42.0;
+    controls.maxDistance = 48.0;
 
-    // 3-Point Horror Tactical Lighting
+    // 5-Light Figure-Ground Rig: Front-3/4 Key + Back-Rim Separation + Hemi Bounce + 2 Fire Barrels
     const hemi = new THREE.HemisphereLight(0xcbd5e1, 0x1e2430, 1.15);
     scene.add(hemi);
 
     const keyLight = new THREE.DirectionalLight(0xfff4e0, 2.35);
     keyLight.position.set(10, 18, 12);
     keyLight.castShadow = true;
-    keyLight.shadow.mapSize.set(2048, 2048);
+    keyLight.shadow.mapSize.set(1024, 1024);
     keyLight.shadow.camera.near = 1;
-    keyLight.shadow.camera.far = 56;
-    keyLight.shadow.camera.left = -22;
-    keyLight.shadow.camera.right = 22;
-    keyLight.shadow.camera.top = 22;
-    keyLight.shadow.camera.bottom = -22;
-    keyLight.shadow.bias = -0.0005;
+    keyLight.shadow.camera.far = 62;
+    keyLight.shadow.camera.left = -20;
+    keyLight.shadow.camera.right = 20;
+    keyLight.shadow.camera.top = 16;
+    keyLight.shadow.camera.bottom = -16;
+    keyLight.shadow.bias = -0.0004;
+    keyLight.shadow.normalBias = 0.035;
     scene.add(keyLight);
 
-    const rimLight = new THREE.DirectionalLight(0x60a5fa, 0.95);
+    const rimLight = new THREE.DirectionalLight(0x60a5fa, 1.15);
     rimLight.position.set(-10, 8, -12);
     scene.add(rimLight);
 
     // Warm fire barrel accent lights (active in Apocalypse Street mode)
-    const fireLightW = new THREE.PointLight(0xff7722, 4.5, 11.0, 1.4);
+    const fireLightW = new THREE.PointLight(0xff7722, 5.5, 10.0, 1.6);
     fireLightW.position.set(-4.4, 1.45, -3.65);
     fireLightW.visible = false;
     scene.add(fireLightW);
 
-    const fireLightE = new THREE.PointLight(0xff7722, 4.5, 11.0, 1.4);
+    const fireLightE = new THREE.PointLight(0xff7722, 5.5, 10.0, 1.6);
     fireLightE.position.set(4.6, 1.45, -3.75);
     fireLightE.visible = false;
     scene.add(fireLightE);
+
+    // -----------------------------------------------------------------------
+    // 2B. PROCEDURAL SKY DOME, LINEAR PMREM IBL & DAYLIGHT/WEATHER PRESETS
+    // -----------------------------------------------------------------------
+    const WEATHER_PRESETS = {
+      apoc_morning: {
+        label: 'Pagi Berkabut Apocalypse',
+        topColor: 0x5d82a8, midColor: 0x9ab4c9, horizonColor: 0xc8c5bc, groundColor: 0x6b6052,
+        sunColor: 0xfff3d6, sunDir: [-0.45, 0.44, 0.77], sunSize: 0.045,
+        cloudColor: 0xe6eaef, cloudIntensity: 0.42,
+        fogColor: 0xc8c5bc, fogDensity: 0.0110,
+        hemiSky: 0xeaf2fa, hemiGround: 0x7d6e5d, hemiInt: 1.48,
+        keyColor: 0xfff5e4, keyPos: [-14, 22, 16], keyInt: 2.55,
+        rimColor: 0xb8d8ff, rimPos: [16, 14, -12], rimInt: 1.25,
+        fireInt: 2.6, fireHaloAlpha: 0.28, lampAlpha: 0.0, coneAlpha: 0.0,
+        exposure: 1.12, envInt: 1.05,
+        asphaltRough: 0.80, asphaltEnv: 0.55, puddleRough: 0.05, puddleEnv: 1.80,
+        rain: false, lightning: false, mistAlpha: 0.55,
+        particleMode: 'ash_embers', particleCount: 70, particleColor: 0xffe4b8, particleSize: 0.11,
+      },
+      apoc_noon: {
+        label: 'Siang Cerah Berdebu',
+        topColor: 0x3b72b5, midColor: 0x82accf, horizonColor: 0xd2cbbd, groundColor: 0x7a6c5a,
+        sunColor: 0xfff8e6, sunDir: [-0.36, 0.62, 0.69], sunSize: 0.042,
+        cloudColor: 0xf4f6f8, cloudIntensity: 0.36,
+        fogColor: 0xd2cbbd, fogDensity: 0.0085,
+        hemiSky: 0xf4f8fc, hemiGround: 0x8a7965, hemiInt: 1.62,
+        keyColor: 0xfff8ed, keyPos: [-12, 28, 15], keyInt: 2.90,
+        rimColor: 0xd6e8ff, rimPos: [16, 16, -12], rimInt: 1.15,
+        fireInt: 2.0, fireHaloAlpha: 0.22, lampAlpha: 0.0, coneAlpha: 0.0,
+        exposure: 1.14, envInt: 1.10,
+        asphaltRough: 0.84, asphaltEnv: 0.50, puddleRough: 0.05, puddleEnv: 1.75,
+        rain: false, lightning: false, mistAlpha: 0.35,
+        particleMode: 'ash_embers', particleCount: 55, particleColor: 0xf5ead8, particleSize: 0.10,
+      },
+      apoc_overcast: {
+        label: 'Siang Mendung Berkabut',
+        topColor: 0x606e7e, midColor: 0x8a99a8, horizonColor: 0xb2bcc4, groundColor: 0x52575e,
+        sunColor: 0xeaf0f5, sunDir: [-0.35, 0.45, 0.82], sunSize: 0.050,
+        cloudColor: 0xc2ccd6, cloudIntensity: 0.56,
+        fogColor: 0xb2bcc4, fogDensity: 0.0155,
+        hemiSky: 0xdde6ee, hemiGround: 0x5c626b, hemiInt: 1.68,
+        keyColor: 0xf5f8fb, keyPos: [-11, 24, 15], keyInt: 1.90,
+        rimColor: 0xc4e2f8, rimPos: [15, 14, -12], rimInt: 1.15,
+        fireInt: 3.6, fireHaloAlpha: 0.36, lampAlpha: 0.0, coneAlpha: 0.0,
+        exposure: 1.10, envInt: 1.00,
+        asphaltRough: 0.82, asphaltEnv: 0.52, puddleRough: 0.05, puddleEnv: 1.85,
+        rain: false, lightning: false, mistAlpha: 0.78,
+        particleMode: 'ash_embers', particleCount: 130, particleColor: 0xdbe2ea, particleSize: 0.12,
+      },
+      apoc_sunset: {
+        label: 'Sore Senja Emas',
+        topColor: 0x2c4266, midColor: 0x9c5c46, horizonColor: 0xd48e61, groundColor: 0x4f382b,
+        sunColor: 0xffc778, sunDir: [-0.66, 0.24, -0.71], sunSize: 0.062,
+        cloudColor: 0xc27756, cloudIntensity: 0.48,
+        fogColor: 0xd48e61, fogDensity: 0.0115,
+        hemiSky: 0xebc3a4, hemiGround: 0x594234, hemiInt: 1.18,
+        keyColor: 0xffd2a6, keyPos: [-20, 14, 16], keyInt: 2.65,
+        rimColor: 0x99c2ff, rimPos: [16, 13, -12], rimInt: 1.35,
+        fireInt: 5.4, fireHaloAlpha: 0.48, lampAlpha: 0.16, coneAlpha: 0.08,
+        exposure: 1.10, envInt: 0.98,
+        asphaltRough: 0.78, asphaltEnv: 0.60, puddleRough: 0.05, puddleEnv: 2.00,
+        rain: false, lightning: false, mistAlpha: 0.58,
+        particleMode: 'ash_embers', particleCount: 110, particleColor: 0xffae5c, particleSize: 0.13,
+      },
+      storm_rain: {
+        label: 'Mendung Hujan Ringan',
+        topColor: 0x354457, midColor: 0x55677a, horizonColor: 0x7b8b9c, groundColor: 0x3b434d,
+        sunColor: 0xd6e6ff, sunDir: [-0.42, 0.36, 0.83], sunSize: 0.038,
+        cloudColor: 0x8192a3, cloudIntensity: 0.55,
+        fogColor: 0x7b8b9c, fogDensity: 0.0145,
+        hemiSky: 0xc4d4e6, hemiGround: 0x434d57, hemiInt: 1.35,
+        keyColor: 0xe6f0ff, keyPos: [-12, 22, 15], keyInt: 1.95,
+        rimColor: 0xa8d4ff, rimPos: [15, 13, -12], rimInt: 1.40,
+        fireInt: 5.8, fireHaloAlpha: 0.48, lampAlpha: 0.18, coneAlpha: 0.09,
+        exposure: 1.10, envInt: 1.05,
+        asphaltRough: 0.48, asphaltEnv: 1.05, puddleRough: 0.04, puddleEnv: 2.20,
+        rain: true, lightning: true, mistAlpha: 0.72,
+        particleMode: 'embers', particleCount: 60, particleColor: 0xff9a44, particleSize: 0.14,
+      },
+    };
+
+    const skyUniforms = {
+      uTopColor: { value: new THREE.Color(0x5d82a8) },
+      uMidColor: { value: new THREE.Color(0x9ab4c9) },
+      uHorizonColor: { value: new THREE.Color(0xc8c5bc) },
+      uGroundColor: { value: new THREE.Color(0x6b6052) },
+      uSunColor: { value: new THREE.Color(0xfff3d6) },
+      uSunDir: { value: new THREE.Vector3(-0.45, 0.44, 0.77).normalize() },
+      uSunSize: { value: 0.045 },
+      uCloudColor: { value: new THREE.Color(0xe6eaef) },
+      uCloudIntensity: { value: 0.42 },
+      uTime: { value: 0.0 },
+      uFlash: { value: 0.0 },
+    };
+
+    const skyVertShader = /* glsl */`
+      varying vec3 vWorldDir;
+      void main() {
+        vWorldDir = position;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `;
+
+    const skyFragBody = /* glsl */`
+      uniform vec3 uTopColor;
+      uniform vec3 uMidColor;
+      uniform vec3 uHorizonColor;
+      uniform vec3 uGroundColor;
+      uniform vec3 uSunColor;
+      uniform vec3 uSunDir;
+      uniform float uSunSize;
+      uniform vec3 uCloudColor;
+      uniform float uCloudIntensity;
+      uniform float uTime;
+      uniform float uFlash;
+      varying vec3 vWorldDir;
+
+      float hash21(vec2 p) {
+        p = fract(p * vec2(123.34, 456.21));
+        p += dot(p, p + 45.32);
+        return fract(p.x * p.y);
+      }
+      float noise2(vec2 p) {
+        vec2 i = floor(p);
+        vec2 f = fract(p);
+        f = f * f * (3.0 - 2.0 * f);
+        float a = hash21(i);
+        float b = hash21(i + vec2(1.0, 0.0));
+        float c = hash21(i + vec2(0.0, 1.0));
+        float d = hash21(i + vec2(1.0, 1.0));
+        return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+      }
+
+      void main() {
+        vec3 dir = normalize(vWorldDir);
+        float h = clamp(dir.y, -1.0, 1.0);
+        vec3 col;
+        if (h >= 0.0) {
+          float tMid = smoothstep(0.0, 0.24, h);
+          float tTop = smoothstep(0.18, 0.78, h);
+          col = mix(uHorizonColor, uMidColor, tMid);
+          col = mix(col, uTopColor, tTop);
+        } else {
+          col = mix(uHorizonColor, uGroundColor, smoothstep(0.0, -0.25, h));
+        }
+
+        float sunDot = max(dot(dir, normalize(uSunDir)), 0.0);
+        float halo = pow(sunDot, 10.0) * 0.42 + pow(sunDot, 48.0) * 0.55;
+        float disc = smoothstep(cos(uSunSize * 1.45), cos(uSunSize * 0.65), sunDot);
+        if (h > -0.04) {
+          float vis = smoothstep(-0.04, 0.06, h);
+          col += uSunColor * (halo * 0.65 + disc * 1.15) * vis;
+        }
+
+        // Lightweight 2-octave drifting cloud wisps
+        if (dir.y > 0.01 && uCloudIntensity > 0.01) {
+          vec2 uv = dir.xz / (dir.y + 0.18);
+          vec2 wind = vec2(uTime * 0.014, uTime * 0.005);
+          float c1 = noise2(uv * 0.90 + wind);
+          float c2 = noise2(uv * 2.10 - wind * 1.4 + vec2(4.2, 1.9));
+          float cloudMask = smoothstep(0.46, 0.84, c1 * 0.65 + c2 * 0.35);
+          float elevFade = smoothstep(0.01, 0.22, dir.y) * smoothstep(0.96, 0.30, dir.y);
+          vec3 cloudCol = mix(uCloudColor, uSunColor * 0.92, pow(sunDot, 6.0) * 0.40);
+          cloudCol += vec3(0.55, 0.72, 1.0) * uFlash * (0.45 + 0.55 * c2);
+          col = mix(col, cloudCol, cloudMask * elevFade * uCloudIntensity);
+        }
+
+        col += vec3(0.28, 0.38, 0.56) * uFlash * smoothstep(-0.05, 0.45, dir.y);
+        gl_FragColor = vec4(col, 1.0);
+    `;
+
+    // Screen sky dome encodes ACES + sRGB so horizon color seamlessly matches scene.fog
+    const skyMat = new THREE.ShaderMaterial({
+      uniforms: skyUniforms,
+      side: THREE.BackSide,
+      depthWrite: false,
+      fog: false,
+      vertexShader: skyVertShader,
+      fragmentShader: skyFragBody + /* glsl */`
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }
+      `,
+    });
+
+    // Linear HDR sky sphere exclusively for PMREMGenerator IBL reflections
+    const skyEnvMat = new THREE.ShaderMaterial({
+      uniforms: skyUniforms,
+      side: THREE.BackSide,
+      depthWrite: false,
+      fog: false,
+      toneMapped: false,
+      vertexShader: skyVertShader,
+      fragmentShader: skyFragBody + /* glsl */`
+      }
+      `,
+    });
+
+    const skyDome = new THREE.Mesh(new THREE.SphereGeometry(210, 32, 20), skyMat);
+    skyDome.visible = false;
+    skyDome.frustumCulled = false;
+    scene.add(skyDome);
+
+    const pmremGen = new THREE.PMREMGenerator(renderer);
+    const skyEnvScene = new THREE.Scene();
+    const skyEnvMesh = new THREE.Mesh(new THREE.SphereGeometry(20, 24, 14), skyEnvMat);
+    skyEnvScene.add(skyEnvMesh);
+    let currentEnvRT = null;
+
+    function makeRadialTex(innerRgba, midRgba, outerRgba, size = 128) {
+      const c = document.createElement('canvas');
+      c.width = size; c.height = size;
+      const ctx = c.getContext('2d');
+      const g = ctx.createRadialGradient(size / 2, size / 2, 1, size / 2, size / 2, size / 2);
+      g.addColorStop(0.0, innerRgba);
+      g.addColorStop(0.42, midRgba);
+      g.addColorStop(1.0, outerRgba);
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, size, size);
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+
+    function makeMistCloudTex(size = 192) {
+      const c = document.createElement('canvas');
+      c.width = size; c.height = size;
+      const ctx = c.getContext('2d');
+      const puffs = [
+        [0.50, 0.52, 0.44, 0.24], [0.34, 0.48, 0.30, 0.22],
+        [0.66, 0.50, 0.30, 0.20], [0.48, 0.38, 0.28, 0.18],
+        [0.54, 0.64, 0.32, 0.18],
+      ];
+      for (const [px, py, pr, pa] of puffs) {
+        const g = ctx.createRadialGradient(px * size, py * size, 2, px * size, py * size, pr * size);
+        g.addColorStop(0.0, `rgba(215, 228, 245, ${pa})`);
+        g.addColorStop(0.55, `rgba(185, 204, 224, ${pa * 0.42})`);
+        g.addColorStop(1.0, 'rgba(185, 204, 224, 0.0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, size, size);
+      }
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+
+    function makeConeGradTex(size = 128) {
+      const c = document.createElement('canvas');
+      c.width = 16; c.height = size;
+      const ctx = c.getContext('2d');
+      const g = ctx.createLinearGradient(0, 0, 0, size);
+      g.addColorStop(0.0, 'rgba(255, 210, 140, 0.95)');
+      g.addColorStop(0.28, 'rgba(255, 196, 120, 0.42)');
+      g.addColorStop(1.0, 'rgba(255, 180, 100, 0.0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 16, size);
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+
+    const softGlowTex = makeRadialTex('rgba(255,255,255,1)', 'rgba(255,255,255,0.45)', 'rgba(255,255,255,0)', 128);
+    const contactShadowTex = makeRadialTex('rgba(6,9,14,0.72)', 'rgba(6,9,14,0.34)', 'rgba(6,9,14,0)', 128);
+    const mistCloudTex = makeMistCloudTex(192);
+    const coneGradTex = makeConeGradTex(128);
+
+    // Zero-light-cost warm ground light-pool decals under streetlamps
+    const lampPoolGeo = new THREE.PlaneGeometry(4.8, 4.8);
+    const lampPoolMatW = new THREE.MeshBasicMaterial({
+      map: softGlowTex, color: 0xffc168, transparent: true, opacity: 0.22,
+      blending: THREE.AdditiveBlending, depthWrite: false, fog: false,
+    });
+    const lampPoolMatE = lampPoolMatW.clone();
+    const lampPoolW = new THREE.Mesh(lampPoolGeo, lampPoolMatW);
+    lampPoolW.rotation.x = -Math.PI / 2;
+    lampPoolW.position.set(-7.85, 0.011, -2.05);
+    lampPoolW.visible = false;
+    scene.add(lampPoolW);
+
+    const lampPoolE = new THREE.Mesh(lampPoolGeo, lampPoolMatE);
+    lampPoolE.rotation.x = -Math.PI / 2;
+    lampPoolE.position.set(5.45, 0.011, -2.10);
+    lampPoolE.visible = false;
+    scene.add(lampPoolE);
+
+    const atmosphereGroup = new THREE.Group();
+    atmosphereGroup.visible = false;
+    scene.add(atmosphereGroup);
+
+    // Volumetric light cones under broken streetlamps
+    const coneGeo = new THREE.CylinderGeometry(0.14, 2.45, 4.95, 14, 1, true);
+    const coneMatW = new THREE.MeshBasicMaterial({
+      map: coneGradTex, color: 0xffc670, transparent: true, opacity: 0.11,
+      blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false,
+    });
+    const coneMatE = coneMatW.clone();
+    const lampConeW = new THREE.Mesh(coneGeo, coneMatW);
+    lampConeW.position.set(-7.85, 2.48, -2.55);
+    lampConeW.rotation.x = 0.20;
+    atmosphereGroup.add(lampConeW);
+
+    const lampConeE = new THREE.Mesh(coneGeo, coneMatE);
+    lampConeE.position.set(5.45, 2.48, -2.60);
+    lampConeE.rotation.x = 0.20;
+    atmosphereGroup.add(lampConeE);
+
+    // Fire barrel additive halos
+    const fireHaloMatW = new THREE.SpriteMaterial({
+      map: softGlowTex, color: 0xff7b1c, transparent: true, opacity: 0.56,
+      blending: THREE.AdditiveBlending, depthWrite: false, fog: false,
+    });
+    const fireHaloMatE = fireHaloMatW.clone();
+    const fireHaloW = new THREE.Sprite(fireHaloMatW);
+    fireHaloW.position.set(-4.4, 1.18, -3.65);
+    fireHaloW.scale.set(2.6, 2.6, 1);
+    atmosphereGroup.add(fireHaloW);
+
+    const fireHaloE = new THREE.Sprite(fireHaloMatE);
+    fireHaloE.position.set(4.6, 1.18, -3.75);
+    fireHaloE.scale.set(2.6, 2.6, 1);
+    atmosphereGroup.add(fireHaloE);
+
+    // Batched rising smoke plumes (1 THREE.Points draw call for fire barrels & wrecked car hood)
+    const smokeEmitters = [
+      { x: -4.4, y: 1.25, z: -3.65 },
+      { x:  4.6, y: 1.25, z: -3.75 },
+      { x: -6.8, y: 0.85, z: -4.20 },
+    ];
+    const SMOKE_COUNT = 18;
+    const smokePos = new Float32Array(SMOKE_COUNT * 3);
+    const smokeMeta = [];
+    for (let i = 0; i < SMOKE_COUNT; i++) {
+      const em = smokeEmitters[i % smokeEmitters.length];
+      smokePos[i * 3 + 0] = em.x;
+      smokePos[i * 3 + 1] = em.y + (i / SMOKE_COUNT) * 3.5;
+      smokePos[i * 3 + 2] = em.z;
+      smokeMeta.push({
+        emitter: em,
+        age: Math.random() * 4.0,
+        maxAge: 3.4 + Math.random() * 1.4,
+        vx: 0.20 + Math.random() * 0.22,
+        vz: (Math.random() - 0.5) * 0.14,
+      });
+    }
+    const smokeGeo = new THREE.BufferGeometry();
+    smokeGeo.setAttribute('position', new THREE.BufferAttribute(smokePos, 3));
+    const smokeMat = new THREE.PointsMaterial({
+      map: mistCloudTex, color: 0x8a929c, size: 2.0, transparent: true, opacity: 0.16,
+      depthWrite: false, sizeAttenuation: true, fog: true,
+    });
+    const smokePoints = new THREE.Points(smokeGeo, smokeMat);
+    smokePoints.frustumCulled = false;
+    atmosphereGroup.add(smokePoints);
+
+    // Lightweight background haze cards behind street ruins (zero foreground overdraw)
+    const mistLayers = [];
+    for (let i = 0; i < 5; i++) {
+      const mMat = new THREE.SpriteMaterial({
+        map: mistCloudTex, color: 0x94a3b8, transparent: true, opacity: 0.14,
+        depthWrite: false, fog: true,
+      });
+      const sp = new THREE.Sprite(mMat);
+      sp.position.set(-28 + i * 14, 1.9 + (i % 2) * 0.6, -15.5 - (i % 2) * 5.0);
+      sp.scale.set(22, 7.2, 1);
+      atmosphereGroup.add(sp);
+      mistLayers.push({ sprite: sp, baseAlpha: 0.14, spd: 0.28 + (i % 3) * 0.08 });
+    }
+
+    // Lightweight storm rain streaks (420 lines, 1 draw call, tight arena bounds)
+    const RAIN_COUNT = 420;
+    const rainPos = new Float32Array(RAIN_COUNT * 6);
+    const rainSeeds = new Float32Array(RAIN_COUNT * 3);
+    for (let i = 0; i < RAIN_COUNT; i++) {
+      const rx = (Math.random() - 0.5) * 40;
+      const ry = Math.random() * 14;
+      const rz = (Math.random() - 0.5) * 24;
+      rainSeeds[i * 3 + 0] = rx;
+      rainSeeds[i * 3 + 1] = ry;
+      rainSeeds[i * 3 + 2] = rz;
+      const i6 = i * 6;
+      rainPos[i6 + 0] = rx; rainPos[i6 + 1] = ry; rainPos[i6 + 2] = rz;
+      rainPos[i6 + 3] = rx - 0.10; rainPos[i6 + 4] = ry + 0.78; rainPos[i6 + 5] = rz - 0.03;
+    }
+    const rainGeo = new THREE.BufferGeometry();
+    rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
+    const rainMat = new THREE.LineBasicMaterial({
+      color: 0xaec8e8, transparent: true, opacity: 0.34, depthWrite: false, fog: true,
+    });
+    const rainLines = new THREE.LineSegments(rainGeo, rainMat);
+    rainLines.frustumCulled = false;
+    atmosphereGroup.add(rainLines);
+
+    // Lightweight floating particles (embers / ash / bioluminescent spores)
+    const PARTICLE_MAX = 180;
+    const partPos = new Float32Array(PARTICLE_MAX * 3);
+    const partMeta = [];
+    for (let i = 0; i < PARTICLE_MAX; i++) {
+      partPos[i * 3 + 0] = (Math.random() - 0.5) * 34;
+      partPos[i * 3 + 1] = Math.random() * 6.5;
+      partPos[i * 3 + 2] = -9 + Math.random() * 16;
+      partMeta.push({
+        phase: Math.random() * Math.PI * 2,
+        spdY: 0.35 + Math.random() * 1.10,
+        spdX: 0.25 + Math.random() * 0.50,
+        barrelIdx: i % 2,
+      });
+    }
+    const partGeo = new THREE.BufferGeometry();
+    partGeo.setAttribute('position', new THREE.BufferAttribute(partPos, 3));
+    const partMat = new THREE.PointsMaterial({
+      map: softGlowTex, color: 0xffa654, size: 0.14, transparent: true, opacity: 0.85,
+      blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true,
+    });
+    const floatPoints = new THREE.Points(partGeo, partMat);
+    floatPoints.frustumCulled = false;
+    atmosphereGroup.add(floatPoints);
 
     // Arena Ground + Grid + Apocalypse Street Environment Group + Distance Ruler Line
     const ground = new THREE.Mesh(
@@ -645,10 +1097,8 @@
     scene.add(rulerLine);
 
     const ringGeo = new THREE.RingGeometry(0.46, 0.56, 24);
-    const selectRing = new THREE.Mesh(
-      ringGeo,
-      new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide })
-    );
+    const selectRingMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide });
+    const selectRing = new THREE.Mesh(ringGeo, selectRingMat);
     selectRing.rotation.x = -Math.PI / 2;
     selectRing.position.y = 0.015;
     selectRing.visible = false;
@@ -657,7 +1107,7 @@
     // -----------------------------------------------------------------------
     // 3. GLB ASSET CACHE & WEAPON/VFX LOADER (cache-busted for freshly baked animations)
     // -----------------------------------------------------------------------
-    const ASSET_VER = '?v=5';
+    const ASSET_VER = '?v=11';
     const loader = new GLTFLoader();
     const gltfCache = new Map();
 
@@ -669,27 +1119,174 @@
       return gltfCache.get(fullUrl);
     }
 
-    function prepShadows(root) {
+    function prepShadows(root, envBoost = 1.25) {
       root.traverse((o) => {
         if (o.isMesh || o.isSkinnedMesh) {
           o.castShadow = true;
           o.receiveShadow = true;
           o.frustumCulled = false; // avoids skinned bounding-box culling during leaps/slams
+          const mats = Array.isArray(o.material) ? o.material : [o.material];
+          for (const mt of mats) {
+            if (mt && 'envMapIntensity' in mt) mt.envMapIntensity = envBoost;
+          }
         }
       });
     }
 
+    const contactShadowGeo = new THREE.PlaneGeometry(1, 1);
+    const contactShadowMat = new THREE.MeshBasicMaterial({
+      map: contactShadowTex, transparent: true, opacity: 0.58, depthWrite: false,
+      polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1,
+    });
+    function addContactShadow(group, radius = 0.85) {
+      const mat = contactShadowMat.clone();
+      const decal = new THREE.Mesh(contactShadowGeo, mat);
+      decal.rotation.x = -Math.PI / 2;
+      decal.position.y = 0.012;
+      decal.scale.set(radius * 2.0, radius * 2.0, 1);
+      decal.castShadow = false;
+      decal.receiveShadow = false;
+      group.add(decal);
+      return { mesh: decal, mat, baseRad: radius, baseOpacity: mat.opacity };
+    }
+
     let envLoaded = false;
+    const envMaterialRefs = {};
+    let activeWeatherId = 'apoc_morning';
+    let lightningState = { timer: 4.5, flash: 0.0 };
+
+    function rebuildEnvReflections(preset) {
+      skyUniforms.uTopColor.value.setHex(preset.topColor);
+      skyUniforms.uMidColor.value.setHex(preset.midColor);
+      skyUniforms.uHorizonColor.value.setHex(preset.horizonColor);
+      skyUniforms.uGroundColor.value.setHex(preset.groundColor);
+      skyUniforms.uSunColor.value.setHex(preset.sunColor);
+      skyUniforms.uSunDir.value.set(...preset.sunDir).normalize();
+      skyUniforms.uSunSize.value = preset.sunSize;
+      skyUniforms.uCloudColor.value.setHex(preset.cloudColor);
+      skyUniforms.uCloudIntensity.value = preset.cloudIntensity;
+
+      const nextRT = pmremGen.fromScene(skyEnvScene, 0.04);
+      scene.environment = nextRT.texture;
+      scene.environmentIntensity = preset.envInt;
+      if (currentEnvRT) currentEnvRT.dispose();
+      currentEnvRT = nextRT;
+    }
+
+    function resetParticlePoolForPreset(p) {
+      partMat.color.setHex(p.particleColor);
+      partMat.size = p.particleSize;
+      partMat.blending = p.particleMode === 'ash_embers' ? THREE.NormalBlending : THREE.AdditiveBlending;
+      partGeo.setDrawRange(0, Math.min(PARTICLE_MAX, p.particleCount));
+      for (let i = 0; i < PARTICLE_MAX; i++) {
+        if (p.particleMode === 'embers') {
+          const bx = i % 2 === 0 ? -4.4 : 4.6;
+          const bz = i % 2 === 0 ? -3.65 : -3.75;
+          partPos[i * 3 + 0] = bx + (Math.random() - 0.5) * 1.4;
+          partPos[i * 3 + 1] = 0.95 + Math.random() * 4.5;
+          partPos[i * 3 + 2] = bz + (Math.random() - 0.5) * 1.4;
+        } else {
+          partPos[i * 3 + 0] = (Math.random() - 0.5) * 34;
+          partPos[i * 3 + 1] = 0.25 + Math.random() * 6.5;
+          partPos[i * 3 + 2] = -9 + Math.random() * 16;
+        }
+      }
+      partGeo.attributes.position.needsUpdate = true;
+    }
+
+    function applyWeatherPreset(weatherId) {
+      activeWeatherId = WEATHER_PRESETS[weatherId] ? weatherId : 'apoc_morning';
+      if (document.getElementById('sel-env-mode').value !== 'apocalypse') return;
+      const p = WEATHER_PRESETS[activeWeatherId];
+
+      skyDome.visible = true;
+      rebuildEnvReflections(p);
+
+      scene.background.setHex(p.fogColor);
+      scene.fog.color.setHex(p.fogColor);
+      scene.fog.density = p.fogDensity;
+      renderer.toneMappingExposure = p.exposure;
+      if (sliderBrightness && brightVal) {
+        sliderBrightness.value = p.exposure.toFixed(2);
+        brightVal.textContent = `${p.exposure.toFixed(2)}x`;
+      }
+
+      hemi.color.setHex(p.hemiSky);
+      hemi.groundColor.setHex(p.hemiGround);
+      hemi.intensity = p.hemiInt;
+
+      keyLight.color.setHex(p.keyColor);
+      keyLight.position.set(...p.keyPos);
+      keyLight.intensity = p.keyInt;
+
+      rimLight.color.setHex(p.rimColor);
+      rimLight.position.set(...p.rimPos);
+      rimLight.intensity = p.rimInt;
+
+      const hasPool = p.lampAlpha > 0.005;
+      lampPoolW.visible = hasPool;
+      lampPoolE.visible = hasPool;
+      lampPoolMatW.opacity = p.lampAlpha;
+      lampPoolMatE.opacity = p.lampAlpha;
+
+      if (envMaterialRefs.Mat_Env_AsphaltCracked) {
+        envMaterialRefs.Mat_Env_AsphaltCracked.roughness = p.asphaltRough;
+        envMaterialRefs.Mat_Env_AsphaltCracked.envMapIntensity = p.asphaltEnv;
+      }
+      if (envMaterialRefs.Mat_Env_PuddleWet) {
+        envMaterialRefs.Mat_Env_PuddleWet.roughness = p.puddleRough;
+        envMaterialRefs.Mat_Env_PuddleWet.envMapIntensity = p.puddleEnv;
+      }
+      if (envMaterialRefs.Mat_Env_GlassBroken) {
+        envMaterialRefs.Mat_Env_GlassBroken.envMapIntensity = 1.65;
+      }
+
+      const showFx = chkWeather.checked;
+      atmosphereGroup.visible = showFx;
+      rainLines.visible = showFx && p.rain;
+      const hasCone = showFx && p.coneAlpha > 0.005;
+      lampConeW.visible = hasCone;
+      lampConeE.visible = hasCone;
+      coneMatW.opacity = p.coneAlpha;
+      coneMatE.opacity = p.coneAlpha;
+      for (const m of mistLayers) {
+        m.sprite.material.color.setHex(p.fogColor).lerp(new THREE.Color(0xe2e8f0), 0.35);
+      }
+      resetParticlePoolForPreset(p);
+      lightningState.flash = 0.0;
+      lightningState.timer = 3.2 + Math.random() * 5.0;
+      skyUniforms.uFlash.value = 0.0;
+    }
+
     async function setEnvironmentMode(mode) {
       if (mode === 'studio') {
         envGroup.visible = false;
+        skyDome.visible = false;
+        atmosphereGroup.visible = false;
         ground.visible = true;
         grid.visible = true;
         fireLightW.visible = false;
         fireLightE.visible = false;
+        lampPoolW.visible = false;
+        lampPoolE.visible = false;
+        scene.environment = null;
         scene.background.setHex(0x161b24);
         scene.fog.color.setHex(0x161b24);
         scene.fog.density = 0.016;
+        hemi.color.setHex(0xcbd5e1);
+        hemi.groundColor.setHex(0x1e2430);
+        hemi.intensity = 1.15;
+        keyLight.color.setHex(0xfff4e0);
+        keyLight.position.set(10, 18, 12);
+        keyLight.intensity = 2.35;
+        rimLight.color.setHex(0x60a5fa);
+        rimLight.position.set(-10, 8, -12);
+        rimLight.intensity = 0.95;
+        renderer.toneMappingExposure = 1.15;
+        if (sliderBrightness && brightVal) {
+          sliderBrightness.value = '1.15';
+          brightVal.textContent = '1.15x';
+        }
         return;
       }
 
@@ -697,7 +1294,24 @@
         try {
           const gltf = await loadGLB('../output/environment/apocalypse_street_scene.glb');
           const envScene = gltf.scene.clone(true);
-          prepShadows(envScene);
+          envScene.traverse((o) => {
+            if (o.isMesh || o.isSkinnedMesh) {
+              const nm = o.name || (o.parent ? o.parent.name : '');
+              const noCast = nm.includes('Env_DistantSkyline') || nm.includes('Env_BaseEarth') || nm.includes('Env_WetPuddles');
+              o.castShadow = !noCast;
+              o.receiveShadow = true;
+              o.frustumCulled = false;
+              const mats = Array.isArray(o.material) ? o.material : [o.material];
+              for (const mt of mats) {
+                if (mt && mt.name) {
+                  envMaterialRefs[mt.name] = mt;
+                  if (mt.name !== 'Mat_Env_PuddleWet' && mt.name !== 'Mat_Env_GlassBroken' && 'envMapIntensity' in mt) {
+                    mt.envMapIntensity = 0.70;
+                  }
+                }
+              }
+            }
+          });
           envGroup.add(envScene);
           envLoaded = true;
         } catch (err) {
@@ -713,9 +1327,7 @@
       grid.visible = false;
       fireLightW.visible = true;
       fireLightE.visible = true;
-      scene.background.setHex(0x1b1e26);
-      scene.fog.color.setHex(0x1b1e26);
-      scene.fog.density = 0.011;
+      applyWeatherPreset(selWeather.value);
     }
 
     // -----------------------------------------------------------------------
@@ -725,6 +1337,11 @@
     const activeVfx = [];
     const activeProjectiles = [];
     const floatDmgs = [];
+    const deathParticles = [];
+    const deathDecals = [];
+    const pendingDeathImpacts = [];
+    let cameraShake = 0.0;
+    const _shakeVec = new THREE.Vector3();
     let nextUid = 1;
     let selectedUid = null;
     let paused = false;
@@ -732,32 +1349,248 @@
     let battleOver = false;
     let followCam = false;
 
+    // Organic radial splatter texture for death blood / acid / ichor pools
+    const splatterTex = (() => {
+      const c = document.createElement('canvas');
+      c.width = 128; c.height = 128;
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0, 0, 128, 128);
+      const blobs = [
+        [64, 64, 34], [46, 52, 20], [82, 58, 18], [58, 84, 21],
+        [76, 44, 15], [38, 72, 13], [90, 78, 12], [66, 36, 11],
+        [26, 54, 7], [98, 50, 6], [42, 98, 7], [88, 96, 6], [62, 18, 5],
+      ];
+      for (const [bx, by, br] of blobs) {
+        const g = ctx.createRadialGradient(bx, by, br * 0.15, bx, by, br);
+        g.addColorStop(0, 'rgba(255,255,255,0.96)');
+        g.addColorStop(0.68, 'rgba(255,255,255,0.82)');
+        g.addColorStop(1, 'rgba(255,255,255,0.0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(bx, by, br, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    })();
+
+    const chunkGeo = new THREE.IcosahedronGeometry(0.065, 0);
+    const dustRingGeo = new THREE.RingGeometry(0.32, 0.52, 24);
+    const MAX_DEATH_PUDDLES = 48;
+
+    const DEATH_THEMES = {
+      mutant_bile_juggernaut: { colors: [0xa3e635, 0x84cc16, 0x65a30d, 0x7f1d1d], poolColor: 0x3f6212, poolRad: 1.85, count: 26, impactDelay: 0.68, shake: 0.24, dustScale: 2.2, dustColor: 0xa3b18a },
+      mutant_rafflesia:       { colors: [0xdc2626, 0x991b1b, 0x84cc16, 0x4d7c0f], poolColor: 0x4c0519, poolRad: 1.50, count: 22, impactDelay: 0.60, shake: 0.12, dustScale: 1.6, dustColor: 0xb59e8c },
+      mutant_thorn_shroud:    { colors: [0xe2e8f0, 0x93c5fd, 0xcbd5e1, 0x475569], poolColor: 0x1e293b, poolRad: 1.20, count: 22, impactDelay: 0.58, shake: 0.10, dustScale: 1.4, dustColor: 0xcbd5e1 },
+      mutant_scythe_stalker:  { colors: [0x991b1b, 0x450a0a, 0xd6d3d1],           poolColor: 0x3b0a0a, poolRad: 1.25, count: 20, impactDelay: 0.54, shake: 0.09, dustScale: 1.4, dustColor: 0xa8a29e },
+      mutant_arachnid_maw:    { colors: [0xa6f214, 0x65a30d, 0x1e293b],           poolColor: 0x365314, poolRad: 1.40, count: 22, impactDelay: 0.50, shake: 0.10, dustScale: 1.5, dustColor: 0x9ca3af },
+      zombie_bloater_boomer:  { colors: [0xa3e635, 0x84cc16, 0x7f1d1d],           poolColor: 0x3f6212, poolRad: 1.15, count: 22, impactDelay: 0.56, shake: 0.14, dustScale: 1.5, dustColor: 0xa3b18a },
+      zombie_spitter_hazmat:  { colors: [0x84cc16, 0x991b1b, 0x4d7c0f],           poolColor: 0x365314, poolRad: 0.95, count: 16, impactDelay: 0.52, shake: 0.05, dustScale: 1.1, dustColor: 0x9ca3af },
+      zombie_juggernaut_brute:{ colors: [0xb91c1c, 0x7f1d1d, 0x334155],           poolColor: 0x3b0a0a, poolRad: 1.20, count: 20, impactDelay: 0.62, shake: 0.15, dustScale: 1.5, dustColor: 0x9ca3af },
+      _default:               { colors: [0xb91c1c, 0x7f1d1d, 0x450a0a],           poolColor: 0x3b0a0a, poolRad: 0.88, count: 15, impactDelay: 0.52, shake: 0.04, dustScale: 1.0, dustColor: 0x9ca3af },
+    };
+
+    function getDeathTheme(unit) {
+      return DEATH_THEMES[unit.specId] || DEATH_THEMES._default;
+    }
+
+    function prepareCorpseMaterials(unit) {
+      if (unit.corpseMats) return;
+      const list = [];
+      unit.model.traverse((o) => {
+        if (!(o.isMesh || o.isSkinnedMesh) || !o.material) return;
+        const wasArr = Array.isArray(o.material);
+        const srcArr = wasArr ? o.material : [o.material];
+        const clonedArr = srcArr.map((mt) => {
+          if (!mt) return mt;
+          const c = mt.clone();
+          list.push({
+            mat: c,
+            origColor: c.color ? c.color.clone() : null,
+            origEmissiveInt: ('emissiveIntensity' in c) ? c.emissiveIntensity : null,
+            origRough: ('roughness' in c) ? c.roughness : null,
+          });
+          return c;
+        });
+        o.material = wasArr ? clonedArr : clonedArr[0];
+      });
+      unit.corpseMats = list;
+    }
+
+    function restoreCorpseMaterials(unit) {
+      if (unit.corpseMats) {
+        for (const entry of unit.corpseMats) {
+          if (entry.origColor && entry.mat.color) entry.mat.color.copy(entry.origColor);
+          if (entry.origEmissiveInt !== null) entry.mat.emissiveIntensity = entry.origEmissiveInt;
+          if (entry.origRough !== null) entry.mat.roughness = entry.origRough;
+        }
+      }
+      if (unit.shadow) {
+        const s = unit.shadow.baseRad * 2.0;
+        unit.shadow.mesh.scale.set(s, s, 1);
+        unit.shadow.mat.opacity = unit.shadow.baseOpacity;
+      }
+    }
+
+    function disposeUnitCorpseMaterials(unit) {
+      if (unit.corpseMats) {
+        for (const entry of unit.corpseMats) entry.mat.dispose();
+        unit.corpseMats = null;
+      }
+      if (unit.shadow) unit.shadow.mat.dispose();
+    }
+
+    function clearDeathFx() {
+      for (const p of deathParticles) {
+        scene.remove(p.mesh);
+        p.mesh.material.dispose();
+      }
+      deathParticles.length = 0;
+      for (const d of deathDecals) {
+        scene.remove(d.mesh);
+        d.mesh.material.dispose();
+      }
+      deathDecals.length = 0;
+      pendingDeathImpacts.length = 0;
+      cameraShake = 0.0;
+    }
+
+    function spawnBurstParticles(pos, dirBias, colors, count, speedScale = 1.0, lowDust = false) {
+      for (let i = 0; i < count; i++) {
+        const col = colors[i % colors.length];
+        const mat = new THREE.MeshStandardMaterial({
+          color: col, roughness: lowDust ? 0.92 : 0.42, metalness: 0.05,
+          transparent: lowDust, opacity: lowDust ? 0.72 : 1.0,
+        });
+        const m = new THREE.Mesh(chunkGeo, mat);
+        const sc = (lowDust ? 1.15 : 0.65) + Math.random() * 1.15;
+        m.position.copy(pos);
+        m.scale.setScalar(sc);
+        m.rotation.set(Math.random() * 6.28, Math.random() * 6.28, Math.random() * 6.28);
+        scene.add(m);
+
+        const ang = Math.random() * Math.PI * 2;
+        const hSpd = (lowDust ? 1.8 : 1.2) + Math.random() * (lowDust ? 2.6 : 3.2) * speedScale;
+        const vx = Math.cos(ang) * hSpd + (dirBias ? dirBias.x * (1.2 + Math.random() * 1.5) : 0);
+        const vz = Math.sin(ang) * hSpd + (dirBias ? dirBias.z * (1.2 + Math.random() * 1.5) : 0);
+        const vy = lowDust ? (0.4 + Math.random() * 1.1) : (2.2 + Math.random() * 3.4 * speedScale);
+        const maxLife = lowDust ? (0.42 + Math.random() * 0.28) : (0.90 + Math.random() * 0.65);
+        deathParticles.push({
+          mesh: m, vx, vy, vz,
+          rx: (Math.random() - 0.5) * 14, ry: (Math.random() - 0.5) * 14,
+          life: maxLife, maxLife, baseScale: sc, lowDust,
+        });
+      }
+    }
+
+    function spawnDeathEffect(target, attacker) {
+      prepareCorpseMaterials(target);
+      const theme = getDeathTheme(target);
+      const away = attacker
+        ? new THREE.Vector3().subVectors(target.group.position, attacker.group.position).setY(0)
+        : new THREE.Vector3(0, 0, 0);
+      if (away.lengthSq() > 1e-5) away.normalize();
+
+      const origin = target.group.position.clone().add(new THREE.Vector3(0, target.height * 0.44, 0));
+      spawnBurstParticles(origin, away, theme.colors, theme.count, Math.min(1.35, 0.85 + target.height * 0.14), false);
+
+      // Evict oldest puddle if many corpses accumulate in endless waves
+      let puddleCount = 0;
+      for (const d of deathDecals) { if (d.kind === 'puddle') puddleCount++; }
+      if (puddleCount >= MAX_DEATH_PUDDLES) {
+        const idx = deathDecals.findIndex((d) => d.kind === 'puddle');
+        if (idx !== -1) {
+          scene.remove(deathDecals[idx].mesh);
+          deathDecals[idx].mesh.material.dispose();
+          deathDecals.splice(idx, 1);
+        }
+      }
+
+      // Ground blood/ichor pool shifted forward slightly where corpse torso lands
+      const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(target.group.quaternion);
+      const poolShift = target.specId === 'mutant_arachnid_maw' ? 0.0 : 0.34 * (target.ringScale || 1.0);
+      const poolMat = new THREE.MeshStandardMaterial({
+        map: splatterTex, color: theme.poolColor, transparent: true, opacity: 0.88,
+        roughness: 0.24, metalness: 0.06, depthWrite: false,
+        polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
+      });
+      const pool = new THREE.Mesh(contactShadowGeo, poolMat);
+      pool.rotation.set(-Math.PI / 2, Math.random() * Math.PI * 2, 0);
+      pool.position.set(
+        target.group.position.x + fwd.x * poolShift,
+        0.008,
+        target.group.position.z + fwd.z * poolShift
+      );
+      pool.scale.setScalar(0.22);
+      pool.receiveShadow = true;
+      scene.add(pool);
+      deathDecals.push({
+        kind: 'puddle', mesh: pool, targetScale: theme.poolRad * 2.0, age: 0.0, growDur: 1.35,
+      });
+
+      pendingDeathImpacts.push({
+        timer: theme.impactDelay,
+        unit: target,
+        shift: poolShift,
+        fwd: fwd.clone(),
+        theme,
+      });
+    }
+
     const sliderDist = document.getElementById('slider-distance');
     const distVal = document.getElementById('dist-val');
     const selSurvBehavior = document.getElementById('sel-surv-behavior');
     const selCombatMode = document.getElementById('sel-combat-mode');
     const selEnvMode = document.getElementById('sel-env-mode');
-    selEnvMode.addEventListener('change', () => setEnvironmentMode(selEnvMode.value));
+    const selWeather = document.getElementById('sel-weather');
+    const sliderBrightness = document.getElementById('slider-brightness');
+    const brightVal = document.getElementById('bright-val');
     const chkVfx = document.getElementById('chk-vfx');
     const chkHud = document.getElementById('chk-hud');
     const chkRuler = document.getElementById('chk-ruler');
+    const chkWeather = document.getElementById('chk-weather');
+    selEnvMode.addEventListener('change', () => setEnvironmentMode(selEnvMode.value));
+    selWeather.addEventListener('change', () => applyWeatherPreset(selWeather.value));
+    sliderBrightness.addEventListener('input', () => {
+      const v = parseFloat(sliderBrightness.value);
+      renderer.toneMappingExposure = v;
+      brightVal.textContent = `${v.toFixed(2)}x`;
+    });
+    chkWeather.addEventListener('change', () => {
+      if (selEnvMode.value === 'apocalypse') applyWeatherPreset(selWeather.value);
+    });
     const rosterListEl = document.getElementById('roster-list');
     const inspectorBox = document.getElementById('inspector-box');
     const inspNameEl = document.getElementById('insp-name');
     const selRawClip = document.getElementById('sel-raw-clip');
     const resultBanner = document.getElementById('result-banner');
 
-    function playClip(unit, clipName, loopOnce = false, fade = 0.16, clipSpeed = 1.0) {
+    function playClip(unit, clipName, loopOnce = false, fade = 0.16, clipSpeed = 1.0, exclusive = false) {
       if (!clipName) return null;
       const clip = unit.clipsByName[clipName];
       if (!clip) return null;
       if (unit.currentClip === clipName && !loopOnce) {
-        if (unit.currentAction) unit.currentAction.timeScale = clipSpeed;
+        if (unit.currentAction) {
+          unit.currentAction.enabled = true;
+          unit.currentAction.setEffectiveWeight(1.0);
+          unit.currentAction.timeScale = clipSpeed;
+        }
         return unit.currentAction;
       }
 
       const nextAct = unit.mixer.clipAction(clip);
+      if (exclusive) {
+        for (const c of Object.values(unit.clipsByName)) {
+          const existing = unit.mixer.existingAction(c);
+          if (existing && existing !== nextAct && existing.isRunning()) {
+            existing.fadeOut(fade);
+          }
+        }
+      }
       nextAct.reset();
+      nextAct.enabled = true;
+      nextAct.setEffectiveWeight(1.0);
       nextAct.timeScale = clipSpeed;
       if (loopOnce) {
         nextAct.setLoop(THREE.LoopOnce, 1);
@@ -767,7 +1600,7 @@
         nextAct.clampWhenFinished = false;
       }
       nextAct.play();
-      if (unit.currentAction && unit.currentAction !== nextAct) {
+      if (!exclusive && unit.currentAction && unit.currentAction !== nextAct) {
         unit.currentAction.crossFadeTo(nextAct, fade, false);
       }
       unit.currentAction = nextAct;
@@ -893,6 +1726,7 @@
 
       const group = new THREE.Group();
       group.add(clone);
+      const shadow = addContactShadow(group, 0.72);
       scene.add(group);
 
       const unit = {
@@ -901,7 +1735,9 @@
         kind: 'survivor',
         specId: meta.id,
         shortName: `${meta.id.replace('_', ' ')} [${wid}]`,
-        group, model: clone, mixer, clipsByName, anims,
+        group, model: clone, mixer, clipsByName, anims, shadow,
+        bodyRadius: 0.34,
+        corpseMats: null,
         hp: meta.hp, maxHp: meta.hp,
         speed: 2.35,
         range: wMeta.range,
@@ -922,6 +1758,7 @@
         vel: new THREE.Vector3(),
         pendingHit: null,
         dead: false,
+        deadTimer: 0,
         manualHold: false,
         lockTimer: 0,
         stateText: 'Idle',
@@ -939,6 +1776,8 @@
       const meta = ENEMIES.find((e) => e.id === specId) || ENEMIES[0];
       const gltf = await loadGLB(meta.glb);
       const clone = SkeletonUtils.clone(gltf.scene);
+      const sc = meta.scale || [1, 1, 1];
+      clone.scale.set(sc[0], sc[1], sc[2]);
       prepShadows(clone);
 
       const mixer = new THREE.AnimationMixer(clone);
@@ -947,6 +1786,10 @@
 
       const group = new THREE.Group();
       group.add(clone);
+      const shadowRad = meta.shadowRad || (meta.id === 'mutant_arachnid_maw'
+        ? 1.45
+        : (meta.id.includes('juggernaut') ? 1.30 : (meta.id === 'mutant_rafflesia' ? 1.15 : 0.80)));
+      const shadow = addContactShadow(group, shadowRad);
       scene.add(group);
 
       const unit = {
@@ -955,9 +1798,16 @@
         kind: meta.kind,
         specId: meta.id,
         shortName: meta.label.replace(/\[.*?\]\s*/, ''),
-        group, model: clone, mixer, clipsByName, anims: meta.anims,
+        group, model: clone, mixer, clipsByName, anims: meta.anims, shadow,
+        bodyRadius: meta.bodyRadius || 0.38,
+        corpseMats: null,
         hp: meta.hp, maxHp: meta.hp,
         speed: meta.speed,
+        walkStride: meta.walkStride || 0.90,
+        runStride: meta.runStride || meta.walkStride || 0.90,
+        sprintSpeed: meta.sprintSpeed || null,
+        ringScale: meta.ringScale || 1.0,
+        vfxScale: meta.vfxScale || 1.0,
         range: meta.range,
         skillRange: meta.skillRange,
         cd: meta.cd,
@@ -971,10 +1821,11 @@
         vel: new THREE.Vector3(),
         pendingHit: null,
         dead: false,
+        deadTimer: 0,
         manualHold: false,
         lockTimer: 0,
         stateText: 'Walk',
-        height: meta.id.includes('juggernaut') ? 2.25 : (meta.id === 'mutant_arachnid_maw' ? 1.15 : 1.85),
+        height: meta.height || (meta.id.includes('juggernaut') ? 2.25 : (meta.id === 'mutant_arachnid_maw' ? 1.15 : 1.85)),
       };
       createUnitHUD(unit);
       units.push(unit);
@@ -985,31 +1836,42 @@
     }
 
     function layoutArenaPositions() {
+      clearDeathFx();
       const dist = parseFloat(sliderDist.value);
       const halfD = dist * 0.5;
       const survs = units.filter((u) => u.team === 'survivor');
       const enms = units.filter((u) => u.team === 'enemy');
+      const isApoc = selEnvMode.value === 'apocalypse';
 
       const placeTeam = (list, baseX, dirSign) => {
-        const perRow = 5;
+        const hasLarge = list.some((u) => (u.bodyRadius || 0.38) >= 0.55);
+        const perRow = isApoc ? (hasLarge ? 4 : 5) : 5;
+        const maxHalfZ = isApoc ? 3.05 : 6.5;
         list.forEach((u, i) => {
           const row = Math.floor(i / perRow);
           const idxInRow = i % perRow;
           const rowLen = Math.min(perRow, list.length - row * perRow);
-          const z = (idxInRow - (rowLen - 1) * 0.5) * 2.15;
-          const x = baseX + dirSign * row * 1.9;
+          const zSpan = maxHalfZ * 2.0;
+          const zStep = rowLen > 1 ? Math.min(isApoc ? 1.95 : 2.35, zSpan / (rowLen - 1)) : 0;
+          const staggerZ = (row % 2 === 1 && rowLen < perRow) ? 0.35 : 0.0;
+          const z = THREE.MathUtils.clamp((idxInRow - (rowLen - 1) * 0.5) * zStep + staggerZ, -maxHalfZ, maxHalfZ);
+          const x = THREE.MathUtils.clamp(baseX + dirSign * row * 2.05, -20.5, 20.5);
           u.group.position.set(x, 0, z);
           u.group.rotation.set(0, dirSign < 0 ? Math.PI * 0.5 : -Math.PI * 0.5, 0);
           u.hp = u.maxHp;
           u.dead = false;
+          u.deadTimer = 0;
           u.manualHold = false;
           u.lockTimer = 0;
           u.attackCount = 0;
           u.pendingHit = null;
           u.vel.set(0, 0, 0);
           u.cooldown = Math.random() * 0.25;
+          restoreCorpseMaterials(u);
           u.hudEl.classList.remove('dead');
-          playClip(u, u.team === 'survivor' ? (u.anims.aim || u.anims.idle) : u.anims.walk, false, 0.08);
+          u.hudEl.style.opacity = '';
+          u.hudEl.style.display = 'block';
+          playClip(u, u.team === 'survivor' ? (u.anims.aim || u.anims.idle) : u.anims.walk, false, 0.08, 1.0, true);
         });
       };
 
@@ -1020,7 +1882,9 @@
     }
 
     function clearArena() {
+      clearDeathFx();
       for (const u of units) {
+        disposeUnitCorpseMaterials(u);
         scene.remove(u.group);
         u.hudEl.remove();
       }
@@ -1155,10 +2019,13 @@
       }
       if (!immortal && target.hp <= 0) {
         target.dead = true;
+        target.deadTimer = 0;
         target.pendingHit = null;
+        target.lockTimer = 0;
         target.stateText = 'Tumbang';
         target.hudEl.classList.add('dead');
-        playClip(target, target.anims.death || target.anims.hit, true, 0.14);
+        spawnDeathEffect(target, attacker);
+        playClip(target, target.anims.death || target.anims.hit, true, 0.14, 1.0, true);
       } else if (target.lockTimer <= 0 && target.kind === 'zombie') {
         // Zombies flinch on hit if not mid-skill
         playClip(target, target.anims.hit, true, 0.08, 1.15);
@@ -1166,19 +2033,112 @@
       }
     }
 
+    function resolveUnitSeparation(dt) {
+      if (dt <= 0) return;
+      const n = units.length;
+      const zLimit = selEnvMode.value === 'apocalypse' ? 4.2 : 14.8;
+      for (let i = 0; i < n; i++) {
+        const a = units[i];
+        if (a.dead) continue;
+        const rA = a.bodyRadius || 0.38;
+        for (let j = i + 1; j < n; j++) {
+          const b = units[j];
+          if (b.dead) continue;
+          const rB = b.bodyRadius || 0.38;
+          const sameTeam = a.team === b.team;
+          const minDist = (rA + rB) * (sameTeam ? 0.90 : 0.78);
+          let dx = a.group.position.x - b.group.position.x;
+          let dz = a.group.position.z - b.group.position.z;
+          const d2 = dx * dx + dz * dz;
+          if (d2 >= minDist * minDist) continue;
+
+          let dist = Math.sqrt(d2);
+          if (dist < 1e-4) {
+            const ang = (a.uid * 1.618 + b.uid * 2.718) % 6.283;
+            dx = Math.cos(ang);
+            dz = Math.sin(ang);
+            dist = 1.0;
+          }
+          const overlap = minDist - dist;
+          const push = Math.min(0.085, overlap * Math.min(1.0, 7.5 * dt));
+          const nx = dx / dist;
+          const nz = dz / dist;
+          const wA = 1.0 / (0.4 + rA * rA);
+          const wB = 1.0 / (0.4 + rB * rB);
+          const wSum = wA + wB;
+          const fA = wA / wSum;
+          const fB = wB / wSum;
+          a.group.position.x = THREE.MathUtils.clamp(a.group.position.x + nx * push * fA, -21, 21);
+          a.group.position.z = THREE.MathUtils.clamp(a.group.position.z + nz * push * fA, -zLimit, zLimit);
+          b.group.position.x = THREE.MathUtils.clamp(b.group.position.x - nx * push * fB, -21, 21);
+          b.group.position.z = THREE.MathUtils.clamp(b.group.position.z - nz * push * fB, -zLimit, zLimit);
+        }
+      }
+    }
+
+    function computeMoveDir(unit, dirToTarget) {
+      let fx = 0.0, fz = 0.0;
+      const rU = unit.bodyRadius || 0.38;
+      for (const ally of units) {
+        if (ally === unit || ally.dead || ally.team !== unit.team) continue;
+        const rx = ally.group.position.x - unit.group.position.x;
+        const rz = ally.group.position.z - unit.group.position.z;
+        const d2 = rx * rx + rz * rz;
+        const senseDist = (rU + (ally.bodyRadius || 0.38)) * 1.55;
+        if (d2 < 1e-6 || d2 > senseDist * senseDist) continue;
+        const d = Math.sqrt(d2);
+        const fwdDot = (rx * dirToTarget.x + rz * dirToTarget.z) / d;
+        if (fwdDot <= 0.32) continue;
+        const crossY = dirToTarget.x * rz - dirToTarget.z * rx;
+        const sideSign = Math.abs(crossY) > 0.02
+          ? (crossY >= 0 ? -1.0 : 1.0)
+          : ((unit.uid % 2 === 0) ? 1.0 : -1.0);
+        const w = (1.0 - d / senseDist) * (0.45 + 0.55 * fwdDot);
+        fx += (-dirToTarget.z) * sideSign * w;
+        fz += (dirToTarget.x) * sideSign * w;
+      }
+      const out = new THREE.Vector3(dirToTarget.x + fx * 1.15, 0, dirToTarget.z + fz * 1.15);
+      return out.lengthSq() > 1e-6 ? out.normalize() : dirToTarget;
+    }
+
     const _turnDummy = new THREE.Object3D();
     function updateUnitAI(unit, dt) {
       unit.mixer.update(dt);
 
-      // Apply damped knockback / lunge velocity impulse & keep inside arena
+      // Apply damped knockback / lunge velocity impulse & keep inside street/arena
       if (unit.vel.lengthSq() > 1e-5 && dt > 0) {
+        const zLimit = selEnvMode.value === 'apocalypse' ? 4.2 : 15.0;
         unit.group.position.addScaledVector(unit.vel, dt);
         unit.group.position.x = THREE.MathUtils.clamp(unit.group.position.x, -21, 21);
-        unit.group.position.z = THREE.MathUtils.clamp(unit.group.position.z, -15, 15);
-        unit.vel.multiplyScalar(Math.exp(-8.5 * dt));
+        unit.group.position.z = THREE.MathUtils.clamp(unit.group.position.z, -zLimit, zLimit);
+        unit.vel.multiplyScalar(Math.exp((unit.dead ? -13.0 : -8.5) * dt));
       }
 
-      if (unit.dead) return;
+      if (unit.dead) {
+        if (dt > 0) {
+          unit.deadTimer += dt;
+          const t = Math.min(1.0, unit.deadTimer / 1.35);
+          if (unit.corpseMats) {
+            for (const entry of unit.corpseMats) {
+              if (entry.origColor && entry.mat.color) {
+                entry.mat.color.copy(entry.origColor).multiplyScalar(1.0 - 0.32 * t);
+              }
+              if (entry.origEmissiveInt !== null) {
+                entry.mat.emissiveIntensity = entry.origEmissiveInt * (1.0 - 0.90 * t);
+              }
+              if (entry.origRough !== null) {
+                entry.mat.roughness = Math.min(1.0, entry.origRough + 0.14 * t);
+              }
+            }
+          }
+          if (unit.shadow) {
+            const sc = unit.shadow.baseRad * 2.0 * (1.0 + 0.18 * t);
+            unit.shadow.mesh.scale.set(sc, sc, 1);
+            unit.shadow.mat.opacity = unit.shadow.baseOpacity * (1.0 - 0.32 * t);
+          }
+        }
+        return;
+      }
 
       // Resolve synchronized melee/monster strike impact at animation strike frame
       if (unit.pendingHit && dt > 0) {
@@ -1196,7 +2156,7 @@
           } else if (ph.kind === 'enemy_melee') {
             const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(unit.group.quaternion);
             const o2 = getEnemyAttackOrigin(unit);
-            spawnTimedVfx(unit.vfxGlb, o2, fwd, { groundFlat: ph.isSlam, scale: ph.isSlam ? 1.1 : 1.0, life: 0.48 });
+            spawnTimedVfx(unit.vfxGlb, o2, fwd, { groundFlat: ph.isSlam, scale: (ph.isSlam ? 1.1 : 1.0) * (unit.vfxScale || 1.0), life: 0.48 });
             if (ph.target && !ph.target.dead && unit.group.position.distanceTo(ph.target.group.position) <= ph.maxDist) {
               applyDamage(ph.target, ph.dmg, unit, ph.isSlam ? 3.2 : 1.8);
             }
@@ -1218,15 +2178,24 @@
         return;
       }
 
-      // Smooth horizontal slerp toward target
-      const lookPos = new THREE.Vector3(target.group.position.x, unit.group.position.y, target.group.position.z);
-      const dir = new THREE.Vector3().subVectors(lookPos, unit.group.position);
-      if (dir.lengthSq() > 1e-6) {
-        dir.normalize();
+      const dir = new THREE.Vector3(
+        target.group.position.x - unit.group.position.x,
+        0,
+        target.group.position.z - unit.group.position.z
+      );
+      if (dir.lengthSq() > 1e-6) dir.normalize();
+
+      const lookAtDir = (vec) => {
+        if (vec.lengthSq() <= 1e-6) return;
+        const lp = new THREE.Vector3(
+          unit.group.position.x + vec.x,
+          unit.group.position.y,
+          unit.group.position.z + vec.z
+        );
         _turnDummy.position.copy(unit.group.position);
-        _turnDummy.lookAt(lookPos);
+        _turnDummy.lookAt(lp);
         unit.group.quaternion.slerp(_turnDummy.quaternion, Math.min(1.0, dt * 11.0));
-      }
+      };
 
       if (unit.team === 'enemy') {
         const useSkill = (unit.attackCount % 2 === 1) && Boolean(unit.anims.skill);
@@ -1235,12 +2204,18 @@
         if (dist > engageRange) {
           const isSprint = (dist > engageRange + 3.0) && unit.anims.run && (unit.anims.run !== unit.anims.walk);
           const moveClip = isSprint ? unit.anims.run : unit.anims.walk;
-          const moveSpd = isSprint ? unit.speed * 1.24 : unit.speed;
-          const clipScale = THREE.MathUtils.clamp(moveSpd / Math.max(0.75, unit.speed), 0.85, 1.35);
-          unit.group.position.addScaledVector(dir, moveSpd * dt);
+          const moveSpd = isSprint ? (unit.sprintSpeed || unit.speed * 1.45) : unit.speed;
+          const clipObj = unit.clipsByName[moveClip];
+          const clipDur = (clipObj && clipObj.duration) || 1.0;
+          const strideLen = (isSprint && unit.runStride) ? unit.runStride : (unit.walkStride || 0.90);
+          const clipScale = THREE.MathUtils.clamp((moveSpd * clipDur) / strideLen, 0.65, 1.85);
+          const moveDir = computeMoveDir(unit, dir);
+          lookAtDir(moveDir);
+          unit.group.position.addScaledVector(moveDir, moveSpd * dt);
           unit.stateText = `${isSprint ? 'Berlari' : 'Berjalan'} (${dist.toFixed(1)}m)`;
           playClip(unit, moveClip, false, 0.16, clipScale);
         } else if (unit.cooldown <= 0) {
+          lookAtDir(dir);
           unit.attackCount++;
           const clip = useSkill ? unit.anims.skill : unit.anims.attack;
           const act = playClip(unit, clip, true, 0.12, 1.05);
@@ -1252,7 +2227,7 @@
           const dmg = useSkill ? unit.skillDmg : unit.dmg;
           const origin = getEnemyAttackOrigin(unit);
           if (useSkill && unit.skillRange > 3.5 && unit.vfxProjColor) {
-            spawnTimedVfx(unit.vfxGlb, origin, dir, { groundFlat: false, scale: 0.95, life: 0.45 });
+            spawnTimedVfx(unit.vfxGlb, origin, dir, { groundFlat: false, scale: 0.95 * (unit.vfxScale || 1.0), life: 0.45 });
             const hitPt = target.group.position.clone().add(new THREE.Vector3(0, 1.15, 0));
             spawnProjectile(origin, hitPt, unit.vfxProjColor, 14.0, () => applyDamage(target, dmg, unit, 1.4));
           } else {
@@ -1270,6 +2245,7 @@
             };
           }
         } else {
+          lookAtDir(dir);
           unit.stateText = 'Siap Serang';
           playClip(unit, unit.anims.idle, false, 0.16);
         }
@@ -1280,11 +2256,17 @@
           const isSprint = (dist > unit.range + 2.6) && Boolean(unit.anims.run);
           const moveClip = isSprint ? unit.anims.run : unit.anims.walk;
           const moveSpd = isSprint ? 3.55 : 2.15;
-          const clipScale = isSprint ? 1.12 : 1.0;
-          unit.group.position.addScaledVector(dir, moveSpd * dt);
+          const clipObj = unit.clipsByName[moveClip];
+          const clipDur = (clipObj && clipObj.duration) || 1.0;
+          const strideLen = isSprint ? 1.60 : 1.07;
+          const clipScale = THREE.MathUtils.clamp((moveSpd * clipDur) / strideLen, 0.70, 1.85);
+          const moveDir = computeMoveDir(unit, dir);
+          lookAtDir(moveDir);
+          unit.group.position.addScaledVector(moveDir, moveSpd * dt);
           unit.stateText = `${isSprint ? 'Lari' : 'Maju'} (${dist.toFixed(1)}m)`;
           playClip(unit, moveClip, false, 0.14, clipScale);
         } else if (dist <= unit.range && unit.cooldown <= 0) {
+          lookAtDir(dir);
           unit.attackCount++;
           const isHeavyMelee = (unit.weaponClass === 'melee') && (unit.attackCount % 2 === 0) && Boolean(unit.anims.skill);
           const atkClip = isHeavyMelee ? unit.anims.skill : unit.anims.attack;
@@ -1314,6 +2296,7 @@
             spawnProjectile(muz, aimPt, pColor, unit.weaponClass === 'bow' ? 20.0 : 32.0, () => applyDamage(target, unit.dmg, unit, unit.weaponClass === 'bow' ? 1.0 : 0.45));
           }
         } else {
+          lookAtDir(dir);
           unit.stateText = dist <= unit.range ? 'Membidik' : `Siaga (${dist.toFixed(1)}m)`;
           playClip(unit, unit.anims.aim || unit.anims.idle, false, 0.16);
         }
@@ -1358,6 +2341,7 @@
       const idx = units.findIndex((u) => u.uid === uid);
       if (idx === -1) return;
       const u = units[idx];
+      disposeUnitCorpseMaterials(u);
       scene.remove(u.group);
       u.hudEl.remove();
       units.splice(idx, 1);
@@ -1555,6 +2539,90 @@
       const dt = paused ? 0 : rawDt * timeScale;
 
       for (const u of units) updateUnitAI(u, dt);
+      resolveUnitSeparation(dt);
+
+      // Update death impact bursts, ballistic debris chunks, & expanding ground decals
+      for (let i = pendingDeathImpacts.length - 1; i >= 0; i--) {
+        const imp = pendingDeathImpacts[i];
+        imp.timer -= dt;
+        if (imp.timer <= 0) {
+          pendingDeathImpacts.splice(i, 1);
+          if (!imp.unit.dead) continue;
+          const pos = new THREE.Vector3(
+            imp.unit.group.position.x + imp.fwd.x * imp.shift,
+            0.018,
+            imp.unit.group.position.z + imp.fwd.z * imp.shift
+          );
+          const dustCol = imp.theme.dustColor || 0x9ca3af;
+          const rMat = new THREE.MeshBasicMaterial({
+            color: dustCol, side: THREE.DoubleSide, transparent: true, opacity: 0.56, depthWrite: false,
+          });
+          const ring = new THREE.Mesh(dustRingGeo, rMat);
+          ring.rotation.x = -Math.PI / 2;
+          ring.position.copy(pos);
+          ring.scale.setScalar(0.45 * imp.theme.dustScale);
+          scene.add(ring);
+          deathDecals.push({
+            kind: 'ring', mesh: ring, age: 0.0, maxLife: 0.46,
+            startScale: 0.45 * imp.theme.dustScale, endScale: 2.35 * imp.theme.dustScale, baseOpacity: 0.56,
+          });
+          spawnBurstParticles(pos.clone().setY(0.10), null, [dustCol, 0x64748b], 8, 0.85, true);
+          cameraShake = Math.max(cameraShake, imp.theme.shake);
+        }
+      }
+
+      for (let i = deathParticles.length - 1; i >= 0; i--) {
+        const dp = deathParticles[i];
+        dp.life -= dt;
+        if (dp.life <= 0) {
+          scene.remove(dp.mesh);
+          dp.mesh.material.dispose();
+          deathParticles.splice(i, 1);
+          continue;
+        }
+        if (dt > 0) {
+          dp.vy -= (dp.lowDust ? 4.2 : 14.5) * dt;
+          dp.mesh.position.x += dp.vx * dt;
+          dp.mesh.position.y += dp.vy * dt;
+          dp.mesh.position.z += dp.vz * dt;
+          dp.mesh.rotation.x += dp.rx * dt;
+          dp.mesh.rotation.y += dp.ry * dt;
+          if (dp.mesh.position.y < 0.032) {
+            dp.mesh.position.y = 0.032;
+            dp.vy = Math.abs(dp.vy) * 0.24;
+            dp.vx *= 0.52;
+            dp.vz *= 0.52;
+            dp.rx *= 0.4;
+            dp.ry *= 0.4;
+          }
+          const frac = dp.life / dp.maxLife;
+          if (dp.lowDust) {
+            dp.mesh.material.opacity = 0.72 * frac;
+            dp.mesh.scale.setScalar(dp.baseScale * (1.0 + (1.0 - frac) * 0.75));
+          } else if (frac < 0.28) {
+            dp.mesh.scale.setScalar(dp.baseScale * Math.max(0.05, frac / 0.28));
+          }
+        }
+      }
+
+      for (let i = deathDecals.length - 1; i >= 0; i--) {
+        const dd = deathDecals[i];
+        if (dt > 0) dd.age += dt;
+        if (dd.kind === 'puddle') {
+          const p = Math.min(1.0, dd.age / dd.growDur);
+          const ease = 1.0 - Math.pow(1.0 - p, 3.0);
+          dd.mesh.scale.setScalar(0.22 + (dd.targetScale - 0.22) * ease);
+        } else {
+          const p = Math.min(1.0, dd.age / dd.maxLife);
+          dd.mesh.scale.setScalar(dd.startScale + (dd.endScale - dd.startScale) * p);
+          dd.mesh.material.opacity = dd.baseOpacity * (1.0 - p);
+          if (dd.age >= dd.maxLife) {
+            scene.remove(dd.mesh);
+            dd.mesh.material.dispose();
+            deathDecals.splice(i, 1);
+          }
+        }
+      }
 
       // Update timed VFX
       for (let i = activeVfx.length - 1; i >= 0; i--) {
@@ -1618,7 +2686,9 @@
       const selU = units.find((u) => u.uid === selectedUid);
       if (selU) {
         selectRing.visible = true;
+        selectRingMat.color.setHex(selU.dead ? 0xef4444 : 0x38bdf8);
         selectRing.position.set(selU.group.position.x, 0.015, selU.group.position.z);
+        selectRing.scale.setScalar(selU.ringScale || 1.0);
         if (followCam) {
           controls.target.lerp(tmpVec.copy(selU.group.position).add(new THREE.Vector3(0, 1.0, 0)), 0.12);
         }
@@ -1630,12 +2700,26 @@
       const showHud = chkHud.checked;
       for (const u of units) {
         if (!showHud) { u.hudEl.style.display = 'none'; continue; }
-        tmpVec.copy(u.group.position).add(new THREE.Vector3(0, u.height + 0.30, 0));
+        let anchorH = u.height + 0.30;
+        let hudAlpha = '';
+        if (u.dead) {
+          const dropT = Math.min(1.0, u.deadTimer / 0.75);
+          anchorH = THREE.MathUtils.lerp(u.height + 0.30, 0.65, dropT);
+          if (u.uid !== selectedUid) {
+            if (u.deadTimer >= 2.4) { u.hudEl.style.display = 'none'; continue; }
+            if (u.deadTimer > 1.6) hudAlpha = `${Math.max(0.0, 0.55 * (1.0 - (u.deadTimer - 1.6) / 0.8))}`;
+            else hudAlpha = '0.55';
+          } else {
+            hudAlpha = '0.68';
+          }
+        }
+        tmpVec.copy(u.group.position).add(new THREE.Vector3(0, anchorH, 0));
         tmpVec.project(camera);
         if (tmpVec.z > 1) {
           u.hudEl.style.display = 'none';
         } else {
           u.hudEl.style.display = 'block';
+          u.hudEl.style.opacity = hudAlpha;
           u.hudEl.style.left = `${(tmpVec.x * 0.5 + 0.5) * window.innerWidth}px`;
           u.hudEl.style.top = `${(-tmpVec.y * 0.5 + 0.5) * window.innerHeight}px`;
           u.stateEl.textContent = u.stateText;
@@ -1658,14 +2742,166 @@
         fd.el.style.opacity = `${Math.max(0, fd.life / fd.maxLife)}`;
       }
 
-      if (fireLightW.visible) {
-        const t = performance.now() * 0.008;
-        fireLightW.intensity = 4.2 + Math.sin(t) * 0.75 + Math.sin(t * 2.3) * 0.35;
-        fireLightE.intensity = 4.2 + Math.cos(t * 1.1) * 0.75 + Math.sin(t * 2.7) * 0.35;
+      const tNow = performance.now() * 0.001;
+      skyUniforms.uTime.value = tNow;
+      if (skyDome.visible) {
+        skyDome.position.set(camera.position.x, 0, camera.position.z);
+      }
+
+      if (selEnvMode.value === 'apocalypse' && envGroup.visible) {
+        const wPreset = WEATHER_PRESETS[activeWeatherId] || WEATHER_PRESETS.apoc_morning;
+        // Fire barrel flicker + halo pulse
+        const fBase = wPreset.fireInt;
+        const flickW = fBase * (0.86 + 0.14 * Math.sin(tNow * 8.2) + 0.08 * Math.sin(tNow * 19.7));
+        const flickE = fBase * (0.86 + 0.14 * Math.cos(tNow * 8.9) + 0.08 * Math.sin(tNow * 21.3));
+        fireLightW.intensity = flickW;
+        fireLightE.intensity = flickE;
+        const fHalo = wPreset.fireHaloAlpha ?? 0.30;
+        const glowScale = Math.max(0.25, fBase);
+        fireHaloW.material.opacity = fHalo * (0.78 + 0.22 * (flickW / glowScale));
+        fireHaloE.material.opacity = fHalo * (0.78 + 0.22 * (flickE / glowScale));
+        const haloSc = 2.1 + 0.24 * Math.sin(tNow * 12.0);
+        fireHaloW.scale.set(haloSc, haloSc, 1);
+        fireHaloE.scale.set(haloSc * 0.96, haloSc * 0.96, 1);
+
+        // Streetlamp ground pools & cones (hidden in daytime, active in sunset/storm; east sputters)
+        const sputter = Math.sin(tNow * 17.0) * Math.sin(tNow * 31.3) > 0.56 ? 0.20 : 1.0;
+        if (lampPoolW.visible) {
+          lampPoolMatW.opacity = wPreset.lampAlpha;
+          lampPoolMatE.opacity = wPreset.lampAlpha * sputter;
+        }
+        if (lampConeW.visible) {
+          coneMatW.opacity = wPreset.coneAlpha;
+          coneMatE.opacity = wPreset.coneAlpha * sputter;
+        }
+
+        // Lightweight lightning flash via existing rimLight + hemi + sky shader (no extra directional light)
+        if (wPreset.lightning && chkWeather.checked) {
+          lightningState.timer -= rawDt;
+          if (lightningState.timer <= 0) {
+            lightningState.flash = 1.0;
+            lightningState.timer = 5.2 + Math.random() * 6.5;
+          }
+          if (lightningState.flash > 0.001) {
+            lightningState.flash = Math.max(0.0, lightningState.flash - rawDt * 3.0);
+            const pulse = lightningState.flash > 0.55
+              ? 1.0
+              : Math.sin(lightningState.flash * 26.0) * 0.45 + lightningState.flash * 0.7;
+            const fp = Math.max(0.0, pulse);
+            skyUniforms.uFlash.value = fp;
+            rimLight.intensity = wPreset.rimInt + fp * 2.2;
+            hemi.intensity = wPreset.hemiInt + fp * 0.85;
+            scene.environmentIntensity = wPreset.envInt + fp * 0.95;
+          } else {
+            skyUniforms.uFlash.value = 0.0;
+            rimLight.intensity = wPreset.rimInt;
+            hemi.intensity = wPreset.hemiInt;
+            scene.environmentIntensity = wPreset.envInt;
+          }
+        } else {
+          skyUniforms.uFlash.value = 0.0;
+        }
+
+        // Batched smoke plumes, minimal background haze & lightweight weather particles
+        if (atmosphereGroup.visible && chkWeather.checked) {
+          const smArr = smokeGeo.attributes.position.array;
+          for (let i = 0; i < SMOKE_COUNT; i++) {
+            const sp = smokeMeta[i];
+            sp.age += rawDt;
+            if (sp.age >= sp.maxAge) sp.age = 0;
+            const p = sp.age / sp.maxAge;
+            const em = sp.emitter;
+            const sway = Math.sin(tNow * 1.4 + p * 4.0) * 0.25 * p;
+            smArr[i * 3 + 0] = em.x + sp.vx * sp.age + sway;
+            smArr[i * 3 + 1] = em.y + sp.age * 1.15;
+            smArr[i * 3 + 2] = em.z + sp.vz * sp.age;
+          }
+          smokeGeo.attributes.position.needsUpdate = true;
+
+          for (const ml of mistLayers) {
+            ml.sprite.position.x += ml.spd * rawDt;
+            if (ml.sprite.position.x > 34) ml.sprite.position.x = -34;
+            ml.sprite.material.opacity = ml.baseAlpha * wPreset.mistAlpha;
+          }
+
+          if (rainLines.visible) {
+            const arr = rainGeo.attributes.position.array;
+            for (let i = 0; i < RAIN_COUNT; i++) {
+              const s3 = i * 3;
+              let rx = rainSeeds[s3] + 2.8 * rawDt;
+              let ry = rainSeeds[s3 + 1] - 20.0 * rawDt;
+              let rz = rainSeeds[s3 + 2] + 0.7 * rawDt;
+              if (ry < 0.0) {
+                ry = 13.5 + Math.random() * 1.5;
+                rx = (Math.random() - 0.5) * 40;
+                rz = (Math.random() - 0.5) * 24;
+              }
+              if (rx > 20) rx -= 40;
+              rainSeeds[s3] = rx; rainSeeds[s3 + 1] = ry; rainSeeds[s3 + 2] = rz;
+              const i6 = i * 6;
+              arr[i6] = rx; arr[i6 + 1] = ry; arr[i6 + 2] = rz;
+              arr[i6 + 3] = rx - 0.10; arr[i6 + 4] = ry + 0.78; arr[i6 + 5] = rz - 0.03;
+            }
+            rainGeo.attributes.position.needsUpdate = true;
+          }
+
+          const drawN = Math.min(PARTICLE_MAX, wPreset.particleCount);
+          const pArr = partGeo.attributes.position.array;
+          for (let i = 0; i < drawN; i++) {
+            const m = partMeta[i];
+            const i3 = i * 3;
+            let px = pArr[i3], py = pArr[i3 + 1], pz = pArr[i3 + 2];
+            if (wPreset.particleMode === 'embers') {
+              py += m.spdY * 1.45 * rawDt;
+              px += (0.35 + Math.sin(tNow * 2.1 + m.phase) * 0.45) * rawDt;
+              pz += Math.cos(tNow * 1.7 + m.phase) * 0.25 * rawDt;
+              if (py > 5.8) {
+                const bx = m.barrelIdx === 0 ? -4.4 : 4.6;
+                const bz = m.barrelIdx === 0 ? -3.65 : -3.75;
+                px = bx + (Math.random() - 0.5) * 0.45;
+                py = 0.95 + Math.random() * 0.25;
+                pz = bz + (Math.random() - 0.5) * 0.45;
+              }
+            } else if (wPreset.particleMode === 'spores') {
+              py += Math.sin(tNow * 1.3 + m.phase) * 0.35 * rawDt + 0.08 * rawDt;
+              px += m.spdX * 0.55 * rawDt;
+              pz += Math.cos(tNow * 0.9 + m.phase) * 0.35 * rawDt;
+              if (px > 18) px = -18;
+              if (py > 6.2 || py < 0.15) py = 0.4 + Math.random() * 4.5;
+            } else {
+              // ash_embers: gently drifting embers & ash flakes across avenue
+              py += (i % 3 === 0 ? m.spdY * 0.75 : -m.spdY * 0.42) * rawDt;
+              px += m.spdX * 1.15 * rawDt;
+              pz += Math.sin(tNow * 1.2 + m.phase) * 0.25 * rawDt;
+              if (px > 18) px = -18;
+              if (py < 0.05) { py = 5.5 + Math.random() * 1.5; px = (Math.random() - 0.5) * 34; }
+              if (py > 6.8) { py = 0.4; px = (i % 2 === 0 ? -4.4 : 4.6) + (Math.random() - 0.5) * 2.0; }
+            }
+            pArr[i3] = px; pArr[i3 + 1] = py; pArr[i3 + 2] = pz;
+          }
+          partGeo.attributes.position.needsUpdate = true;
+        }
       }
 
       controls.update();
+      if (cameraShake > 0.002) {
+        _shakeVec.set(
+          (Math.random() - 0.5) * cameraShake,
+          (Math.random() - 0.5) * cameraShake * 0.65,
+          (Math.random() - 0.5) * cameraShake
+        );
+        camera.position.add(_shakeVec);
+        controls.target.addScaledVector(_shakeVec, 0.35);
+        cameraShake = Math.max(0.0, cameraShake - rawDt * 0.85);
+      } else {
+        _shakeVec.set(0, 0, 0);
+        cameraShake = 0.0;
+      }
       renderer.render(scene, camera);
+      if (_shakeVec.lengthSq() > 0) {
+        camera.position.sub(_shakeVec);
+        controls.target.addScaledVector(_shakeVec, -0.35);
+      }
     }
 
     animate();
