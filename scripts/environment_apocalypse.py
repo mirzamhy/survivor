@@ -19,6 +19,7 @@ from mesh_utils import (
     apply_box_uvs,
     finalize_mesh,
     loft_rings,
+    ring_ellipse,
 )
 
 
@@ -754,6 +755,254 @@ def build_env_fire_barrel(materials, idx_map, collection=None, name="Env_FireBar
     return obj, tris
 
 
+def _build_wet_road_puddles(materials, idx_map, col):
+    """Add irregular flat mirror-gloss rainwater puddles nestled along road cracks & gutters."""
+    bm = bmesh.new()
+    m_puddle = idx_map["Mat_Env_PuddleWet"]
+
+    puddle_specs = (
+        (-12.2, -1.12, 1.35, 0.54,  0.08, 11),
+        ( -6.2,  1.34, 1.45, 0.52, -0.06, 23),
+        ( -5.8, -1.16, 1.48, 0.56,  0.12, 41),
+        ( -0.4,  1.12, 1.32, 0.50, -0.05, 53),
+        (  0.4, -1.18, 1.42, 0.52,  0.10, 67),
+        (  5.7,  1.36, 1.40, 0.52, -0.10, 79),
+        (  6.4, -1.10, 1.35, 0.50,  0.08, 89),
+        ( 11.9,  1.22, 1.44, 0.54, -0.08, 97),
+    )
+
+    n_pts = 12
+    for px, py, rx, ry, yaw, seed in puddle_specs:
+        cy, sy = math.cos(yaw), math.sin(yaw)
+        bot_ring = []
+        top_ring = []
+        for i in range(n_pts):
+            t = (2.0 * math.pi * i) / n_pts
+            wob = 1.0 + 0.22 * math.sin(2.0 * t + seed) + 0.14 * math.cos(3.0 * t - seed * 1.7)
+            lx = rx * wob * math.cos(t)
+            ly = ry * wob * math.sin(t)
+            wx = px + lx * cy - ly * sy
+            wy = py + lx * sy + ly * cy
+            bot_ring.append((wx, wy, 0.001))
+            top_ring.append((
+                px + (lx * 0.94) * cy - (ly * 0.94) * sy,
+                py + (lx * 0.94) * sy + (ly * 0.94) * cy,
+                0.0055,
+            ))
+        loft_rings(bm, [bot_ring, top_ring], close_caps=(False, True), mat_idx=m_puddle)
+
+    obj, tris = finalize_mesh("Env_WetPuddles", bm, materials, collection=col)
+    apply_box_uvs(obj, tex_scale=0.50)
+    return obj, tris
+
+
+def _build_foundation_and_street_clutter(materials, idx_map, col):
+    """Root buildings into the earth with rubble foundations, add broken steel fences & street crates."""
+    bm = bmesh.new()
+    m_soil = idx_map["Mat_Env_SoilCracked"]
+    m_conc = idx_map["Mat_Env_ConcreteCracked"]
+    m_dark = idx_map["Mat_Env_ConcreteDark"]
+    m_brick = idx_map["Mat_Env_BrickRuined"]
+    m_metal = idx_map["Mat_Env_MetalScrap"]
+    m_rust = idx_map["Mat_Env_RustHeavy"]
+    m_wood = idx_map["Mat_Env_WoodPlank"]
+    m_dry = idx_map["Mat_Env_GrassDry"]
+    m_lush = idx_map["Mat_Env_GrassLush"]
+
+    # Foundation dirt/rubble collars rooting first-row buildings & walls into ground
+    skirts = (
+        (-11.8, 7.75, 5.4, 4.3, 0.24,  4.0),
+        ( -4.6, 7.95, 5.8, 4.0, 0.22, -2.0),
+        (  0.6, 5.60, 4.2, 1.4, 0.20,  2.0),
+        (  5.2, 8.15, 5.8, 4.0, 0.22,  3.0),
+        ( 12.2, 7.85, 5.4, 4.3, 0.24, -6.0),
+        (-16.5, 6.20, 4.2, 1.5, 0.20, 18.0),
+        ( 16.8, 6.40, 4.2, 1.5, 0.20,-15.0),
+    )
+    for k, (sx, sy, sw, sd, sh, rot_deg) in enumerate(skirts):
+        rz = math.radians(rot_deg)
+        add_box(bm, (sx, sy, sh * 0.35), (sw, sd, sh), rot=(0.0, 0.0, rz),
+                bevel=0.14, taper_top=(0.82, 0.80), mat_idx=m_soil)
+        _add_stone_chunk(bm, (sx - sw * 0.36, sy - sd * 0.44, 0.14), 0.26, yaw=k * 0.9, mat_idx=m_dark)
+        _add_stone_chunk(bm, (sx + sw * 0.34, sy - sd * 0.42, 0.13), 0.22, yaw=k * 1.4, mat_idx=m_conc)
+        _add_grass_patch(bm, sx - sw * 0.42, sy - sd * 0.45, 0.02, count=7, spread=0.32,
+                         h_min=0.18, h_max=0.45, idx_dry=m_dry, idx_lush=m_lush, seed=k + 30)
+
+    # Broken steel security fences bridging vacant lot gap & arena flanks (transparent silhouettes)
+    fence_runs = (
+        (-1.55, 6.85,  2.75, 6.95, 11),
+        (-18.6, 5.30, -14.8, 5.50, 22),
+        ( 14.8, 5.55,  18.8, 5.35, 33),
+    )
+    for x0, y0, x1, y1, fseed in fence_runs:
+        span_v = Vector((x1 - x0, y1 - y0, 0.0))
+        length = span_v.length
+        yaw = math.atan2(span_v.y, span_v.x)
+        # Concrete fence curb
+        mid = Vector(((x0 + x1) * 0.5, (y0 + y1) * 0.5, 0.09))
+        add_box(bm, mid, (length, 0.22, 0.22), rot=(0.0, 0.0, yaw), bevel=0.02, mat_idx=m_dark)
+        n_posts = 4
+        for pi in range(n_posts):
+            t = pi / (n_posts - 1)
+            px = x0 + (x1 - x0) * t
+            py = y0 + (y1 - y0) * t
+            lean_x = 0.08 * math.sin(pi * 2.1 + fseed)
+            lean_y = 0.10 * math.cos(pi * 1.7 + fseed)
+            h_post = 1.65 - (0.35 if pi == 2 else 0.0)
+            add_cylinder(bm, (px, py, 0.16), (px + lean_x, py + lean_y, h_post),
+                         0.036, 0.032, segments=6, mat_idx=m_metal if pi % 2 == 0 else m_rust)
+            # Criss-cross wire-frame diamond slats (skip gap on one broken bay)
+            if pi < n_posts - 1 and not (pi == 1 and fseed == 11):
+                nx = x0 + (x1 - x0) * ((pi + 1) / (n_posts - 1))
+                ny = y0 + (y1 - y0) * ((pi + 1) / (n_posts - 1))
+                for hz in (0.65, 1.28):
+                    add_cylinder(bm, (px, py, hz), (nx, ny, hz - 0.04),
+                                 0.016, 0.016, segments=5, mat_idx=m_rust)
+                add_cylinder(bm, (px, py, 0.24), (nx, ny, 1.32), 0.014, 0.014, segments=5, mat_idx=m_metal)
+                add_cylinder(bm, (px, py, 1.32), (nx, ny, 0.24), 0.014, 0.014, segments=5, mat_idx=m_metal)
+
+    # Supply crates, wooden pallets & scattered brick piles near barricades & shoulders
+    crate_spots = (
+        (-2.45,  4.45, 0.22, 0.62, 0.48, 0.44,  0.30, m_wood),
+        (-2.22,  4.50, 0.58, 0.42, 0.36, 0.32, -0.22, m_rust),
+        ( 5.55,  4.18, 0.20, 0.56, 0.50, 0.40,  0.48, m_wood),
+        (-11.7, -4.10, 0.20, 0.60, 0.46, 0.40, -0.35, m_wood),
+        ( 11.4, -4.15, 0.21, 0.64, 0.48, 0.42,  0.28, m_dark),
+    )
+    for cx, cy, cz, sx, sy, sz, rz, mat_i in crate_spots:
+        add_box(bm, (cx, cy, cz), (sx, sy, sz), rot=(0.0, 0.0, rz), bevel=0.02, mat_idx=mat_i)
+    add_box(bm, (-3.1, 4.35, 0.05), (0.95, 0.85, 0.10), rot=(0.0, 0.0, 0.18), mat_idx=m_wood)
+    add_box(bm, ( 6.1, 4.30, 0.11), (0.48, 0.36, 0.22), rot=(0.12, -0.1, 0.6), mat_idx=m_brick)
+
+    obj, tris = finalize_mesh("Env_StreetClutter", bm, materials, collection=col)
+    apply_box_uvs(obj, tex_scale=0.55)
+    return obj, tris
+
+
+def _build_distant_city_skyline(materials, idx_map, col):
+    """Build 360-degree ruined skyscraper ring, collapsed concrete highway overpass & red-beacon radio tower."""
+    bm = bmesh.new()
+    m_conc = idx_map["Mat_Env_ConcreteCracked"]
+    m_dark = idx_map["Mat_Env_ConcreteDark"]
+    m_brick = idx_map["Mat_Env_BrickRuined"]
+    m_plaster = idx_map["Mat_Env_PlasterDamaged"]
+    m_glass = idx_map["Mat_Env_GlassBroken"]
+    m_metal = idx_map["Mat_Env_MetalScrap"]
+    m_rust = idx_map["Mat_Env_RustHeavy"]
+    m_wood = idx_map["Mat_Env_WoodPlank"]
+    m_beacon = idx_map["Mat_Env_BeaconRed"]
+
+    # 1. Collapsed Concrete Highway Overpass in North Mid-Background (Y ~ +20.5m)
+    oy = 20.5
+    # Heavy battered concrete piers along west and east intact spans
+    for px in (-21.0, -13.0, -5.5, 6.2, 14.0, 22.0):
+        for py_off in (-1.35, 1.35):
+            add_box(bm, (px, oy + py_off, 3.4), (1.05, 0.95, 6.8),
+                    taper_top=(0.86, 0.86), mat_idx=m_dark)
+        add_box(bm, (px, oy, 6.85), (1.35, 4.30, 0.85), bevel=0.06, mat_idx=m_conc)
+
+    # Intact/broken elevated west deck (X = -26..-3.4) & east deck (X = +4.2..+26)
+    add_box(bm, (-14.7, oy, 7.62), (22.6, 4.70, 0.72), bevel=0.05, mat_idx=m_conc)
+    add_box(bm, (-14.7, oy - 2.18, 8.28), (22.4, 0.32, 0.68), bevel=0.03, mat_idx=m_dark)
+    add_box(bm, (-14.7, oy + 2.18, 8.28), (22.4, 0.32, 0.68), bevel=0.03, mat_idx=m_dark)
+
+    add_box(bm, (15.1, oy, 7.62), (21.8, 4.70, 0.72), bevel=0.05, mat_idx=m_conc)
+    add_box(bm, (15.1, oy - 2.18, 8.28), (21.6, 0.32, 0.68), bevel=0.03, mat_idx=m_dark)
+    add_box(bm, (15.1, oy + 2.18, 8.28), (21.6, 0.32, 0.68), bevel=0.03, mat_idx=m_dark)
+
+    # Tilted collapsed center span hanging from east edge & resting on rubble mound
+    add_box(bm, (0.4, oy - 0.1, 3.6), (8.2, 4.50, 0.68), rot=(0.14, 0.56, 0.04), bevel=0.06, mat_idx=m_dark)
+    add_box(bm, (-1.8, oy + 0.2, 0.7), (5.2, 3.60, 0.80), rot=(-0.10, -0.25, 0.20), bevel=0.08, mat_idx=m_conc)
+    for rz_off in (-1.4, -0.4, 0.7, 1.6):
+        add_cylinder(bm, (-3.5, oy + rz_off, 7.55), (-1.9, oy + rz_off, 7.20), 0.04, 0.03, segments=5, mat_idx=m_rust)
+        add_cylinder(bm, ( 4.3, oy + rz_off, 7.58), ( 2.8, oy + rz_off, 7.35), 0.04, 0.03, segments=5, mat_idx=m_rust)
+
+    # 2. Leaning Steel Radio / Cell Lattice Tower at (16.2, 22.0) silhouetted against open sky gap
+    tx, ty = 16.2, 22.0
+    tilt_x, tilt_y = 0.045, 0.025
+    add_box(bm, (tx, ty, 0.35), (3.4, 3.4, 0.70), bevel=0.08, mat_idx=m_dark)
+    levels = ((0.65, 1.35), (6.0, 1.00), (12.0, 0.68), (17.5, 0.42), (20.8, 0.24))
+    corners = ((-1, -1), (1, -1), (1, 1), (-1, 1))
+    for li in range(len(levels) - 1):
+        z0, w0 = levels[li]
+        z1, w1 = levels[li + 1]
+        pts0 = [(tx + cx * w0 + z0 * tilt_x, ty + cy * w0 + z0 * tilt_y, z0) for cx, cy in corners]
+        pts1 = [(tx + cx * w1 + z1 * tilt_x, ty + cy * w1 + z1 * tilt_y, z1) for cx, cy in corners]
+        for ci in range(4):
+            ni = (ci + 1) % 4
+            add_cylinder(bm, pts0[ci], pts1[ci], 0.095, 0.08, segments=5, mat_idx=m_metal)
+            add_cylinder(bm, pts1[ci], pts1[ni], 0.055, 0.055, segments=5, mat_idx=m_rust if li % 2 == 0 else m_metal)
+            add_cylinder(bm, pts0[ci], pts1[ni], 0.042, 0.042, segments=4, mat_idx=m_metal)
+    top_x = tx + 20.8 * tilt_x
+    top_y = ty + 20.8 * tilt_y
+    # Crossarms + glowing red beacon crystal
+    add_box(bm, (top_x, top_y, 18.2), (2.4, 0.16, 0.16), rot=(0.0, 0.0, 0.3), mat_idx=m_metal)
+    add_cylinder(bm, (top_x, top_y, 20.8), (top_x + 0.08, top_y + 0.04, 22.3), 0.09, 0.04, segments=6, mat_idx=m_metal)
+    add_box(bm, (top_x + 0.08, top_y + 0.04, 22.45), (0.38, 0.38, 0.42), bevel=0.06, mat_idx=m_beacon)
+
+    # 3. 360-Degree Ruined Skyscrapers, Smokestacks & Rooftop Water Towers (sky gap behind radio tower!)
+    skyscrapers = (
+        # North skyline backdrop (X, Y, W, D, H, yaw, body_mat, has_water_tower)
+        (-42.0, 42.0, 9.5, 8.5, 24.0,  0.12, m_dark,    False),
+        (-30.5, 45.0, 10.5, 8.8, 30.0, -0.06, m_plaster, True),
+        (-21.5, 38.0, 8.2, 7.6, 18.0,  0.08, m_brick,   False),
+        (-13.2, 46.0, 9.6, 8.6, 32.0, -0.04, m_dark,    False),
+        ( -4.2, 43.0, 8.5, 7.8, 22.0,  0.05, m_plaster, False),
+        (  5.2, 48.0, 10.8, 9.0, 33.0, 0.02, m_dark,    False),
+        ( 26.8, 44.0, 9.4, 8.2, 28.0,  0.06, m_brick,   True),
+        ( 37.0, 40.0, 8.8, 7.8, 24.0, -0.10, m_dark,    False),
+        ( 46.0, 42.0, 9.5, 8.4, 26.0,  0.14, m_plaster, False),
+        # Far east/west street corridor framing buildings
+        (-31.0, 12.0, 8.2, 8.6, 15.5,  0.04, m_brick,   False),
+        (-34.5, -5.5, 8.5, 9.0, 13.0, -0.08, m_dark,    False),
+        ( 31.0, 11.5, 8.4, 8.5, 16.5, -0.05, m_plaster, False),
+        ( 34.5, -6.0, 8.8, 8.8, 13.5,  0.09, m_brick,   False),
+        # Distant south outer perimeter (well outside r=36m camera zone)
+        (-34.0,-34.0, 8.8, 8.0, 14.0,  0.22, m_dark,    False),
+        (-16.0,-46.0, 9.5, 8.2, 16.0, -0.10, m_plaster, False),
+        (  4.0,-50.0, 10.0, 8.5, 15.0, 0.06, m_dark,    False),
+        ( 22.0,-44.0, 9.0, 8.0, 14.5,  0.18, m_brick,   False),
+        ( 36.0,-30.0, 8.5, 8.2, 13.5, -0.15, m_dark,    False),
+    )
+
+    for idx, (bx, by, bw, bd, bh, yaw, bmat, water_tower) in enumerate(skyscrapers):
+        # Main stepped skyscraper shell with jagged/broken upper setback
+        add_box(bm, (bx, by, bh * 0.42), (bw, bd, bh * 0.84),
+                rot=(0.0, 0.0, yaw), mat_idx=bmat)
+        # Broken upper crown (offset & shorter to create ragged bombed roofline)
+        crown_h = bh * (0.24 + 0.05 * (idx % 3))
+        crown_tilt = 0.04 if idx % 2 == 0 else -0.04
+        add_box(bm, (bx + bw * 0.12 * (1 if idx % 2 == 0 else -1), by, bh * 0.82 + crown_h * 0.40),
+                (bw * 0.68, bd * 0.72, crown_h),
+                rot=(crown_tilt, -crown_tilt * 0.8, yaw), mat_idx=m_plaster if bmat == m_dark else m_dark)
+
+        # Dark shattered window floor bands along facade facing street
+        n_floors = max(3, int(bh // 4.2))
+        for fl in range(1, n_floors):
+            fz = fl * 3.8
+            if fz < bh * 0.80:
+                add_box(bm, (bx, by, fz), (bw + 0.16, bd + 0.16, 1.35),
+                        rot=(0.0, 0.0, yaw), mat_idx=m_glass if (fl + idx) % 3 != 0 else m_dark)
+
+        # Optional rooftop water tower
+        if water_tower:
+            wz_base = bh * 0.84
+            add_cylinder(bm, (bx - 1.2, by - 0.8, wz_base), (bx - 1.2, by - 0.8, wz_base + 2.4), 0.14, 0.10, segments=4, mat_idx=m_metal)
+            add_cylinder(bm, (bx + 0.2, by - 0.8, wz_base), (bx + 0.2, by - 0.8, wz_base + 2.4), 0.14, 0.10, segments=4, mat_idx=m_metal)
+            add_cylinder(bm, (bx - 0.5, by + 0.2, wz_base), (bx - 0.5, by + 0.2, wz_base + 2.4), 0.14, 0.10, segments=4, mat_idx=m_metal)
+            add_cylinder(bm, (bx - 0.5, by - 0.4, wz_base + 2.4), (bx - 0.5, by - 0.4, wz_base + 4.9), 1.35, 1.25, segments=8, mat_idx=m_wood)
+            add_cone(bm, (bx - 0.5, by - 0.4, wz_base + 4.9), (bx - 0.5, by - 0.4, wz_base + 5.8), 1.45, segments=8, mat_idx=m_rust)
+
+    # Twin ruined industrial factory smokestacks in far north corners
+    for sx, sy, sh in ((-35.5, 48.0, 31.0), (35.5, 48.0, 29.0)):
+        add_cylinder(bm, (sx, sy, 0.0), (sx + 0.35, sy - 0.2, sh), 2.1, 1.05, segments=10, mat_idx=m_brick)
+        add_box(bm, (sx + 0.35, sy - 0.2, sh - 0.4), (2.5, 2.5, 0.7), rot=(0.12, -0.08, 0.4), mat_idx=m_dark)
+
+    obj, tris = finalize_mesh("Env_DistantSkyline", bm, materials, collection=col)
+    apply_box_uvs(obj, tex_scale=0.32)
+    return obj, tris
+
+
 ALL_ENV_BUILDERS = [
     ("ground_cracked_earth", build_env_ground_cracked_earth, "ground"),
     ("road_cracked_asphalt", build_env_road_cracked_asphalt, "ground"),
@@ -801,16 +1050,43 @@ def build_apocalypse_street_scene(materials, idx_map, collection=None):
         placed.append(obj)
         total_tris += t
 
-    # 1. Outer cracked-earth base terrain skirting the road
+    # 1. Endless 160m x 160m Wasteland Earth Skirt + Continuing Side Street + Shoulder Strips
     bm_base = bmesh.new()
     m_soil = idx_map["Mat_Env_SoilCracked"]
     m_dark = idx_map["Mat_Env_ConcreteDark"]
+    m_asph = idx_map["Mat_Env_AsphaltCracked"]
+    m_conc = idx_map["Mat_Env_ConcreteCracked"]
+    m_line = idx_map["Mat_Env_RoadStripe"]
+
+    # Seamless outer cracked-earth terrain extending far into fog (top at Z = -0.018)
+    add_box(bm_base, (0.0, 0.0, -0.078), (160.0, 160.0, 0.12), mat_idx=m_soil)
+    # Raised inner shoulder strips flush under the ruins & props (top at Z = -0.010)
     add_box(bm_base, (0.0,  8.8, -0.050), (42.0, 12.2, 0.08), mat_idx=m_soil)
     add_box(bm_base, (0.0, -8.8, -0.050), (42.0, 12.2, 0.08), mat_idx=m_soil)
-    add_box(bm_base, (-21.0, 0.0, -0.052), (6.0, 30.0, 0.08), mat_idx=m_dark)
-    add_box(bm_base, ( 21.0, 0.0, -0.052), (6.0, 30.0, 0.08), mat_idx=m_dark)
+    # Outer low-poly wasteland berms/rubble hills outside the combat corridor
+    outer_berms = (
+        (-28.0,  15.5, 16.0,  8.5, 1.5,  0.22),
+        (  0.0,  16.5, 22.0,  6.5, 1.2, -0.05),
+        ( 29.0,  16.0, 17.0,  8.5, 1.7, -0.25),
+        (-36.0, -18.0, 14.0,  9.0, 1.1,  0.30),
+        ( 36.0, -18.0, 14.0,  9.0, 1.2, -0.28),
+        (  0.0, -32.0, 34.0, 10.0, 1.4,  0.02),
+    )
+    for bx, by, bw, bd, bh, rz in outer_berms:
+        add_box(bm_base, (bx, by, bh * 0.35 - 0.02), (bw, bd, bh), rot=(0.0, 0.0, rz),
+                bevel=0.45, taper_top=(0.62, 0.58), mat_idx=m_soil)
+
+    # Continuing cracked asphalt avenue extending West (-68..-18) and East (+18..+68) into horizon fog
+    for dir_x in (-1.0, 1.0):
+        ax = dir_x * 43.0
+        add_box(bm_base, (ax, 0.0, -0.018), (50.0, 4.72, 0.032), mat_idx=m_asph)
+        add_box(bm_base, (ax,  2.66, 0.036), (50.0, 0.64, 0.095), mat_idx=m_conc)
+        add_box(bm_base, (ax, -2.66, 0.036), (50.0, 0.64, 0.095), mat_idx=m_conc)
+        for dx in range(21, 67, 4):
+            add_box(bm_base, (dir_x * dx, 0.02, 0.002), (1.35, 0.12, 0.006), mat_idx=m_line)
+
     base_obj, base_tris = finalize_mesh("Env_BaseEarth", bm_base, materials, collection=col)
-    apply_box_uvs(base_obj, tex_scale=0.28)
+    apply_box_uvs(base_obj, tex_scale=0.18)
     placed.append(base_obj)
     total_tris += base_tris
 
@@ -876,5 +1152,15 @@ def build_apocalypse_street_scene(materials, idx_map, collection=None):
         ( 3.2,  -3.25, 0.92, 75), ( 8.4, -3.20, 1.00, 190), (13.4, -3.15, 1.05, 300),
     )):
         add(build_env_grass_clump_tall, f"Env_Grass_S_{k}", (gx, gy, 0.0), rz=rz, sc=sc)
+
+    # 7. Wet Road Puddles, Building Foundation Grounding/Fences & 360° Ruined City Skyline
+    for extra_fn in (
+        _build_wet_road_puddles,
+        _build_foundation_and_street_clutter,
+        _build_distant_city_skyline,
+    ):
+        e_obj, e_tris = extra_fn(materials, idx_map, col)
+        placed.append(e_obj)
+        total_tris += e_tris
 
     return placed, total_tris

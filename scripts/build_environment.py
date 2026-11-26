@@ -98,7 +98,8 @@ def build_diorama_scene(env_dir):
 
 def main():
     env_dir = os.path.join(PROJECT_DIR, "output", "environment")
-    build_modular_assets(env_dir)
+    if "--diorama-only" not in sys.argv:
+        build_modular_assets(env_dir)
     build_diorama_scene(env_dir)
     print("=" * 74)
     print("APOCALYPSE ENVIRONMENT KIT BUILD COMPLETE")

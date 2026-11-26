@@ -26,40 +26,72 @@ from render_preview import (
 )
 
 
-def _add_dusk_lights(center=(0.0, 0.0, 1.0), scale=1.0, bg_rgb=(0.12, 0.13, 0.16)):
+def _add_dusk_lights(center=(0.0, 0.0, 1.0), scale=1.0, bg_rgb=(0.12, 0.13, 0.16), atmospheric_sky=False):
     scene = bpy.context.scene
     if scene.world is None:
         scene.world = bpy.data.worlds.new("DuskWorld")
     scene.world.use_nodes = True
     nt = scene.world.node_tree
     bg = nt.nodes.get("Background")
-    if bg:
+
+    if atmospheric_sky:
+        nt.nodes.clear()
+        out = nt.nodes.new("ShaderNodeOutputWorld")
+        bg = nt.nodes.new("ShaderNodeBackground")
+        tc = nt.nodes.new("ShaderNodeTexCoord")
+        sep = nt.nodes.new("ShaderNodeSeparateXYZ")
+        mr = nt.nodes.new("ShaderNodeMapRange")
+        mr.inputs["From Min"].default_value = -0.02
+        mr.inputs["From Max"].default_value = 0.65
+        mr.clamp = True
+        ramp = nt.nodes.new("ShaderNodeValToRGB")
+        # Map ray Z (0 = horizon, 0.65 = high sky) into rich storm-twilight gradient
+        ramp.color_ramp.elements[0].position = 0.00
+        ramp.color_ramp.elements[0].color = (0.05, 0.06, 0.09, 1.0)
+        e_hor = ramp.color_ramp.elements.new(0.08)
+        e_hor.color = (0.30, 0.21, 0.19, 1.0)
+        e_mid = ramp.color_ramp.elements.new(0.32)
+        e_mid.color = (0.11, 0.16, 0.25, 1.0)
+        ramp.color_ramp.elements[-1].position = 0.92
+        ramp.color_ramp.elements[-1].color = (0.022, 0.032, 0.062, 1.0)
+        nt.links.new(tc.outputs["Generated"], sep.inputs["Vector"])
+        nt.links.new(sep.outputs["Z"], mr.inputs["Value"])
+        nt.links.new(mr.outputs["Result"], ramp.inputs["Fac"])
+        nt.links.new(ramp.outputs["Color"], bg.inputs["Color"])
+        bg.inputs["Strength"].default_value = 0.56
+        nt.links.new(bg.outputs["Background"], out.inputs["Surface"])
+    elif bg:
         bg.inputs["Color"].default_value = (*bg_rgb, 1.0)
         bg.inputs["Strength"].default_value = 0.90
 
     # Warm sun key + cool sky fill + subtle rim
     sun_data = bpy.data.lights.new(name="SunKey", type="SUN")
-    sun_data.energy = 3.2
-    sun_data.color = (1.0, 0.91, 0.78)
+    sun_data.energy = 3.8 if atmospheric_sky else 3.2
+    sun_data.color = (1.0, 0.80, 0.58) if atmospheric_sky else (1.0, 0.91, 0.78)
     sun = bpy.data.objects.new(name="SunKey", object_data=sun_data)
     scene.collection.objects.link(sun)
-    aim_camera(sun, (center[0] - 12 * scale, center[1] - 14 * scale, center[2] + 18 * scale), center)
+    sun_pos = (
+        (center[0] - 18 * scale, center[1] - 12 * scale, center[2] + 9 * scale)
+        if atmospheric_sky else
+        (center[0] - 12 * scale, center[1] - 14 * scale, center[2] + 18 * scale)
+    )
+    aim_camera(sun, sun_pos, center)
 
     fill_data = bpy.data.lights.new(name="CoolFill", type="AREA")
-    fill_data.energy = 420.0 * (scale ** 1.4)
+    fill_data.energy = (340.0 if atmospheric_sky else 420.0) * (scale ** 1.4)
     fill_data.size = 6.0 * scale
-    fill_data.color = (0.72, 0.84, 1.0)
+    fill_data.color = (0.50, 0.70, 1.0) if atmospheric_sky else (0.72, 0.84, 1.0)
     fill = bpy.data.objects.new(name="CoolFill", object_data=fill_data)
     scene.collection.objects.link(fill)
     aim_camera(fill, (center[0] + 9 * scale, center[1] - 10 * scale, center[2] + 7 * scale), center)
 
     rim_data = bpy.data.lights.new(name="BackRim", type="AREA")
-    rim_data.energy = 340.0 * (scale ** 1.4)
-    rim_data.size = 6.0 * scale
-    rim_data.color = (0.88, 0.92, 1.0)
+    rim_data.energy = (520.0 if atmospheric_sky else 340.0) * (scale ** 1.4)
+    rim_data.size = 8.0 * scale
+    rim_data.color = (0.62, 0.80, 1.0) if atmospheric_sky else (0.88, 0.92, 1.0)
     rim = bpy.data.objects.new(name="BackRim", object_data=rim_data)
     scene.collection.objects.link(rim)
-    aim_camera(rim, (center[0], center[1] + 12 * scale, center[2] + 9 * scale), center)
+    aim_camera(rim, (center[0], center[1] + 14 * scale, center[2] + 10 * scale), center)
 
 
 def render_modular_kit_sheet(out_path, tile_size=460):
@@ -106,6 +138,33 @@ def render_modular_kit_sheet(out_path, tile_size=460):
     print(f"Saved {len(tiles)}-asset modular kit sheet: {out_path}")
 
 
+def _add_bounded_atmosphere_haze(scene):
+    """Add bounded volumetric distance fog box so far highway/skyscrapers fade naturally."""
+    bpy.ops.mesh.primitive_cube_add(size=1.0, location=(0.0, 16.0, 12.0))
+    haze_obj = bpy.context.active_object
+    haze_obj.name = "Env_QA_VolumeHaze"
+    haze_obj.scale = (140.0, 120.0, 26.0)
+    haze_obj.visible_shadow = False
+
+    hmat = bpy.data.materials.new("Mat_QA_VolHaze")
+    hmat.use_nodes = True
+    nt = hmat.node_tree
+    nt.nodes.clear()
+    out = nt.nodes.new("ShaderNodeOutputMaterial")
+    vs = nt.nodes.new("ShaderNodeVolumeScatter")
+    vs.inputs["Color"].default_value = (0.44, 0.54, 0.66, 1.0)
+    vs.inputs["Density"].default_value = 0.0085
+    vs.inputs["Anisotropy"].default_value = 0.45
+    nt.links.new(vs.outputs["Volume"], out.inputs["Volume"])
+    haze_obj.data.materials.append(hmat)
+
+    if hasattr(scene, "eevee"):
+        if hasattr(scene.eevee, "volumetric_end"):
+            scene.eevee.volumetric_end = 180.0
+        if hasattr(scene.eevee, "use_volumetric_lights"):
+            scene.eevee.use_volumetric_lights = True
+
+
 def render_diorama_sheet(out_path):
     tmp_dir = os.path.join(PROJECT_DIR, "renders", "_tmp_diorama")
     os.makedirs(tmp_dir, exist_ok=True)
@@ -115,30 +174,43 @@ def render_diorama_sheet(out_path):
     materials, idx_map = create_materials(with_env_textures=True)
     build_apocalypse_street_scene(materials, idx_map)
 
-    _add_dusk_lights(center=(0.0, 2.0, 1.5), scale=3.2, bg_rgb=(0.10, 0.12, 0.15))
+    _add_dusk_lights(center=(0.0, 4.0, 2.0), scale=3.2, bg_rgb=(0.09, 0.11, 0.15), atmospheric_sky=True)
+    _add_bounded_atmosphere_haze(scene)
 
     # Warm orange point lights above both fire barrels
     for lname, lx, ly in (("FirePt_W", -4.4, 3.65), ("FirePt_E", 4.6, 3.75)):
         pl_data = bpy.data.lights.new(name=lname, type="POINT")
-        pl_data.energy = 280.0
-        pl_data.color = (1.0, 0.45, 0.12)
-        pl_data.shadow_soft_size = 0.25
+        pl_data.energy = 420.0
+        pl_data.color = (1.0, 0.44, 0.12)
+        pl_data.shadow_soft_size = 0.30
         pl = bpy.data.objects.new(name=lname, object_data=pl_data)
         pl.location = (lx, ly, 1.45)
         scene.collection.objects.link(pl)
 
+    # Warm amber streetlamp down-cones illuminating wet puddles & cracked asphalt
+    for sname, lx, ly in (("LampSpot_W", -7.85, 3.05), ("LampSpot_E", 5.45, 3.10)):
+        sp_data = bpy.data.lights.new(name=sname, type="SPOT")
+        sp_data.energy = 720.0
+        sp_data.color = (1.0, 0.76, 0.44)
+        sp_data.spot_size = math.radians(72.0)
+        sp_data.spot_blend = 0.60
+        sp_data.shadow_soft_size = 0.25
+        sp = bpy.data.objects.new(name=sname, object_data=sp_data)
+        scene.collection.objects.link(sp)
+        aim_camera(sp, (lx, ly, 4.95), (lx, ly - 1.2, 0.0))
+
     cam_data = bpy.data.cameras.new("DioramaCam")
     cam_data.type = "PERSP"
-    cam_data.lens = 28.0
+    cam_data.lens = 26.0
     cam_data.clip_start = 0.1
-    cam_data.clip_end = 150.0
+    cam_data.clip_end = 260.0
     cam = bpy.data.objects.new("DioramaCam", cam_data)
     scene.collection.objects.link(cam)
     scene.camera = cam
 
     views = [
-        ("wide",  (-3.5, -14.8, 7.6), (0.0,  3.2, 1.4), 1600, 740),
-        ("close", (-7.8,  -3.6, 2.3), (3.8,  4.2, 1.5), 1600, 740),
+        ("wide",  (-4.2, -14.8, 5.6), (0.8,  9.5, 3.6), 1600, 740),
+        ("close", (-8.0,  -3.5, 2.1), (4.5,  4.5, 1.8), 1600, 740),
     ]
     panels = []
     for tag, loc, tgt, w, h in views:
@@ -165,7 +237,8 @@ def render_diorama_sheet(out_path):
 
 def main():
     os.makedirs(os.path.join(PROJECT_DIR, "renders"), exist_ok=True)
-    render_modular_kit_sheet(os.path.join(PROJECT_DIR, "renders", "env_modular_kit_sheet.png"))
+    if "--diorama-only" not in sys.argv:
+        render_modular_kit_sheet(os.path.join(PROJECT_DIR, "renders", "env_modular_kit_sheet.png"))
     render_diorama_sheet(os.path.join(PROJECT_DIR, "renders", "env_apocalypse_street_scene.png"))
 
 

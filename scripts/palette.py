@@ -216,6 +216,8 @@ MATERIAL_SPECS = [
     ("Mat_Env_BarrelRed",       "#922C24", 0.62, 0.32),
     ("Mat_Env_EmberGlow",       "#FF6A1A", 0.25, 0.00, "#FF5210", 4.5),
     ("Mat_Env_FireCore",        "#FFD44D", 0.18, 0.00, "#FFA820", 6.5),
+    ("Mat_Env_PuddleWet",       "#121820", 0.05, 0.22),
+    ("Mat_Env_BeaconRed",       "#FF2A20", 0.20, 0.00, "#FF1E14", 7.5),
 ]
 
 
@@ -268,7 +270,7 @@ def create_materials(with_mutant_textures=False, with_env_textures=False):
 
         bsdf.inputs["Metallic"].default_value = metallic
         if not applied_tex and "Specular IOR Level" in bsdf.inputs:
-            bsdf.inputs["Specular IOR Level"].default_value = 0.35
+            bsdf.inputs["Specular IOR Level"].default_value = 0.65 if roughness <= 0.10 else 0.35
         if len(spec) >= 6 and "Emission Color" in bsdf.inputs:
             bsdf.inputs["Emission Color"].default_value = rgba(spec[4])
             bsdf.inputs["Emission Strength"].default_value = spec[5]
