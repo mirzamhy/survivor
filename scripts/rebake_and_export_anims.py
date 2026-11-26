@@ -67,6 +67,8 @@ def rebake_single(blend_path, glb_path, unarmed_glb_path=None, kind="survivor", 
 
 def main():
     test_only = "--test" in sys.argv
+    humans_only = "--humans" in sys.argv
+    mutants_only = "--mutants" in sys.argv
     out_root = os.path.join(PROJECT_DIR, "output")
     surv_dir = os.path.join(out_root, "survivors")
     zomb_dir = os.path.join(out_root, "zombies")
@@ -92,22 +94,24 @@ def main():
             None,
         ))
     else:
-        for bp in sorted(glob.glob(os.path.join(surv_dir, "*.blend"))):
-            slug = os.path.splitext(os.path.basename(bp))[0]
-            jobs.append((
-                "survivor", None, bp,
-                os.path.join(surv_dir, f"{slug}.glb"),
-                os.path.join(surv_dir, "unarmed", f"{slug}_unarmed.glb"),
-            ))
-        for bp in sorted(glob.glob(os.path.join(zomb_dir, "zombie_*.blend"))):
-            slug = os.path.splitext(os.path.basename(bp))[0]
-            jobs.append(("zombie", None, bp, os.path.join(zomb_dir, f"{slug}.glb"), None))
-        for bp in sorted(glob.glob(os.path.join(zomb_dir, "mutant_*.blend"))):
-            slug = os.path.splitext(os.path.basename(bp))[0]
-            if slug == "mutant_fungal_bloom":
-                continue
-            ctype = slug[len("mutant_"):]
-            jobs.append(("mutant", ctype, bp, os.path.join(zomb_dir, f"{slug}.glb"), None))
+        if not mutants_only:
+            for bp in sorted(glob.glob(os.path.join(surv_dir, "*.blend"))):
+                slug = os.path.splitext(os.path.basename(bp))[0]
+                jobs.append((
+                    "survivor", None, bp,
+                    os.path.join(surv_dir, f"{slug}.glb"),
+                    os.path.join(surv_dir, "unarmed", f"{slug}_unarmed.glb"),
+                ))
+            for bp in sorted(glob.glob(os.path.join(zomb_dir, "zombie_*.blend"))):
+                slug = os.path.splitext(os.path.basename(bp))[0]
+                jobs.append(("zombie", None, bp, os.path.join(zomb_dir, f"{slug}.glb"), None))
+        if not humans_only:
+            for bp in sorted(glob.glob(os.path.join(zomb_dir, "mutant_*.blend"))):
+                slug = os.path.splitext(os.path.basename(bp))[0]
+                if slug == "mutant_fungal_bloom":
+                    continue
+                ctype = slug[len("mutant_"):]
+                jobs.append(("mutant", ctype, bp, os.path.join(zomb_dir, f"{slug}.glb"), None))
 
     print("=" * 78)
     print(f"RE-BAKING & EXPORTING {len(jobs)} MODELS (QUATERNION + FLUID COMBAT ACTIONS)")
