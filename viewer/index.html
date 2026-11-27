@@ -316,6 +316,8 @@
         <label class="check-row"><input id="chk-hud" type="checkbox" checked /> Tampilkan Bar HP &amp; Status di Atas Kepala</label>
         <label class="check-row"><input id="chk-ruler" type="checkbox" checked /> Tampilkan Garis Ukur Jarak</label>
         <label class="check-row"><input id="chk-weather" type="checkbox" checked /> Efek Cuaca, Kabut &amp; Partikel Ringan</label>
+        <label class="check-row"><input id="chk-bloom" type="checkbox" checked /> Efek Bloom / Glow Emissive (Ringan)</label>
+        <label class="check-row"><input id="chk-sfx" type="checkbox" checked /> Efek Suara Pertempuran (Web Audio)</label>
       </div>
 
       <!-- 3. Tambah Karakter -->
@@ -419,6 +421,10 @@
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+    import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+    import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
     // -----------------------------------------------------------------------
     // 1. CATALOG DEFINITIONS (Exact GLB Paths, Animations, Stats & VFX)
@@ -628,20 +634,34 @@
     const keyLight = new THREE.DirectionalLight(0xfff4e0, 2.35);
     keyLight.position.set(10, 18, 12);
     keyLight.castShadow = true;
-    keyLight.shadow.mapSize.set(1024, 1024);
+    keyLight.shadow.mapSize.set(2048, 2048);
     keyLight.shadow.camera.near = 1;
-    keyLight.shadow.camera.far = 62;
-    keyLight.shadow.camera.left = -20;
-    keyLight.shadow.camera.right = 20;
-    keyLight.shadow.camera.top = 16;
-    keyLight.shadow.camera.bottom = -16;
-    keyLight.shadow.bias = -0.0004;
-    keyLight.shadow.normalBias = 0.035;
+    keyLight.shadow.camera.far = 56;
+    keyLight.shadow.camera.left = -18;
+    keyLight.shadow.camera.right = 18;
+    keyLight.shadow.camera.top = 14;
+    keyLight.shadow.camera.bottom = -14;
+    keyLight.shadow.bias = -0.00035;
+    keyLight.shadow.normalBias = 0.028;
     scene.add(keyLight);
 
     const rimLight = new THREE.DirectionalLight(0x60a5fa, 1.15);
     rimLight.position.set(-10, 8, -12);
     scene.add(rimLight);
+
+    // Pooled dynamic combat flash light (zero per-shot allocation)
+    const combatFlashLight = new THREE.PointLight(0xffcf70, 0, 9.0, 1.7);
+    scene.add(combatFlashLight);
+    const combatFlash = { timer: 0, dur: 0.07, maxInt: 5.5 };
+    function triggerFlashLight(pos, colorHex, intensity = 5.5, duration = 0.07) {
+      if (!pos) return;
+      combatFlashLight.position.copy(pos);
+      combatFlashLight.color.setHex(colorHex);
+      combatFlashLight.intensity = intensity;
+      combatFlash.maxInt = intensity;
+      combatFlash.dur = Math.max(0.03, duration);
+      combatFlash.timer = combatFlash.dur;
+    }
 
     // Warm fire barrel accent lights (active in Apocalypse Street mode)
     const fireLightW = new THREE.PointLight(0xff7722, 5.5, 10.0, 1.6);
@@ -653,6 +673,22 @@
     fireLightE.position.set(4.6, 1.45, -3.75);
     fireLightE.visible = false;
     scene.add(fireLightE);
+
+    // Lightweight HDR Selective Bloom pipeline (thresholds only HDR emissives/highlights)
+    const composerRT = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, {
+      type: THREE.HalfFloatType,
+      samples: renderer.capabilities.isWebGL2 ? 4 : 0,
+    });
+    const composer = new EffectComposer(renderer, composerRT);
+    composer.setPixelRatio(renderer.getPixelRatio());
+    composer.setSize(window.innerWidth, window.innerHeight);
+    composer.addPass(new RenderPass(scene, camera));
+    const bloomPass = new UnrealBloomPass(
+      new THREE.Vector2(window.innerWidth, window.innerHeight),
+      0.26, 0.42, 1.08
+    );
+    composer.addPass(bloomPass);
+    composer.addPass(new OutputPass());
 
     // -----------------------------------------------------------------------
     // 2B. PROCEDURAL SKY DOME, LINEAR PMREM IBL & DAYLIGHT/WEATHER PRESETS
@@ -852,10 +888,22 @@
       `,
     });
 
-    const skyDome = new THREE.Mesh(new THREE.SphereGeometry(210, 32, 20), skyMat);
+    const chkBloom = document.getElementById('chk-bloom');
+    const chkSfx = document.getElementById('chk-sfx');
+
+    const skyDome = new THREE.Mesh(new THREE.SphereGeometry(210, 32, 20), skyEnvMat);
     skyDome.visible = false;
     skyDome.frustumCulled = false;
     scene.add(skyDome);
+
+    function syncBloomSkyMaterial() {
+      const targetMat = (chkBloom && chkBloom.checked) ? skyEnvMat : skyMat;
+      if (skyDome.material !== targetMat) {
+        skyDome.material = targetMat;
+      }
+    }
+    syncBloomSkyMaterial();
+    if (chkBloom) chkBloom.addEventListener('change', syncBloomSkyMaterial);
 
     const pmremGen = new THREE.PMREMGenerator(renderer);
     const skyEnvScene = new THREE.Scene();
@@ -1119,7 +1167,37 @@
       return gltfCache.get(fullUrl);
     }
 
-    function prepShadows(root, envBoost = 1.25) {
+    const unitRimUniforms = {
+      uRimColor: { value: new THREE.Color(0xb8d8ff) },
+      uRimStrength: { value: 0.24 },
+    };
+
+    function applyUnitRimShader(mat) {
+      if (!mat || !mat.isMeshStandardMaterial || mat.userData._hasRimShader) return;
+      mat.userData._hasRimShader = true;
+      mat.customProgramCacheKey = () => 'unit_fresnel_rim_v1';
+      mat.onBeforeCompile = (shader) => {
+        shader.uniforms.uRimColor = unitRimUniforms.uRimColor;
+        shader.uniforms.uRimStrength = unitRimUniforms.uRimStrength;
+        shader.fragmentShader = shader.fragmentShader
+          .replace(
+            '#include <common>',
+            '#include <common>\nuniform vec3 uRimColor;\nuniform float uRimStrength;'
+          )
+          .replace(
+            '#include <opaque_fragment>',
+            `{
+              float _rimNdotV = clamp(dot(normalize(normal), normalize(vViewPosition)), 0.0, 1.0);
+              float _rimPow = pow(1.0 - _rimNdotV, 3.2) * uRimStrength;
+              outgoingLight += uRimColor * _rimPow * (0.35 + 0.65 * diffuseColor.rgb);
+            }
+            #include <opaque_fragment>`
+          );
+      };
+      mat.needsUpdate = true;
+    }
+
+    function prepShadows(root, envBoost = 1.25, isUnit = false) {
       root.traverse((o) => {
         if (o.isMesh || o.isSkinnedMesh) {
           o.castShadow = true;
@@ -1127,7 +1205,17 @@
           o.frustumCulled = false; // avoids skinned bounding-box culling during leaps/slams
           const mats = Array.isArray(o.material) ? o.material : [o.material];
           for (const mt of mats) {
-            if (mt && 'envMapIntensity' in mt) mt.envMapIntensity = envBoost;
+            if (!mt) continue;
+            if (isUnit) {
+              applyUnitRimShader(mt);
+              if (!mt.map && mt.isMeshStandardMaterial && !mt.userData._roughCohesed) {
+                mt.userData._roughCohesed = true;
+                mt.roughness = THREE.MathUtils.clamp(mt.roughness, 0.46, 0.88);
+              }
+            }
+            if ('envMapIntensity' in mt) {
+              mt.envMapIntensity = (isUnit && !mt.map) ? Math.min(envBoost, 0.95) : envBoost;
+            }
           }
         }
       });
@@ -1200,6 +1288,7 @@
       const p = WEATHER_PRESETS[activeWeatherId];
 
       skyDome.visible = true;
+      syncBloomSkyMaterial();
       rebuildEnvReflections(p);
 
       scene.background.setHex(p.fogColor);
@@ -1222,6 +1311,8 @@
       rimLight.color.setHex(p.rimColor);
       rimLight.position.set(...p.rimPos);
       rimLight.intensity = p.rimInt;
+      unitRimUniforms.uRimColor.value.setHex(p.rimColor);
+      unitRimUniforms.uRimStrength.value = (activeWeatherId === 'apoc_sunset' || activeWeatherId === 'storm_rain') ? 0.30 : 0.24;
 
       const hasPool = p.lampAlpha > 0.005;
       lampPoolW.visible = hasPool;
@@ -1282,6 +1373,8 @@
         rimLight.color.setHex(0x60a5fa);
         rimLight.position.set(-10, 8, -12);
         rimLight.intensity = 0.95;
+        unitRimUniforms.uRimColor.value.setHex(0x60a5fa);
+        unitRimUniforms.uRimStrength.value = 0.22;
         renderer.toneMappingExposure = 1.15;
         if (sliderBrightness && brightVal) {
           sliderBrightness.value = '1.15';
@@ -1342,6 +1435,134 @@
     const pendingDeathImpacts = [];
     let cameraShake = 0.0;
     const _shakeVec = new THREE.Vector3();
+    let hitStopTimer = 0.0;
+    const _hitFlashColEnemy = new THREE.Color(0xffe6d0);
+    const _hitFlashColSurv = new THREE.Color(0xff4040);
+
+    // Lightweight Procedural Web Audio SFX (zero external audio files, unlocks on first interaction)
+    const SFX = (() => {
+      let ctx = null;
+      let masterGain = null;
+      let noiseBuf = null;
+
+      function ensure() {
+        if (!ctx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return null;
+          ctx = new AC();
+          masterGain = ctx.createGain();
+          masterGain.gain.value = 0.24;
+          masterGain.connect(ctx.destination);
+          const len = Math.floor(ctx.sampleRate * 0.35);
+          noiseBuf = ctx.createBuffer(1, len, ctx.sampleRate);
+          const data = noiseBuf.getChannelData(0);
+          for (let i = 0; i < len; i++) data[i] = Math.random() * 2.0 - 1.0;
+        }
+        return ctx;
+      }
+
+      function unlock() {
+        try {
+          const c = ensure();
+          if (c && c.state === 'suspended') c.resume().catch(() => {});
+        } catch {}
+      }
+      window.addEventListener('pointerdown', unlock, { passive: true });
+      window.addEventListener('keydown', unlock, { passive: true });
+
+      function activeCtx() {
+        if (!chkSfx || !chkSfx.checked) return null;
+        try {
+          const c = ensure();
+          if (!c || c.state !== 'running') return null;
+          return c;
+        } catch {
+          return null;
+        }
+      }
+
+      function playNoise(c, t, dur, filterType, freqStart, freqEnd, q, gainPeak) {
+        const src = c.createBufferSource();
+        src.buffer = noiseBuf;
+        const flt = c.createBiquadFilter();
+        flt.type = filterType;
+        flt.Q.value = q;
+        flt.frequency.setValueAtTime(freqStart, t);
+        if (freqEnd !== freqStart) flt.frequency.exponentialRampToValueAtTime(Math.max(30, freqEnd), t + dur);
+        const g = c.createGain();
+        g.gain.setValueAtTime(Math.max(0.0001, gainPeak), t);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        src.connect(flt).connect(g).connect(masterGain);
+        src.start(t);
+        src.stop(t + dur + 0.01);
+      }
+
+      function playTone(c, t, dur, type, freqStart, freqEnd, gainPeak) {
+        const osc = c.createOscillator();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freqStart, t);
+        osc.frequency.exponentialRampToValueAtTime(Math.max(24, freqEnd), t + dur);
+        const g = c.createGain();
+        g.gain.setValueAtTime(Math.max(0.0001, gainPeak), t);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        osc.connect(g).connect(masterGain);
+        osc.start(t);
+        osc.stop(t + dur + 0.01);
+      }
+
+      return {
+        playGun(cls) {
+          const c = activeCtx();
+          if (!c) return;
+          const t = c.currentTime;
+          if (cls === 'bow') {
+            playTone(c, t, 0.09, 'triangle', 310, 140, 0.24);
+            playNoise(c, t, 0.06, 'highpass', 2400, 1600, 1.0, 0.14);
+          } else if (cls === 'shotgun') {
+            playNoise(c, t, 0.15, 'bandpass', 950, 320, 0.7, 0.56);
+            playTone(c, t, 0.16, 'sine', 140, 36, 0.52);
+          } else if (cls === 'pistol') {
+            playNoise(c, t, 0.08, 'bandpass', 1550, 620, 0.9, 0.42);
+            playTone(c, t, 0.07, 'sine', 180, 58, 0.30);
+          } else {
+            playNoise(c, t, 0.075, 'bandpass', 1700, 680, 0.85, 0.38);
+            playTone(c, t, 0.065, 'sine', 160, 50, 0.28);
+          }
+        },
+        playMelee(heavy) {
+          const c = activeCtx();
+          if (!c) return;
+          const t = c.currentTime;
+          playNoise(c, t, heavy ? 0.15 : 0.10, 'bandpass', heavy ? 520 : 860, heavy ? 170 : 300, 1.8, heavy ? 0.36 : 0.24);
+        },
+        playHit(heavy, isMutant) {
+          const c = activeCtx();
+          if (!c) return;
+          const t = c.currentTime;
+          playTone(c, t, heavy ? 0.095 : 0.065, 'triangle', isMutant ? 118 : 155, isMutant ? 42 : 58, heavy ? 0.34 : 0.20);
+          playNoise(c, t, 0.045, 'bandpass', 720, 340, 1.1, heavy ? 0.24 : 0.14);
+        },
+        playMonsterAttack(isSlam) {
+          const c = activeCtx();
+          if (!c) return;
+          const t = c.currentTime;
+          if (isSlam) {
+            playTone(c, t, 0.20, 'sine', 108, 32, 0.50);
+            playNoise(c, t, 0.16, 'lowpass', 380, 110, 0.9, 0.36);
+          } else {
+            playNoise(c, t, 0.11, 'bandpass', 640, 220, 1.5, 0.26);
+          }
+        },
+        playDeathThud(shakeStrength) {
+          const c = activeCtx();
+          if (!c) return;
+          const t = c.currentTime;
+          const w = Math.min(1.0, Math.max(0.28, (shakeStrength || 0.06) / 0.24));
+          playTone(c, t, 0.24, 'sine', 95, 30, 0.55 * w);
+          playNoise(c, t, 0.18, 'lowpass', 260, 90, 0.8, 0.34 * w);
+        },
+      };
+    })();
     let nextUid = 1;
     let selectedUid = null;
     let paused = false;
@@ -1405,9 +1626,11 @@
         const clonedArr = srcArr.map((mt) => {
           if (!mt) return mt;
           const c = mt.clone();
+          if (c.userData && !c.userData._hasRimShader) applyUnitRimShader(c);
           list.push({
             mat: c,
             origColor: c.color ? c.color.clone() : null,
+            origEmissive: c.emissive ? c.emissive.clone() : null,
             origEmissiveInt: ('emissiveIntensity' in c) ? c.emissiveIntensity : null,
             origRough: ('roughness' in c) ? c.roughness : null,
           });
@@ -1419,9 +1642,11 @@
     }
 
     function restoreCorpseMaterials(unit) {
+      unit.hitFlash = 0;
       if (unit.corpseMats) {
         for (const entry of unit.corpseMats) {
           if (entry.origColor && entry.mat.color) entry.mat.color.copy(entry.origColor);
+          if (entry.origEmissive && entry.mat.emissive) entry.mat.emissive.copy(entry.origEmissive);
           if (entry.origEmissiveInt !== null) entry.mat.emissiveIntensity = entry.origEmissiveInt;
           if (entry.origRough !== null) entry.mat.roughness = entry.origRough;
         }
@@ -1454,6 +1679,7 @@
       deathDecals.length = 0;
       pendingDeathImpacts.length = 0;
       cameraShake = 0.0;
+      hitStopTimer = 0.0;
     }
 
     function spawnBurstParticles(pos, dirBias, colors, count, speedScale = 1.0, lowDust = false) {
@@ -1699,14 +1925,14 @@
 
       const gltf = await loadGLB(glbUrl);
       const clone = SkeletonUtils.clone(gltf.scene);
-      prepShadows(clone);
+      prepShadows(clone, 1.25, true);
 
       let weaponNode = null;
       let muzzleNode = null;
       if (useCustomWeapon) {
         const wGltf = await loadGLB(`../output/weapons/weapon_${wid}.glb`);
         const wClone = SkeletonUtils.clone(wGltf.scene);
-        prepShadows(wClone);
+        prepShadows(wClone, 1.25, true);
         const sockName = wMeta.hand === 'L' ? 'WeaponSocket_L' : 'WeaponSocket_R';
         const sock = clone.getObjectByName(sockName);
         if (sock) sock.add(wClone);
@@ -1759,6 +1985,8 @@
         pendingHit: null,
         dead: false,
         deadTimer: 0,
+        hitFlash: 0,
+        animJitter: 0.94 + Math.random() * 0.12,
         manualHold: false,
         lockTimer: 0,
         stateText: 'Idle',
@@ -1766,7 +1994,8 @@
       };
       createUnitHUD(unit);
       units.push(unit);
-      playClip(unit, unit.anims.aim || unit.anims.idle, false, 0.05);
+      const initAct = playClip(unit, unit.anims.aim || unit.anims.idle, false, 0.05);
+      if (initAct) initAct.time = Math.random() * 0.75;
       layoutArenaPositions();
       refreshRosterUI();
       return unit;
@@ -1778,7 +2007,7 @@
       const clone = SkeletonUtils.clone(gltf.scene);
       const sc = meta.scale || [1, 1, 1];
       clone.scale.set(sc[0], sc[1], sc[2]);
-      prepShadows(clone);
+      prepShadows(clone, 1.25, true);
 
       const mixer = new THREE.AnimationMixer(clone);
       const clipsByName = {};
@@ -1822,6 +2051,8 @@
         pendingHit: null,
         dead: false,
         deadTimer: 0,
+        hitFlash: 0,
+        animJitter: 0.94 + Math.random() * 0.12,
         manualHold: false,
         lockTimer: 0,
         stateText: 'Walk',
@@ -1829,7 +2060,8 @@
       };
       createUnitHUD(unit);
       units.push(unit);
-      playClip(unit, unit.anims.aim || unit.anims.idle, false, 0.05);
+      const initAct = playClip(unit, unit.anims.aim || unit.anims.idle, false, 0.05);
+      if (initAct) initAct.time = Math.random() * 0.75;
       layoutArenaPositions();
       refreshRosterUI();
       return unit;
@@ -1861,6 +2093,7 @@
           u.hp = u.maxHp;
           u.dead = false;
           u.deadTimer = 0;
+          u.hitFlash = 0;
           u.manualHold = false;
           u.lockTimer = 0;
           u.attackCount = 0;
@@ -1871,7 +2104,10 @@
           u.hudEl.classList.remove('dead');
           u.hudEl.style.opacity = '';
           u.hudEl.style.display = 'block';
-          playClip(u, u.team === 'survivor' ? (u.anims.aim || u.anims.idle) : u.anims.walk, false, 0.08, 1.0, true);
+          const startAct = playClip(u, u.team === 'survivor' ? (u.anims.aim || u.anims.idle) : u.anims.walk, false, 0.08, 1.0, true);
+          if (startAct && u.team === 'enemy') {
+            startAct.time = Math.random() * (startAct.getClip().duration || 1.0);
+          }
         });
       };
 
@@ -2017,7 +2253,15 @@
           target.vel.addScaledVector(kb, pushImpulse * massFactor);
         }
       }
+      SFX.playHit(amount >= 40, target.kind === 'mutant');
       if (!immortal && target.hp <= 0) {
+        target.hitFlash = 0;
+        if (target.corpseMats) {
+          for (const entry of target.corpseMats) {
+            if (entry.origEmissive && entry.mat.emissive) entry.mat.emissive.copy(entry.origEmissive);
+            if (entry.origEmissiveInt !== null) entry.mat.emissiveIntensity = entry.origEmissiveInt;
+          }
+        }
         target.dead = true;
         target.deadTimer = 0;
         target.pendingHit = null;
@@ -2026,10 +2270,17 @@
         target.hudEl.classList.add('dead');
         spawnDeathEffect(target, attacker);
         playClip(target, target.anims.death || target.anims.hit, true, 0.14, 1.0, true);
-      } else if (target.lockTimer <= 0 && target.kind === 'zombie') {
-        // Zombies flinch on hit if not mid-skill
-        playClip(target, target.anims.hit, true, 0.08, 1.15);
-        target.lockTimer = 0.24;
+      } else {
+        prepareCorpseMaterials(target);
+        target.hitFlash = 0.095;
+        if (amount >= 42 || pushImpulse >= 2.2) {
+          hitStopTimer = Math.max(hitStopTimer, 0.028);
+        }
+        if (target.lockTimer <= 0 && target.kind === 'zombie') {
+          // Zombies flinch on hit if not mid-skill
+          playClip(target, target.anims.hit, true, 0.08, 1.15);
+          target.lockTimer = 0.24;
+        }
       }
     }
 
@@ -2114,6 +2365,23 @@
         unit.vel.multiplyScalar(Math.exp((unit.dead ? -13.0 : -8.5) * dt));
       }
 
+      if (!unit.dead && unit.hitFlash > 0 && dt > 0 && unit.corpseMats) {
+        unit.hitFlash = Math.max(0.0, unit.hitFlash - dt);
+        const k = unit.hitFlash / 0.095;
+        const flashCol = unit.team === 'survivor' ? _hitFlashColSurv : _hitFlashColEnemy;
+        for (const entry of unit.corpseMats) {
+          if (!entry.mat.emissive) continue;
+          if (k > 0.001) {
+            if (entry.origEmissive) entry.mat.emissive.copy(entry.origEmissive).lerp(flashCol, k);
+            else entry.mat.emissive.copy(flashCol);
+            entry.mat.emissiveIntensity = Math.max(entry.origEmissiveInt || 0.0, 1.35 * k);
+          } else {
+            if (entry.origEmissive) entry.mat.emissive.copy(entry.origEmissive);
+            entry.mat.emissiveIntensity = entry.origEmissiveInt ?? 0.0;
+          }
+        }
+      }
+
       if (unit.dead) {
         if (dt > 0) {
           unit.deadTimer += dt;
@@ -2150,6 +2418,8 @@
             const muz = getMuzzleWorldPos(unit);
             const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(unit.group.quaternion);
             spawnTimedVfx('../output/vfx/vfx_melee_slash.glb', muz, fwd, { groundFlat: false, scale: unit.slashScale || 1.05, life: 0.28 });
+            SFX.playMelee(ph.push > 2.0);
+            if (ph.push > 2.0) triggerFlashLight(muz, 0xffe4b5, 3.0, 0.06);
             if (ph.target && !ph.target.dead && unit.group.position.distanceTo(ph.target.group.position) <= unit.range + 1.3) {
               applyDamage(ph.target, ph.dmg, unit, ph.push || 1.6);
             }
@@ -2157,6 +2427,8 @@
             const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(unit.group.quaternion);
             const o2 = getEnemyAttackOrigin(unit);
             spawnTimedVfx(unit.vfxGlb, o2, fwd, { groundFlat: ph.isSlam, scale: (ph.isSlam ? 1.1 : 1.0) * (unit.vfxScale || 1.0), life: 0.48 });
+            triggerFlashLight(o2, unit.vfxProjColor || (ph.isSlam ? 0xff9944 : 0xdc2626), ph.isSlam ? 5.2 : 3.2, 0.085);
+            SFX.playMonsterAttack(ph.isSlam);
             if (ph.target && !ph.target.dead && unit.group.position.distanceTo(ph.target.group.position) <= ph.maxDist) {
               applyDamage(ph.target, ph.dmg, unit, ph.isSlam ? 3.2 : 1.8);
             }
@@ -2208,7 +2480,7 @@
           const clipObj = unit.clipsByName[moveClip];
           const clipDur = (clipObj && clipObj.duration) || 1.0;
           const strideLen = (isSprint && unit.runStride) ? unit.runStride : (unit.walkStride || 0.90);
-          const clipScale = THREE.MathUtils.clamp((moveSpd * clipDur) / strideLen, 0.65, 1.85);
+          const clipScale = THREE.MathUtils.clamp(((moveSpd * clipDur) / strideLen) * (unit.animJitter || 1.0), 0.65, 1.85);
           const moveDir = computeMoveDir(unit, dir);
           lookAtDir(moveDir);
           unit.group.position.addScaledVector(moveDir, moveSpd * dt);
@@ -2228,6 +2500,8 @@
           const origin = getEnemyAttackOrigin(unit);
           if (useSkill && unit.skillRange > 3.5 && unit.vfxProjColor) {
             spawnTimedVfx(unit.vfxGlb, origin, dir, { groundFlat: false, scale: 0.95 * (unit.vfxScale || 1.0), life: 0.45 });
+            triggerFlashLight(origin, unit.vfxProjColor || 0x84cc16, 4.4, 0.08);
+            SFX.playMonsterAttack(false);
             const hitPt = target.group.position.clone().add(new THREE.Vector3(0, 1.15, 0));
             spawnProjectile(origin, hitPt, unit.vfxProjColor, 14.0, () => applyDamage(target, dmg, unit, 1.4));
           } else {
@@ -2259,7 +2533,7 @@
           const clipObj = unit.clipsByName[moveClip];
           const clipDur = (clipObj && clipObj.duration) || 1.0;
           const strideLen = isSprint ? 1.60 : 1.07;
-          const clipScale = THREE.MathUtils.clamp((moveSpd * clipDur) / strideLen, 0.70, 1.85);
+          const clipScale = THREE.MathUtils.clamp(((moveSpd * clipDur) / strideLen) * (unit.animJitter || 1.0), 0.70, 1.85);
           const moveDir = computeMoveDir(unit, dir);
           lookAtDir(moveDir);
           unit.group.position.addScaledVector(moveDir, moveSpd * dt);
@@ -2292,6 +2566,8 @@
             };
           } else {
             spawnTimedVfx(`../output/vfx/vfx_${unit.vfxId}.glb`, muz, dir, { groundFlat: false, scale: 1.05, life: 0.18 });
+            triggerFlashLight(muz, unit.weaponClass === 'bow' ? 0xf87171 : 0xffcc66, unit.weaponClass === 'bow' ? 2.4 : 5.8, 0.065);
+            SFX.playGun(unit.weaponClass);
             const pColor = unit.weaponClass === 'bow' ? 0xf87171 : 0xffe680;
             spawnProjectile(muz, aimPt, pColor, unit.weaponClass === 'bow' ? 20.0 : 32.0, () => applyDamage(target, unit.dmg, unit, unit.weaponClass === 'bow' ? 1.0 : 0.45));
           }
@@ -2522,6 +2798,8 @@
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
+      composer.setSize(window.innerWidth, window.innerHeight);
+      bloomPass.resolution.set(window.innerWidth, window.innerHeight);
     });
 
     // -----------------------------------------------------------------------
@@ -2536,7 +2814,12 @@
     function animate() {
       requestAnimationFrame(animate);
       const rawDt = Math.min(0.05, clock.getDelta());
-      const dt = paused ? 0 : rawDt * timeScale;
+      let simDt = paused ? 0 : rawDt * timeScale;
+      if (hitStopTimer > 0) {
+        hitStopTimer = Math.max(0.0, hitStopTimer - rawDt);
+        simDt = 0;
+      }
+      const dt = simDt;
 
       for (const u of units) updateUnitAI(u, dt);
       resolveUnitSeparation(dt);
@@ -2568,6 +2851,7 @@
           });
           spawnBurstParticles(pos.clone().setY(0.10), null, [dustCol, 0x64748b], 8, 0.85, true);
           cameraShake = Math.max(cameraShake, imp.theme.shake);
+          SFX.playDeathThud(imp.theme.shake);
         }
       }
 
@@ -2883,6 +3167,13 @@
         }
       }
 
+      if (combatFlash.timer > 0) {
+        combatFlash.timer = Math.max(0.0, combatFlash.timer - rawDt);
+        combatFlashLight.intensity = combatFlash.maxInt * (combatFlash.timer / combatFlash.dur);
+      } else if (combatFlashLight.intensity > 0) {
+        combatFlashLight.intensity = 0;
+      }
+
       controls.update();
       if (cameraShake > 0.002) {
         _shakeVec.set(
@@ -2897,7 +3188,8 @@
         _shakeVec.set(0, 0, 0);
         cameraShake = 0.0;
       }
-      renderer.render(scene, camera);
+      if (chkBloom && chkBloom.checked) composer.render();
+      else renderer.render(scene, camera);
       if (_shakeVec.lengthSq() > 0) {
         camera.position.sub(_shakeVec);
         controls.target.addScaledVector(_shakeVec, -0.35);
