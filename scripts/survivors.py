@@ -9,6 +9,8 @@ from mesh_utils import (
     add_box,
     add_cloth_creases,
     add_cylinder,
+    apply_box_uvs,
+    bake_character_vertex_ao,
     finalize_mesh,
     loft_rings,
     ring_ellipse,
@@ -335,6 +337,8 @@ def _finalize_character(name, bm, materials, regions, P, collection_char, collec
     region_indices = {k: {v.index for v in vlist if v.is_valid} for k, vlist in regions.items()}
 
     body_obj, body_tris = finalize_mesh(f"{name}_Body", bm, materials, collection=collection_char)
+    apply_box_uvs(body_obj, tex_scale=2.8)
+    bake_character_vertex_ao(body_obj, style="survivor")
     arm_obj, specs = create_mixamo_armature(collection=collection_rig, proportions=P)
     arm_obj.name = f"{name}_Armature"
     skin_body_to_armature(body_obj, arm_obj, specs, region_indices)
@@ -357,10 +361,14 @@ def equip_weapon(arm_obj, weapon_id, materials, idx_map, collection=None, clear_
         bow_obj, bow_t = WEAPON_BUILDERS_MAP["compound_bow"](
             materials, idx_map, collection=col, name=f"{prefix}_Weapon_Bow"
         )
+        apply_box_uvs(bow_obj, tex_scale=3.8)
+        bake_character_vertex_ao(bow_obj, style="weapon")
         hold(bow_obj, arm_obj, "mixamorig:LeftHand", grip_world=tuple(arm_obj["left_grip_rest"]), hand="Left")
         arr_obj, arr_t = WEAPON_BUILDERS_MAP["arrow"](
             materials, idx_map, collection=col, name=f"{prefix}_Weapon_Arrow"
         )
+        apply_box_uvs(arr_obj, tex_scale=3.8)
+        bake_character_vertex_ao(arr_obj, style="weapon")
         hold(arr_obj, arm_obj, "mixamorig:RightHand", grip_world=tuple(arm_obj["arrow_grip_rest"]), hand="Right")
         arm_obj["weapon_id"] = "arrow"
         arm_obj["weapon_hold_hand"] = "Right"
@@ -370,6 +378,8 @@ def equip_weapon(arm_obj, weapon_id, materials, idx_map, collection=None, clear_
     if builder is None:
         raise ValueError(f"Unknown weapon_id: {weapon_id!r}")
     wep_obj, wep_t = builder(materials, idx_map, collection=col, name=f"{prefix}_Weapon_{weapon_id}")
+    apply_box_uvs(wep_obj, tex_scale=3.8)
+    bake_character_vertex_ao(wep_obj, style="weapon")
     hold(wep_obj, arm_obj, "mixamorig:RightHand", grip_world=tuple(arm_obj["right_grip_rest"]), hand="Right")
     arm_obj["weapon_id"] = weapon_id
     arm_obj["weapon_hold_hand"] = "Right"
@@ -468,6 +478,8 @@ def build_jake(materials, idx_map, col_char, col_gear, col_rig, gender="male"):
     add_cylinder(bm_bp, (-0.140 * wx * s, bp_y + 0.007 * s, 1.465 * s), (0.140 * wx * s, bp_y + 0.007 * s, 1.465 * s),
                  0.044 * s, 0.044 * s, segments=6, mat_idx=idx_map["Mat_CoyoteTan"])
     bp_obj, bp_t = finalize_mesh(f"{label}_Backpack", bm_bp, materials, collection=col_gear)
+    apply_box_uvs(bp_obj, tex_scale=3.0)
+    bake_character_vertex_ao(bp_obj, style="survivor")
     attach_gear_to_bone(bp_obj, arm_obj, "mixamorig:Spine2")
     gear_items.append((bp_obj, bp_t))
 
@@ -476,6 +488,8 @@ def build_jake(materials, idx_map, col_char, col_gear, col_rig, gender="male"):
 
     # Backup Glock 17 holstered on right thigh (-X)
     pistol_obj, pis_t = build_weapon_pistol(materials, idx_map, collection=col_gear, name=f"{label}_Holster_Pistol")
+    apply_box_uvs(pistol_obj, tex_scale=3.8)
+    bake_character_vertex_ao(pistol_obj, style="weapon")
     hold(pistol_obj, arm_obj, "mixamorig:RightUpLeg",
          grip_world=(-(th_x + 0.006 * s), -0.015 * s, 0.785 * s),
          base_rot=(math.pi, 0.0, 0.0), extra_rot=(0.0, -0.12, 0.0))
@@ -593,6 +607,8 @@ def build_maya(materials, idx_map, col_char, col_gear, col_rig, gender="female")
     add_box(bm_mp, center=(0.0, 0.275 * ty, 1.265 * s), size=(0.024 * s, 0.008 * ty, 0.072 * s),
             mat_idx=idx_map["Mat_MedRed"])
     mp_obj, mp_t = finalize_mesh(f"{label}_MedicPack", bm_mp, materials, collection=col_gear)
+    apply_box_uvs(mp_obj, tex_scale=3.0)
+    bake_character_vertex_ao(mp_obj, style="survivor")
     attach_gear_to_bone(mp_obj, arm_obj, "mixamorig:Spine2")
     gear_items.append((mp_obj, mp_t))
 
@@ -779,6 +795,8 @@ def build_lena(materials, idx_map, col_char, col_gear, col_rig, gender="female")
     gear_items = []
 
     kn_obj, kn_t = build_weapon_knife(materials, idx_map, collection=col_gear, name=f"{label}_Hip_Knife")
+    apply_box_uvs(kn_obj, tex_scale=3.8)
+    bake_character_vertex_ao(kn_obj, style="weapon")
     hold(kn_obj, arm_obj, "mixamorig:Hips",
          grip_world=tuple(kn_grip),
          base_rot=(math.pi, 0.0, 0.0), extra_rot=(ang_hip, 0.0, 0.0))
@@ -794,6 +812,8 @@ def build_lena(materials, idx_map, col_char, col_gear, col_rig, gender="female")
         add_box(bm_q, center=((0.102 + ox) * s, 0.158 * ty, (1.52 + oz) * s),
                 size=(0.014 * s, 0.014 * s, 0.036 * s), mat_idx=idx_map["Mat_VaneRed"])
     q_obj, q_t = finalize_mesh(f"{label}_Quiver", bm_q, materials, collection=col_gear)
+    apply_box_uvs(q_obj, tex_scale=3.0)
+    bake_character_vertex_ao(q_obj, style="survivor")
     attach_gear_to_bone(q_obj, arm_obj, "mixamorig:Spine2")
     gear_items.append((q_obj, q_t))
 

@@ -8,6 +8,8 @@ from mesh_utils import (
     add_cloth_creases,
     add_cone,
     add_cylinder,
+    apply_box_uvs,
+    bake_character_vertex_ao,
     finalize_mesh,
     loft_rings,
     ring_ellipse,
@@ -452,6 +454,8 @@ def _finalize_zombie(name, bm, materials, regions, P, col_char, col_rig):
     region_indices = {k: {v.index for v in vlist if v.is_valid} for k, vlist in regions.items()}
 
     body_obj, body_tris = finalize_mesh(f"{name}_Body", bm, materials, collection=col_char)
+    apply_box_uvs(body_obj, tex_scale=2.6)
+    bake_character_vertex_ao(body_obj, style="zombie")
     arm_obj, specs = create_mixamo_armature(collection=col_rig, proportions=P)
     arm_obj.name = f"{name}_Armature"
     skin_body_to_armature(body_obj, arm_obj, specs, region_indices)
@@ -649,6 +653,8 @@ def build_zombie_spitter_hazmat(materials, idx_map, col_char, col_gear, col_rig)
     add_box(bm_tk, center=(-0.054 * s, 0.268 * s, 1.295 * s), size=(0.022 * s, 0.018 * s, 0.135 * s),
             rot=(0.0, 0.18, 0.0), mat_idx=idx_map["Mat_ZAcidGlow"])
     tk_obj, tk_t = finalize_mesh("Zombie_Spitter_Hazmat_AirTank", bm_tk, materials, collection=col_gear)
+    apply_box_uvs(tk_obj, tex_scale=3.2)
+    bake_character_vertex_ao(tk_obj, style="zombie")
     attach_gear_to_bone(tk_obj, arm_obj, "mixamorig:Spine2")
     gear_items.append((tk_obj, tk_t))
 
@@ -777,6 +783,8 @@ def build_zombie_juggernaut_brute(materials, idx_map, col_char, col_gear, col_ri
     add_box(bm_reb, center=(-0.265 * s, 0.225 * s, 1.690 * s), size=(0.098 * s, 0.090 * s, 0.080 * s),
             rot=(0.35, -0.42, 0.22), mat_idx=idx_map["Mat_WorkGrey"])
     reb_obj, reb_t = finalize_mesh("Zombie_Juggernaut_Brute_Rebar", bm_reb, materials, collection=col_gear)
+    apply_box_uvs(reb_obj, tex_scale=3.2)
+    bake_character_vertex_ao(reb_obj, style="zombie")
     attach_gear_to_bone(reb_obj, arm_obj, "mixamorig:Spine2")
     gear_items.append((reb_obj, reb_t))
 

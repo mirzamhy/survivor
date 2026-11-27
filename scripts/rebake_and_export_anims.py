@@ -40,8 +40,32 @@ def _clear_old_actions_and_nla(arm_obj):
         bpy.data.actions.remove(act)
 
 
-def rebake_single(blend_path, glb_path, unarmed_glb_path=None, kind="survivor", creature_type=None):
+def _refresh_human_pbr_in_scene():
+    from human_textures import HUMAN_MAT_TEX_MAP, apply_human_pbr_texture
+    from palette import MATERIAL_SPECS, rgba
+
+    spec_map = {s[0]: s for s in MATERIAL_SPECS}
+    for mat in bpy.data.materials:
+        spec = spec_map.get(mat.name)
+        if spec is None or len(spec) >= 6 or mat.name not in HUMAN_MAT_TEX_MAP:
+            continue
+        _, color_hex, roughness, metallic = spec[0], spec[1], spec[2], spec[3]
+        if apply_human_pbr_texture(mat, mat.name, color_hex, roughness):
+            for node in mat.node_tree.nodes:
+                if node.type == "BSDF_PRINCIPLED":
+                    node.inputs["Metallic"].default_value = metallic
+                    break
+            mat.diffuse_color = rgba(color_hex)
+
+
+def rebake_single(blend_path, glb_path, unarmed_glb_path=None, kind="survivor", creature_type=None,
+                  refresh_human_pbr=False):
     bpy.ops.wm.open_mainfile(filepath=blend_path)
+    if refresh_human_pbr and kind in ("survivor", "zombie"):
+        _refresh_human_pbr_in_scene()
+        bpy.ops.wm.save_mainfile(filepath=blend_path)
+        return _export_blend_with_actions(blend_path, glb_path, unarmed_glb_path=unarmed_glb_path)
+
     arms = [o for o in bpy.data.objects if o.type == "ARMATURE"]
     if not arms:
         raise RuntimeError(f"No armature in {blend_path}")
@@ -69,6 +93,7 @@ def main():
     test_only = "--test" in sys.argv
     humans_only = "--humans" in sys.argv
     mutants_only = "--mutants" in sys.argv
+    refresh_human_pbr = "--refresh-human-pbr" in sys.argv
     out_root = os.path.join(PROJECT_DIR, "output")
     surv_dir = os.path.join(out_root, "survivors")
     zomb_dir = os.path.join(out_root, "zombies")
@@ -118,10 +143,13 @@ def main():
     print("=" * 78)
     for kind, ctype, bp, gp, up in jobs:
         anims, n_imgs, rot_active, u_anims = rebake_single(
-            bp, gp, unarmed_glb_path=up, kind=kind, creature_type=ctype
+            bp, gp, unarmed_glb_path=up, kind=kind, creature_type=ctype,
+            refresh_human_pbr=refresh_human_pbr,
         )
         if kind == "mutant" and n_imgs < 18:
             raise RuntimeError(f"{os.path.basename(gp)}: expected >= 18 embedded images, got {n_imgs}!")
+        if kind in ("survivor", "zombie") and n_imgs < 6:
+            raise RuntimeError(f"{os.path.basename(gp)}: expected >= 6 embedded PBR images, got {n_imgs}!")
         extra = f" | unarmed={len(u_anims)} clips" if u_anims is not None else ""
         print(
             f"  [{kind:<8s}] {os.path.basename(gp):<30s} : clips={len(anims):2d} (rot={rot_active:2d}) | images={n_imgs:2d}{extra}"

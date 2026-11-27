@@ -218,15 +218,25 @@ MATERIAL_SPECS = [
     ("Mat_Env_FireCore",        "#FFD44D", 0.18, 0.00, "#FFA820", 6.5),
     ("Mat_Env_PuddleWet",       "#121820", 0.05, 0.22),
     ("Mat_Env_BeaconRed",       "#FF2A20", 0.20, 0.00, "#FF1E14", 7.5),
+    ("Mat_Env_BeaconBlue",      "#2288FF", 0.20, 0.00, "#1E78FF", 7.5),
+    ("Mat_Env_PoliceWhite",     "#D6DCE0", 0.56, 0.14),
+    ("Mat_Env_MedCanvas",       "#C6CEC4", 0.88, 0.00),
+    ("Mat_Env_MedCross",        "#BA2626", 0.78, 0.00),
+    ("Mat_Env_CrateGreen",      "#3E4D33", 0.74, 0.16),
 ]
 
 
-def create_materials(with_mutant_textures=False, with_env_textures=False):
+def create_materials(with_mutant_textures=False, with_env_textures=False, with_human_textures=False):
     """Create or return the survivor material list and index lookup."""
     apply_tex_fn = None
     if with_mutant_textures:
         from mutant_textures import apply_mutant_pbr_texture
         apply_tex_fn = apply_mutant_pbr_texture
+
+    apply_human_fn = None
+    if with_human_textures:
+        from human_textures import apply_human_pbr_texture
+        apply_human_fn = apply_human_pbr_texture
 
     apply_env_fn = None
     if with_env_textures:
@@ -260,7 +270,9 @@ def create_materials(with_mutant_textures=False, with_env_textures=False):
         if len(spec) < 6:
             if apply_env_fn is not None and name.startswith("Mat_Env_"):
                 applied_tex = bool(apply_env_fn(mat, name, color_hex, roughness))
-            elif apply_tex_fn is not None:
+            elif apply_human_fn is not None:
+                applied_tex = bool(apply_human_fn(mat, name, color_hex, roughness))
+            if not applied_tex and apply_tex_fn is not None:
                 applied_tex = bool(apply_tex_fn(mat, name, color_hex, roughness))
             if applied_tex:
                 for node in mat.node_tree.nodes:

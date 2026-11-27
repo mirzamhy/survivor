@@ -435,6 +435,103 @@ def bake_mutant_vertex_shading(
             col_data[li].color = vert_rgb[loops[li].vertex_index]
 
 
+def bake_character_vertex_ao(mesh_obj, style="survivor"):
+    """Bake subtle geometric cavity AO, ridge highlights, and boot/hem grounding into vertex color 'Col'."""
+    mesh = mesh_obj.data
+    bm = bmesh.new()
+    bm.from_mesh(mesh)
+    bm.verts.ensure_lookup_table()
+    bm.normal_update()
+
+    mat_names = [
+        (slot.material.name if slot.material else "")
+        for slot in mesh_obj.material_slots
+    ]
+    skin_verts = set()
+    if style == "survivor" and mat_names:
+        for f in bm.faces:
+            mname = mat_names[f.material_index] if f.material_index < len(mat_names) else ""
+            if "Skin" in mname or "Lip" in mname or "Eye" in mname:
+                for v in f.verts:
+                    skin_verts.add(v.index)
+
+    zs = [v.co.z for v in bm.verts]
+    z_min = min(zs) if zs else 0.0
+    z_span = max(1e-4, (max(zs) if zs else 1.0) - z_min)
+
+    if style == "zombie":
+        base_lo, base_span = 0.82, 0.14
+        g_thresh, g_tint, g_str = 0.26, (0.48, 0.44, 0.40), 0.55
+        c_tint, c_str = (0.44, 0.36, 0.38), 0.68
+        r_tint, r_str = (0.98, 0.95, 0.90), 0.36
+    elif style == "weapon":
+        base_lo, base_span = 0.92, 0.04
+        g_thresh, g_tint, g_str = 0.0, (0.92, 0.92, 0.92), 0.0
+        c_tint, c_str = (0.46, 0.48, 0.52), 0.62
+        r_tint, r_str = (1.00, 1.00, 1.00), 0.38
+    else:  # survivor
+        base_lo, base_span = 0.88, 0.11
+        g_thresh, g_tint, g_str = 0.22, (0.68, 0.64, 0.60), 0.42
+        c_tint, c_str = (0.56, 0.52, 0.50), 0.50
+        r_tint, r_str = (1.00, 0.99, 0.97), 0.28
+
+    vert_rgb = []
+    for v in bm.verts:
+        acc = 0.0
+        cnt = 0
+        vn = v.normal
+        for e in v.link_edges:
+            nb = e.other_vert(v)
+            dv = nb.co - v.co
+            ln = dv.length
+            if ln > 1e-6:
+                acc += vn.dot(dv / ln)
+                cnt += 1
+        curv = math.tanh((acc / max(1, cnt)) * 3.8)
+
+        z_norm = max(0.0, min(1.0, (v.co.z - z_min) / z_span))
+        base_mul = base_lo + base_span * z_norm
+        r, g, b = base_mul, base_mul, base_mul
+
+        if g_thresh > 0.0 and z_norm < g_thresh:
+            gf = (g_thresh - z_norm) / g_thresh
+            gf = gf * gf * g_str
+            r = r * (1.0 - gf) + g_tint[0] * gf
+            g = g * (1.0 - gf) + g_tint[1] * gf
+            b = b * (1.0 - gf) + g_tint[2] * gf
+
+        is_skin = v.index in skin_verts
+        if curv > 0.0:
+            w_cav = (0.22 if is_skin else c_str)
+            cf = min(1.0, (curv ** 0.90) * w_cav)
+            r = r * (1.0 - cf) + c_tint[0] * cf
+            g = g * (1.0 - cf) + c_tint[1] * cf
+            b = b * (1.0 - cf) + c_tint[2] * cf
+        elif curv < 0.0:
+            w_rdg = (0.14 if is_skin else r_str)
+            rf = min(1.0, ((-curv) ** 0.85) * w_rdg)
+            r = r * (1.0 - rf) + r_tint[0] * rf
+            g = g * (1.0 - rf) + r_tint[1] * rf
+            b = b * (1.0 - rf) + r_tint[2] * rf
+
+        vert_rgb.append((
+            max(0.0, min(1.0, r)),
+            max(0.0, min(1.0, g)),
+            max(0.0, min(1.0, b)),
+            1.0,
+        ))
+    bm.free()
+
+    col_attr = mesh.color_attributes.get("Col")
+    if col_attr is None:
+        col_attr = mesh.color_attributes.new(name="Col", type="BYTE_COLOR", domain="CORNER")
+    col_data = col_attr.data
+    loops = mesh.loops
+    for poly in mesh.polygons:
+        for li in poly.loop_indices:
+            col_data[li].color = vert_rgb[loops[li].vertex_index]
+
+
 def apply_box_uvs(mesh_obj, tex_scale=1.7):
     """Apply fast distortion-free triplanar/box UV projection per polygon for PBR textures."""
     mesh = mesh_obj.data

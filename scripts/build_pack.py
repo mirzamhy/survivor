@@ -19,6 +19,7 @@ from build_survivor import (
     world_bounds,
 )
 from palette import create_materials
+from mesh_utils import apply_box_uvs, bake_character_vertex_ao
 from mutant_vfx import MUTANT_VFX_MAP
 from rig_controls import verify_live_ik
 from rig_creature import bake_creature_actions
@@ -43,9 +44,11 @@ def build_all_weapons(weapons_dir):
     print(f"BUILDING {len(ALL_WEAPON_BUILDERS)} CANONICAL WEAPONS (grip=(0,0,0), muzzle=+Z)")
     for wid, builder, expected_z in ALL_WEAPON_BUILDERS:
         clear_scene()
-        materials, idx_map = create_materials(with_mutant_textures=True)
+        materials, idx_map = create_materials(with_human_textures=True)
         obj, tris = builder(materials, idx_map)
         assert_pure_tris([obj])
+        apply_box_uvs(obj, tex_scale=4.0)
+        bake_character_vertex_ao(obj, style="weapon")
         mins, maxs = world_bounds([obj])
         z_len = maxs[2] - mins[2]
         y_len = maxs[1] - mins[1]
@@ -100,7 +103,7 @@ def build_all_survivors(surv_dir):
         col_gear = make_collection("Gear")
         col_rig = make_collection("Rig")
 
-        materials, idx_map = create_materials(with_mutant_textures=True)
+        materials, idx_map = create_materials(with_human_textures=True)
         body_obj, body_tris, arm_obj, gear_items = builder(materials, idx_map, col_char, col_gear, col_rig)
 
         all_meshes = [body_obj] + [g for g, _ in gear_items]
@@ -149,9 +152,9 @@ def build_all_survivors(surv_dir):
             f"deform={n_deform}, ctrl={n_ctrl} | actions={n_actions}"
         )
 
-        # Round-trip glTF checks (equipped + unarmed sockets)
-        verify_glb_roundtrip(glb_path, expected_centroids, expected_sockets=expected_sockets)
-        verify_glb_roundtrip(unarmed_glb, unarmed_centroids, expected_sockets=expected_sockets)
+        # Round-trip glTF checks (equipped + unarmed sockets + embedded PBR images)
+        verify_glb_roundtrip(glb_path, expected_centroids, expected_sockets=expected_sockets, min_images=6)
+        verify_glb_roundtrip(unarmed_glb, unarmed_centroids, expected_sockets=expected_sockets, min_images=6)
 
 
 def build_all_zombies(zombies_dir):
@@ -167,7 +170,7 @@ def build_all_zombies(zombies_dir):
         col_gear = make_collection("Gear")
         col_rig = make_collection("Rig")
 
-        materials, idx_map = create_materials(with_mutant_textures=True)
+        materials, idx_map = create_materials(with_human_textures=True)
         body_obj, body_tris, arm_obj, gear_items = builder(materials, idx_map, col_char, col_gear, col_rig)
 
         all_meshes = [body_obj] + [g for g, _ in gear_items]
@@ -207,6 +210,7 @@ def build_all_zombies(zombies_dir):
             expected_sockets=expected_sockets,
             min_h=1.30,
             max_h=2.55,
+            min_images=6,
         )
 
 
@@ -295,9 +299,15 @@ def build_mutants(zombies_dir, only_slug=None):
 
 def main():
     vfx_only = "--vfx-only" in sys.argv
+    weapons_only = "--weapons-only" in sys.argv
     zombies_only = "--zombies-only" in sys.argv
     mutant_only = "--mutant-only" in sys.argv
     out_root = os.path.join(PROJECT_DIR, "output")
+    if weapons_only:
+        build_all_weapons(os.path.join(out_root, "weapons"))
+        print("=" * 64)
+        print("WEAPONS BUILD COMPLETE")
+        return
     if mutant_only:
         idx = sys.argv.index("--mutant-only")
         slug = sys.argv[idx + 1] if (idx + 1 < len(sys.argv) and not sys.argv[idx + 1].startswith("-")) else None
