@@ -1024,6 +1024,23 @@
     fireHaloE.scale.set(2.6, 2.6, 1);
     atmosphereGroup.add(fireHaloE);
 
+    // Alternating red/blue roof lightbar halos on wrecked police cruiser
+    const policeHaloRed = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: softGlowTex, color: 0xff2820, transparent: true, opacity: 0.25,
+      blending: THREE.AdditiveBlending, depthWrite: false, fog: false,
+    }));
+    policeHaloRed.position.set(8.72, 1.52, -3.96);
+    policeHaloRed.scale.setScalar(1.65);
+    atmosphereGroup.add(policeHaloRed);
+
+    const policeHaloBlue = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: softGlowTex, color: 0x2688ff, transparent: true, opacity: 0.25,
+      blending: THREE.AdditiveBlending, depthWrite: false, fog: false,
+    }));
+    policeHaloBlue.position.set(8.80, 1.52, -4.54);
+    policeHaloBlue.scale.setScalar(1.65);
+    atmosphereGroup.add(policeHaloBlue);
+
     // Batched rising smoke plumes (1 THREE.Points draw call for fire barrels & wrecked car hood)
     const smokeEmitters = [
       { x: -4.4, y: 1.25, z: -3.65 },
@@ -1155,7 +1172,7 @@
     // -----------------------------------------------------------------------
     // 3. GLB ASSET CACHE & WEAPON/VFX LOADER (cache-busted for freshly baked animations)
     // -----------------------------------------------------------------------
-    const ASSET_VER = '?v=11';
+    const ASSET_VER = '?v=12';
     const loader = new GLTFLoader();
     const gltfCache = new Map();
 
@@ -3047,6 +3064,17 @@
         const haloSc = 2.1 + 0.24 * Math.sin(tNow * 12.0);
         fireHaloW.scale.set(haloSc, haloSc, 1);
         fireHaloE.scale.set(haloSc * 0.96, haloSc * 0.96, 1);
+
+        // Alternating police cruiser emergency lightbar halos
+        const isDimMood = (activeWeatherId === 'apoc_sunset' || activeWeatherId === 'storm_rain');
+        const sirenPeak = isDimMood ? 0.48 : 0.16;
+        const sirenWave = Math.sin(tNow * 6.4);
+        const redPow = Math.pow(Math.max(0.0, sirenWave), 1.6);
+        const bluePow = Math.pow(Math.max(0.0, -sirenWave), 1.6);
+        policeHaloRed.material.opacity = sirenPeak * (0.14 + 0.86 * redPow);
+        policeHaloBlue.material.opacity = sirenPeak * (0.14 + 0.86 * bluePow);
+        policeHaloRed.scale.setScalar(1.35 + 0.45 * redPow);
+        policeHaloBlue.scale.setScalar(1.35 + 0.45 * bluePow);
 
         // Streetlamp ground pools & cones (hidden in daytime, active in sunset/storm; east sputters)
         const sputter = Math.sin(tNow * 17.0) * Math.sin(tNow * 31.3) > 0.56 ? 0.20 : 1.0;
