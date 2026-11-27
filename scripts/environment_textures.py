@@ -135,14 +135,37 @@ def _generate_env_archetype(arch, mat_name, base_hex, base_roughness):
             paint_rgb = _mix(_c("#364954"), _c("#536B78"), fbm_b)
         elif mat_name == "Mat_Env_BarrelRed":
             paint_rgb = _mix(_c("#742019"), _c("#A3382D"), fbm_b)
+        elif mat_name == "Mat_Env_PoliceWhite":
+            paint_rgb = _mix(_c("#B8C0C6"), _c("#E4EAEE"), fbm_b)
+        elif mat_name == "Mat_Env_CrateGreen":
+            paint_rgb = _mix(_c("#313F27"), _c("#4D5F3F"), fbm_b)
+        elif mat_name == "Mat_Env_HazardYellow":
+            paint_rgb = _mix(_c("#9C7618"), _c("#D8AA2E"), fbm_b)
+        elif mat_name == "Mat_Env_MetalScrap":
+            paint_rgb = _mix(_c("#262A30"), _c("#42474E"), fbm_b)
         else:
             paint_rgb = _mix(_c("#4A342B"), _c("#684130"), fbm_b)
 
         rust_col = _mix(_c("#562616"), _c("#8D4422"), fbm_a)
-        rgb = _mix(paint_rgb, rust_col, rust_mask * (0.90 if mat_name == "Mat_Env_RustHeavy" else 0.62))
+        rust_w = 0.90 if mat_name == "Mat_Env_RustHeavy" else (0.38 if mat_name == "Mat_Env_PoliceWhite" else 0.56)
+        rgb = _mix(paint_rgb, rust_col, rust_mask * rust_w)
         height = np.clip(0.62 - 0.25 * rust_mask + 0.14 * fbm_a, 0.0, 1.0)
-        rough_map = np.clip(float(base_roughness) - 0.12 * (1.0 - rust_mask) + 0.16 * rust_mask, 0.45, 0.92)
+        rough_map = np.clip(float(base_roughness) - 0.12 * (1.0 - rust_mask) + 0.16 * rust_mask, 0.42, 0.92)
         norm_rgba = _height_to_normal_rgba(height, strength=3.0)
+
+    elif arch == "fabric_burlap":
+        # Coarse burlap / military canvas weave with weathered soot/dust blotches
+        fbm_a = _periodic_fbm(n, 5, seed=651)
+        wx = _periodic_fbm(n, 4, seed=657)
+        wy = _periodic_fbm(n, 4, seed=663)
+        weave = 0.5 + 0.5 * np.sin(gx * 2.0 * np.pi * 16.0) * np.sin(gy * 2.0 * np.pi * 16.0)
+        grime = _domain_warp(np.clip((fbm_a - 0.54) * 2.2, 0.0, 1.0), wx, wy, 6.0)
+        c_base = _c(base_hex)
+        rgb = c_base * (0.82 + 0.26 * (0.55 * weave + 0.45 * fbm_a))[..., None]
+        rgb = _mix(rgb, _c("#3A3228"), grime * 0.40)
+        height = np.clip(0.55 + 0.25 * weave + 0.20 * fbm_a - 0.15 * grime, 0.0, 1.0)
+        rough_map = np.clip(float(base_roughness) - 0.05 * weave + 0.05 * grime, 0.72, 0.96)
+        norm_rgba = _height_to_normal_rgba(height, strength=2.9)
 
     elif arch == "wood_weathered":
         # Weathered splintered barricade timber planks
@@ -202,7 +225,14 @@ ENV_MAT_TEX_MAP = {
     "Mat_Env_RustHeavy":       ("rust_weathered",   0.90, 0.30),
     "Mat_Env_CarPaintFaded":   ("rust_weathered",   0.78, 0.34),
     "Mat_Env_BarrelRed":       ("rust_weathered",   0.82, 0.32),
+    "Mat_Env_PoliceWhite":     ("rust_weathered",   0.72, 0.36),
+    "Mat_Env_CrateGreen":      ("rust_weathered",   0.78, 0.28),
+    "Mat_Env_HazardYellow":    ("rust_weathered",   0.76, 0.28),
+    "Mat_Env_MetalScrap":      ("rust_weathered",   0.85, 0.44),
     "Mat_Env_WoodPlank":       ("wood_weathered",   0.82, 0.20),
+    "Mat_Env_Sandbag":         ("fabric_burlap",    0.90, 0.18),
+    "Mat_Env_MedCanvas":       ("fabric_burlap",    0.78, 0.18),
+    "Mat_Env_MedCross":        ("fabric_burlap",    0.68, 0.22),
     "Mat_Env_GrassDry":        ("grass_organic",    0.55, 0.22),
     "Mat_Env_GrassLush":       ("grass_organic",    0.55, 0.24),
 }

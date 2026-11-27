@@ -755,6 +755,221 @@ def build_env_fire_barrel(materials, idx_map, collection=None, name="Env_FireBar
     return obj, tris
 
 
+def build_env_police_cruiser(materials, idx_map, collection=None, name="Env_Police_Cruiser"):
+    """4.35m x 1.88m x 1.54m wrecked black-and-white police interceptor with push-bumper & roof lightbar."""
+    bm = bmesh.new()
+    m_white = idx_map["Mat_Env_PoliceWhite"]
+    m_dark = idx_map["Mat_Env_MetalScrap"]
+    m_rust = idx_map["Mat_Env_RustHeavy"]
+    m_glass = idx_map["Mat_Env_GlassBroken"]
+    m_tire = idx_map["Mat_BootSole"]
+    m_red = idx_map["Mat_Env_BeaconRed"]
+    m_blue = idx_map["Mat_Env_BeaconBlue"]
+
+    # Chassis & two-tone squad car lower body (black hood/trunk/fenders + white doors)
+    add_box(bm, (0.0, 0.0, 0.36), (3.98, 1.56, 0.14), mat_idx=m_dark)
+    add_box(bm, (0.00, 0.0, 0.62), (4.08, 1.72, 0.44), bevel=0.04, taper_top=(0.96, 0.94), mat_idx=m_dark)
+    # White patrol side doors & white cabin roof
+    add_box(bm, (-0.18, -0.865, 0.62), (1.76, 0.05, 0.38), mat_idx=m_white)
+    add_box(bm, (-0.18,  0.865, 0.62), (1.76, 0.05, 0.38), mat_idx=m_white)
+    # Dented rusting front left fender & popped hood
+    add_box(bm, (1.36, 0.0, 0.90), (1.02, 1.54, 0.05), rot=(0.0, -0.14, 0.0), mat_idx=m_dark)
+    add_box(bm, (1.42, -0.78, 0.66), (0.88, 0.16, 0.32), rot=(0.05, 0.0, -0.06), mat_idx=m_rust)
+
+    # White squad cabin roof + B/C pillars
+    add_box(bm, (-0.36, 0.0, 1.32), (1.68, 1.46, 0.09), bevel=0.02, mat_idx=m_white)
+    for px, py, ry in ((0.42, -0.68, -0.38), (0.42, 0.68, -0.38), (-1.14, -0.68, 0.35), (-1.14, 0.68, 0.35), (-0.34, -0.68, 0.0), (-0.34, 0.68, 0.0)):
+        add_box(bm, (px, py, 1.07), (0.09, 0.08, 0.52), rot=(0.0, ry, 0.0), mat_idx=m_white if abs(px + 0.34) < 0.1 else m_dark)
+
+    # Shattered windshield shards
+    add_box(bm, (0.46, -0.42, 0.98), (0.03, 0.42, 0.24), rot=(0.0, -0.38, 0.0), taper_top=(0.5, 0.3), mat_idx=m_glass)
+    add_box(bm, (0.46,  0.46, 1.12), (0.03, 0.34, 0.18), rot=(0.0, -0.38, 0.0), taper_top=(0.5, 0.4), mat_idx=m_glass)
+
+    # Roof emergency lightbar (crimson red left + cobalt blue right + steel bridge)
+    add_box(bm, (-0.16,  0.00, 1.41), (0.20, 1.18, 0.06), mat_idx=m_dark)
+    add_box(bm, (-0.16, -0.34, 1.45), (0.18, 0.42, 0.10), bevel=0.015, mat_idx=m_red)
+    add_box(bm, (-0.16,  0.34, 1.45), (0.18, 0.42, 0.10), bevel=0.015, mat_idx=m_blue)
+    add_box(bm, (-0.16,  0.00, 1.45), (0.18, 0.22, 0.10), mat_idx=m_white)
+
+    # Heavy police steel push-bumper + rear bumper
+    add_box(bm, (2.12, 0.0, 0.54), (0.16, 1.15, 0.46), mat_idx=m_dark)
+    add_box(bm, (2.08, 0.0, 0.42), (0.14, 1.76, 0.16), mat_idx=m_dark)
+    add_box(bm, (-2.08, 0.0, 0.42), (0.14, 1.74, 0.15), mat_idx=m_dark)
+
+    # 4 Wheels
+    for wx, wy, off in ((1.28, -0.82, 0.0), (1.28, 0.82, 0.03), (-1.28, -0.82, 0.0), (-1.28, 0.82, 0.0)):
+        r = 0.33
+        add_cylinder(bm, (wx, wy - 0.12, r), (wx, wy + 0.12, r + off), r, r, segments=10, mat_idx=m_tire)
+        add_cylinder(bm, (wx, wy - 0.13, r), (wx, wy + 0.13, r + off), 0.16, 0.16, segments=8, mat_idx=m_dark)
+
+    obj, tris = finalize_mesh(name, bm, materials, collection=collection)
+    apply_box_uvs(obj, tex_scale=0.85)
+    return obj, tris
+
+
+def build_env_medical_tent(materials, idx_map, collection=None, name="Env_Medical_Tent"):
+    """3.2m x 2.6m x 2.35m quarantine field triage tent with steel poles, medical crosses & field cot."""
+    bm = bmesh.new()
+    m_canvas = idx_map["Mat_Env_MedCanvas"]
+    m_cross = idx_map["Mat_Env_MedCross"]
+    m_white = idx_map["Mat_Env_PoliceWhite"]
+    m_metal = idx_map["Mat_Env_MetalScrap"]
+    m_crate = idx_map["Mat_Env_CrateGreen"]
+    m_bag = idx_map["Mat_Env_Sandbag"]
+
+    hw, hd = 1.55, 1.25
+    eave_z, ridge_z = 1.58, 2.35
+    # 6 tubular steel frame poles + top ridge beam
+    for px in (-hw, 0.0, hw):
+        for py in (-hd, hd):
+            add_cylinder(bm, (px, py, 0.0), (px, py, eave_z), 0.042, 0.038, segments=6, mat_idx=m_metal)
+    add_cylinder(bm, (-hw, 0.0, ridge_z), (hw, 0.0, ridge_z), 0.040, 0.040, segments=6, mat_idx=m_metal)
+
+    # Pitched canvas roof slopes (south/front & north/back) + canvas side walls
+    slope_len = math.hypot(hd + 0.12, ridge_z - eave_z)
+    slope_ang = math.atan2(ridge_z - eave_z, hd + 0.12)
+    for sy_sign in (-1.0, 1.0):
+        add_box(
+            bm,
+            (0.0, sy_sign * (hd + 0.12) * 0.5, 0.5 * (eave_z + ridge_z) + 0.02),
+            (hw * 2.0 + 0.24, slope_len, 0.06),
+            rot=(-sy_sign * slope_ang, 0.0, 0.0),
+            mat_idx=m_canvas,
+        )
+    # Left, right, and rear walls (front -Y left open to reveal cot & medical supplies)
+    add_box(bm, (-hw + 0.02, 0.0, eave_z * 0.5), (0.05, hd * 2.0, eave_z), mat_idx=m_canvas)
+    add_box(bm, ( hw - 0.02, 0.0, eave_z * 0.5), (0.05, hd * 2.0, eave_z), mat_idx=m_canvas)
+    add_box(bm, (0.0, hd - 0.02, eave_z * 0.5), (hw * 2.0, 0.05, eave_z), mat_idx=m_canvas)
+    # Rolled-up front doorway canvas valance
+    add_cylinder(bm, (-hw + 0.10, -hd, eave_z - 0.08), (hw - 0.10, -hd, eave_z - 0.08), 0.09, 0.09, segments=6, mat_idx=m_canvas)
+
+    # Bright white medical emblem patch + crimson cross on left & right walls + roof panel
+    for sx in (-hw - 0.02, hw + 0.02):
+        add_box(bm, (sx, 0.0, 1.02), (0.03, 0.68, 0.68), mat_idx=m_white)
+        add_box(bm, (sx + (0.015 if sx > 0 else -0.015), 0.0, 1.02), (0.02, 0.44, 0.14), mat_idx=m_cross)
+        add_box(bm, (sx + (0.015 if sx > 0 else -0.015), 0.0, 1.02), (0.02, 0.14, 0.44), mat_idx=m_cross)
+    # Roof cross facing camera (-Y slope)
+    rc_y, rc_z = -0.58, 1.99
+    add_box(bm, (0.0, rc_y, rc_z), (0.64, 0.62, 0.04), rot=(slope_ang, 0.0, 0.0), mat_idx=m_white)
+    add_box(bm, (0.0, rc_y - 0.02, rc_z + 0.015), (0.42, 0.14, 0.04), rot=(slope_ang, 0.0, 0.0), mat_idx=m_cross)
+    add_box(bm, (0.0, rc_y - 0.02, rc_z + 0.015), (0.14, 0.42, 0.04), rot=(slope_ang, 0.0, 0.0), mat_idx=m_cross)
+
+    # Interior medical cot + field crate & anchor sandbags
+    add_box(bm, (-0.55, 0.10, 0.46), (0.76, 1.68, 0.10), mat_idx=m_bag)
+    for lx in (-0.86, -0.24):
+        for ly in (-0.64, 0.84):
+            add_cylinder(bm, (lx, ly, 0.0), (lx, ly, 0.42), 0.025, 0.025, segments=5, mat_idx=m_metal)
+    add_box(bm, (0.65, 0.35, 0.24), (0.68, 0.52, 0.48), bevel=0.02, mat_idx=m_crate)
+
+    obj, tris = finalize_mesh(name, bm, materials, collection=collection)
+    apply_box_uvs(obj, tex_scale=0.62)
+    return obj, tris
+
+
+def build_env_supply_crate_loot(materials, idx_map, collection=None, name="Env_Supply_Crate_Loot"):
+    """1.45m x 1.05m x 0.88m wooden pallet stacked with military ammo crate, wooden chest & medkit."""
+    bm = bmesh.new()
+    m_wood = idx_map["Mat_Env_WoodPlank"]
+    m_crate = idx_map["Mat_Env_CrateGreen"]
+    m_metal = idx_map["Mat_Env_MetalScrap"]
+    m_white = idx_map["Mat_Env_PoliceWhite"]
+    m_cross = idx_map["Mat_Env_MedCross"]
+    m_haz = idx_map["Mat_Env_HazardYellow"]
+
+    # Slatted wooden cargo pallet at Z = 0..0.11
+    for px in (-0.54, 0.0, 0.54):
+        add_box(bm, (px, 0.0, 0.035), (0.12, 0.98, 0.07), mat_idx=m_wood)
+    for py in (-0.38, 0.0, 0.38):
+        add_box(bm, (0.0, py, 0.09), (1.36, 0.22, 0.04), mat_idx=m_wood)
+
+    # Large military green ammo crate on left half
+    add_box(bm, (-0.28, 0.02, 0.33), (0.72, 0.62, 0.44), bevel=0.02, mat_idx=m_crate)
+    add_box(bm, (-0.28, 0.02, 0.56), (0.76, 0.66, 0.06), bevel=0.015, mat_idx=m_metal)
+    add_box(bm, (-0.28, -0.30, 0.34), (0.36, 0.03, 0.08), mat_idx=m_haz)
+
+    # Reinforced wooden supply box on right + white red-cross medkit stacked on top
+    add_box(bm, (0.36, -0.05, 0.29), (0.50, 0.54, 0.36), rot=(0.0, 0.0, 0.14), bevel=0.02, mat_idx=m_wood)
+    add_box(bm, (0.36, -0.05, 0.48), (0.52, 0.56, 0.04), rot=(0.0, 0.0, 0.14), mat_idx=m_metal)
+    # First-aid medkit on top of green crate
+    add_box(bm, (-0.22, -0.04, 0.68), (0.36, 0.26, 0.18), rot=(0.0, 0.0, -0.22), bevel=0.015, mat_idx=m_white)
+    add_box(bm, (-0.22, -0.04, 0.775), (0.16, 0.05, 0.02), rot=(0.0, 0.0, -0.22), mat_idx=m_cross)
+    add_box(bm, (-0.22, -0.04, 0.775), (0.05, 0.16, 0.02), rot=(0.0, 0.0, -0.22), mat_idx=m_cross)
+
+    obj, tris = finalize_mesh(name, bm, materials, collection=collection)
+    apply_box_uvs(obj, tex_scale=1.15)
+    return obj, tris
+
+
+def build_env_barricade_gate(materials, idx_map, collection=None, name="Env_Barricade_Gate"):
+    """3.4m x 0.85m x 2.25m fortified quarantine checkpoint steel mesh gate with barbed crossbars & hazard sign."""
+    bm = bmesh.new()
+    m_metal = idx_map["Mat_Env_MetalScrap"]
+    m_rust = idx_map["Mat_Env_RustHeavy"]
+    m_conc = idx_map["Mat_Env_ConcreteCracked"]
+    m_haz = idx_map["Mat_Env_HazardYellow"]
+    m_bag = idx_map["Mat_Env_Sandbag"]
+
+    # Weighted concrete foot blocks & sandbag ballast at left/right posts
+    for sx in (-1.52, 1.52):
+        add_box(bm, (sx, 0.0, 0.14), (0.48, 0.64, 0.28), bevel=0.02, taper_top=(0.88, 0.88), mat_idx=m_conc)
+        add_cylinder(bm, (sx, 0.0, 0.26), (sx, 0.0, 2.05), 0.058, 0.052, segments=8, mat_idx=m_metal)
+        add_box(bm, (sx * 0.84, -0.26, 0.11), (0.44, 0.28, 0.20), rot=(0.0, 0.0, 0.2 * sx), bevel=0.04, mat_idx=m_bag)
+
+    # Gate frame rails (bottom, mid, top) + vertical steel picket bars
+    for gz in (0.34, 1.10, 1.86):
+        add_box(bm, (0.0, 0.0, gz), (2.96, 0.07, 0.07), mat_idx=m_metal if gz != 1.10 else m_rust)
+    for px in (-1.20, -0.80, -0.40, 0.0, 0.40, 0.80, 1.20):
+        add_cylinder(bm, (px, 0.0, 0.34), (px, 0.0, 1.88), 0.022, 0.022, segments=5, mat_idx=m_metal if int(abs(px) * 10) % 8 == 0 else m_rust)
+
+    # Angled barbed-wire extension arms on top posts & jagged cross struts
+    for sx in (-1.52, 1.52):
+        add_cylinder(bm, (sx, 0.0, 2.02), (sx, -0.22, 2.26), 0.032, 0.024, segments=6, mat_idx=m_rust)
+    for bz in (2.10, 2.22):
+        add_cylinder(bm, (-1.52, -0.14, bz), (1.52, -0.14, bz), 0.014, 0.014, segments=5, mat_idx=m_rust)
+
+    # Quarantine hazard sign bolted onto gate center
+    add_box(bm, (-0.18, -0.05, 1.38), (0.86, 0.03, 0.44), rot=(0.0, 0.05, 0.0), mat_idx=m_haz)
+    add_box(bm, (-0.18, -0.06, 1.38), (0.74, 0.02, 0.08), rot=(0.0, 0.05, 0.0), mat_idx=m_metal)
+
+    obj, tris = finalize_mesh(name, bm, materials, collection=collection)
+    apply_box_uvs(obj, tex_scale=0.95)
+    return obj, tris
+
+
+def build_env_road_intersection(materials, idx_map, collection=None, name="Env_Road_Intersection"):
+    """6.0m x 6.0m cracked 4-way asphalt street intersection flush at Z = 0.0 with crosswalks & corner curbs."""
+    bm = bmesh.new()
+    m_asph = idx_map["Mat_Env_AsphaltCracked"]
+    m_soil = idx_map["Mat_Env_SoilCracked"]
+    m_conc = idx_map["Mat_Env_ConcreteCracked"]
+    m_line = idx_map["Mat_Env_RoadStripe"]
+    m_metal = idx_map["Mat_Env_MetalScrap"]
+    m_puddle = idx_map["Mat_Env_PuddleWet"]
+
+    # Sub-base cracked earth + full 6m x 6m 4-way cracked asphalt slab flush at Z = 0.0
+    add_box(bm, (0.0, 0.0, -0.045), (6.0, 6.0, 0.07), mat_idx=m_soil)
+    add_box(bm, (0.0, 0.0, -0.016), (6.0, 6.0, 0.032), mat_idx=m_asph)
+
+    # 4 corner concrete sidewalk quadrants leaving both X and Y lanes (width 4.72m) open
+    for cx in (-1.0, 1.0):
+        for cy in (-1.0, 1.0):
+            add_box(bm, (cx * 2.68, cy * 2.68, 0.040), (0.64, 0.64, 0.10), bevel=0.015, mat_idx=m_conc)
+
+    # Faded yellow crosswalk zebra bars on West/East and North/South approaches
+    for side in (-1.0, 1.0):
+        for offset in (-1.65, -0.82, 0.0, 0.82, 1.65):
+            add_box(bm, (side * 2.48, offset, 0.004), (0.62, 0.24, 0.008), mat_idx=m_line)
+            add_box(bm, (offset, side * 2.48, 0.004), (0.24, 0.62, 0.008), mat_idx=m_line)
+
+    # Central iron manhole cover & shallow wet puddle
+    add_cylinder(bm, (0.35, -0.45, 0.001), (0.35, -0.45, 0.012), 0.36, 0.36, segments=10, mat_idx=m_metal)
+    add_box(bm, (-1.05, 0.95, 0.003), (1.15, 0.68, 0.005), rot=(0.0, 0.0, 0.25), bevel=0.03, mat_idx=m_puddle)
+
+    obj, tris = finalize_mesh(name, bm, materials, collection=collection)
+    apply_box_uvs(obj, tex_scale=0.36)
+    return obj, tris
+
+
 def _build_wet_road_puddles(materials, idx_map, col):
     """Add irregular flat mirror-gloss rainwater puddles nestled along road cracks & gutters."""
     bm = bmesh.new()
@@ -1014,6 +1229,11 @@ ALL_ENV_BUILDERS = [
     ("overgrown_bush",         build_env_overgrown_bush,         "foliage"),
     ("dead_tree",              build_env_dead_tree,              "foliage"),
     ("wrecked_car",            build_env_wrecked_car,            "prop"),
+    ("police_cruiser",         build_env_police_cruiser,         "prop"),
+    ("medical_tent",           build_env_medical_tent,           "building"),
+    ("supply_crate_loot",      build_env_supply_crate_loot,      "prop"),
+    ("barricade_gate",         build_env_barricade_gate,         "prop"),
+    ("road_intersection",      build_env_road_intersection,      "ground"),
     ("jersey_barrier",         build_env_jersey_barrier,         "prop"),
     ("sandbag_barricade",      build_env_sandbag_barricade,      "prop"),
     ("street_lamp_broken",     build_env_street_lamp_broken,     "prop"),
@@ -1108,10 +1328,15 @@ def build_apocalypse_street_scene(materials, idx_map, collection=None):
     add(build_env_wall_ruined_brick,      "Env_Wall_Far_W",     (-16.5, 6.2, 0.0), rz=18.0)
     add(build_env_wall_ruined_brick,      "Env_Wall_Far_E",     (16.8,  6.4, 0.0), rz=-15.0)
 
-    # 4. Background Street Props, Cars, Fire Barrels, Checkpoints & Lamps
-    add(build_env_wrecked_car,        "Env_Car_W",          (-7.8,  4.0, 0.0), rz=-16.0)
-    add(build_env_wrecked_car,        "Env_Car_E",          ( 8.6,  4.3, 0.0), rz=168.0)
-    add(build_env_sandbag_barricade,  "Env_Sandbags_N",     (-1.4,  3.85, 0.0), rz=-6.0)
+    # 4. Background Street Props, Cars, Police Cruiser, Medical Tent, Crates, Gates & Lamps
+    add(build_env_wrecked_car,        "Env_Car_W",            (-7.8,  4.0, 0.0), rz=-16.0)
+    add(build_env_police_cruiser,     "Env_PoliceCruiser_E",  ( 8.6,  4.3, 0.0), rz=166.0)
+    add(build_env_medical_tent,       "Env_MedicalTent_C",    ( 0.3,  9.4, 0.0), rz=3.0)
+    add(build_env_supply_crate_loot,  "Env_SupplyCrate_W",    (-5.6,  3.75, 0.0), rz=18.0)
+    add(build_env_supply_crate_loot,  "Env_SupplyCrate_E",    ( 2.4,  3.85, 0.0), rz=-22.0)
+    add(build_env_barricade_gate,     "Env_BarricadeGate_W",  (-15.0, 3.85, 0.0), rz=18.0)
+    add(build_env_barricade_gate,     "Env_BarricadeGate_E",  ( 15.0, 3.85, 0.0), rz=-18.0)
+    add(build_env_sandbag_barricade,  "Env_Sandbags_N",       (-1.4,  3.85, 0.0), rz=-6.0)
     add(build_env_jersey_barrier,     "Env_Barrier_N1",     (-11.4, 3.35, 0.0), rz=4.0)
     add(build_env_jersey_barrier,     "Env_Barrier_N2",     ( 3.8,  3.45, 0.0), rz=-5.0)
     add(build_env_street_lamp_broken, "Env_Lamp_W",         (-9.2,  3.05, 0.0), rz=-8.0)
