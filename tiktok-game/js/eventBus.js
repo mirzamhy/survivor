@@ -291,11 +291,6 @@ export class MockTikTokStream {
         this.bus.emitChat({ user, message: line });
         return;
       }
-      if (st.zombieBaseRatio !== undefined && st.zombieBaseRatio < 0.34 && Math.random() < 0.55) {
-        const line = MOCK_CHAT_POOL.criticalZombie[Math.floor(Math.random() * MOCK_CHAT_POOL.criticalZombie.length)];
-        this.bus.emitChat({ user, message: line });
-        return;
-      }
       if (st.bossAlive && Math.random() < 0.55) {
         const line = MOCK_CHAT_POOL.boss[Math.floor(Math.random() * MOCK_CHAT_POOL.boss.length)];
         this.bus.emitChat({ user, message: line });
@@ -318,12 +313,10 @@ export class MockTikTokStream {
       return;
     }
 
-    // 36% weighted Save vs Sabotage gift event (rubber-banded to 2-base drama)
+    // 36% weighted Save vs Sabotage gift event (rubber-banded to Fortress Defense drama)
     const humanLow = st.humanBaseRatio !== undefined && st.humanBaseRatio < 0.35;
-    const zombieLow = st.zombieBaseRatio !== undefined && st.zombieBaseRatio < 0.35;
-    let defendBias = st.bossAlive ? 0.58 : 0.50;
-    if (humanLow && !zombieLow) defendBias = 0.68;
-    else if (zombieLow && !humanLow) defendBias = 0.32;
+    let defendBias = st.bossAlive ? 0.58 : (st.finalWave ? 0.54 : 0.48);
+    if (humanLow) defendBias = 0.68;
     const isDefend = Math.random() < defendBias;
     const roll = Math.random();
 

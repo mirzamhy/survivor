@@ -1,4 +1,4 @@
-// 9:16 Three.js 2-Base War Arena Engine — Human Fortress vs Zombie Bio-Hive, Wet Mud & Dual Evolution
+// 9:16 Three.js Fortress Defense Engine — Matte War-Torn Human Fortress, Baked AO & Atmospheric Depth
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -22,79 +22,79 @@ import {
 
 const WEATHER_PRESETS = {
   war_dusk: {
-    label: 'Sore Perang Berkabut',
-    topColor: 0x1b2436, midColor: 0x5c3c36, horizonColor: 0xa66b4c, groundColor: 0x38281d,
+    label: 'Senja Perang Atmosferik',
+    topColor: 0x111a2c, midColor: 0x3f3136, horizonColor: 0x9b6246, groundColor: 0x221812,
     sunColor: 0xffb366, sunDir: [-0.62, 0.25, -0.74], sunSize: 0.055,
-    cloudColor: 0x735b54, cloudIntensity: 0.56,
-    fogColor: 0x705344, fogDensity: 0.0118,
-    hemiSky: 0xd4b6a1, hemiGround: 0x3b2a1e, hemiInt: 1.28,
-    keyColor: 0xffcb96, keyPos: [-18, 15, 16], keyInt: 2.55,
-    rimColor: 0x89b4fa, rimPos: [16, 13, -12], rimInt: 1.45,
-    fireInt: 6.2, fireHaloAlpha: 0.52, lampAlpha: 0.20, coneAlpha: 0.12,
-    exposure: 1.15, envInt: 1.15,
-    mudRough: 0.44, mudEnv: 1.30, puddleRough: 0.04, puddleEnv: 2.40,
+    cloudColor: 0x5c4742, cloudIntensity: 0.56,
+    fogColor: 0x4b3a32, fogDensity: 0.0195,
+    hemiSky: 0x6f89ad, hemiGround: 0x261b14, hemiInt: 0.62,
+    keyColor: 0xffbc7d, keyPos: [-16, 12, 13], keyInt: 3.15,
+    rimColor: 0x6ea0dc, rimPos: [14, 11, -12], rimInt: 0.85,
+    fireInt: 4.8, fireHaloAlpha: 0.44, lampAlpha: 0.20, coneAlpha: 0.09,
+    exposure: 1.08, envInt: 0.45,
+    mudRough: 1.0, mudEnv: 0.24,
     rain: false, lightning: false,
-    particleMode: 'embers', particleCount: 95, particleColor: 0xff9d47, particleSize: 0.13,
+    particleMode: 'embers', particleCount: 60, particleColor: 0xff9d47, particleSize: 0.13,
   },
   apoc_sunset: {
     label: 'Sore Senja Emas',
-    topColor: 0x2c4266, midColor: 0x9c5c46, horizonColor: 0xd48e61, groundColor: 0x4f382b,
+    topColor: 0x203252, midColor: 0x7c4838, horizonColor: 0xb87852, groundColor: 0x33241a,
     sunColor: 0xffc778, sunDir: [-0.66, 0.24, -0.71], sunSize: 0.062,
-    cloudColor: 0xc27756, cloudIntensity: 0.48,
-    fogColor: 0xd48e61, fogDensity: 0.0105,
-    hemiSky: 0xebc3a4, hemiGround: 0x594234, hemiInt: 1.26,
-    keyColor: 0xffd2a6, keyPos: [-20, 14, 16], keyInt: 2.65,
-    rimColor: 0x99c2ff, rimPos: [16, 13, -12], rimInt: 1.35,
-    fireInt: 5.4, fireHaloAlpha: 0.48, lampAlpha: 0.16, coneAlpha: 0.08,
-    exposure: 1.12, envInt: 1.05,
-    mudRough: 0.48, mudEnv: 1.15, puddleRough: 0.04, puddleEnv: 2.20,
+    cloudColor: 0x9e5f44, cloudIntensity: 0.48,
+    fogColor: 0x805642, fogDensity: 0.0170,
+    hemiSky: 0x9baec9, hemiGround: 0x34241a, hemiInt: 0.68,
+    keyColor: 0xffcfa0, keyPos: [-18, 12, 14], keyInt: 3.10,
+    rimColor: 0x78a5de, rimPos: [15, 12, -12], rimInt: 0.80,
+    fireInt: 4.2, fireHaloAlpha: 0.40, lampAlpha: 0.15, coneAlpha: 0.09,
+    exposure: 1.06, envInt: 0.44,
+    mudRough: 1.0, mudEnv: 0.22,
     rain: false, lightning: false,
-    particleMode: 'ash_embers', particleCount: 85, particleColor: 0xffae5c, particleSize: 0.12,
+    particleMode: 'ash_embers', particleCount: 55, particleColor: 0xffae5c, particleSize: 0.12,
   },
   apoc_morning: {
     label: 'Pagi Berkabut',
-    topColor: 0x5d82a8, midColor: 0x9ab4c9, horizonColor: 0xc8c5bc, groundColor: 0x4a382b,
+    topColor: 0x4b6e94, midColor: 0x86a0b6, horizonColor: 0xb5b3aa, groundColor: 0x3a2b20,
     sunColor: 0xfff3d6, sunDir: [-0.45, 0.44, 0.77], sunSize: 0.045,
-    cloudColor: 0xe6eaef, cloudIntensity: 0.42,
-    fogColor: 0xc8c5bc, fogDensity: 0.0105,
-    hemiSky: 0xeaf2fa, hemiGround: 0x6b5848, hemiInt: 1.48,
-    keyColor: 0xfff5e4, keyPos: [-14, 22, 16], keyInt: 2.55,
-    rimColor: 0xb8d8ff, rimPos: [16, 14, -12], rimInt: 1.25,
-    fireInt: 2.8, fireHaloAlpha: 0.28, lampAlpha: 0.0, coneAlpha: 0.0,
-    exposure: 1.12, envInt: 1.08,
-    mudRough: 0.48, mudEnv: 1.15, puddleRough: 0.05, puddleEnv: 2.00,
+    cloudColor: 0xcfd6de, cloudIntensity: 0.42,
+    fogColor: 0x9a9c98, fogDensity: 0.0165,
+    hemiSky: 0xaec2d8, hemiGround: 0x443528, hemiInt: 0.80,
+    keyColor: 0xfff0d8, keyPos: [-14, 18, 14], keyInt: 2.85,
+    rimColor: 0x94b8e6, rimPos: [16, 13, -12], rimInt: 0.72,
+    fireInt: 2.4, fireHaloAlpha: 0.22, lampAlpha: 0.0, coneAlpha: 0.0,
+    exposure: 1.05, envInt: 0.48,
+    mudRough: 1.0, mudEnv: 0.22,
     rain: false, lightning: false,
-    particleMode: 'ash_embers', particleCount: 65, particleColor: 0xffe4b8, particleSize: 0.11,
+    particleMode: 'ash_embers', particleCount: 45, particleColor: 0xffe4b8, particleSize: 0.11,
   },
   apoc_noon: {
     label: 'Siang Cerah',
-    topColor: 0x3b72b5, midColor: 0x82accf, horizonColor: 0xd2cbbd, groundColor: 0x594534,
+    topColor: 0x33639e, midColor: 0x759ec0, horizonColor: 0xbdb7aa, groundColor: 0x453528,
     sunColor: 0xfff8e6, sunDir: [-0.36, 0.62, 0.69], sunSize: 0.042,
-    cloudColor: 0xf4f6f8, cloudIntensity: 0.36,
-    fogColor: 0xd2cbbd, fogDensity: 0.0085,
-    hemiSky: 0xf4f8fc, hemiGround: 0x705d4a, hemiInt: 1.62,
-    keyColor: 0xfff8ed, keyPos: [-12, 28, 15], keyInt: 2.85,
-    rimColor: 0xd6e8ff, rimPos: [16, 16, -12], rimInt: 1.15,
-    fireInt: 2.2, fireHaloAlpha: 0.24, lampAlpha: 0.0, coneAlpha: 0.0,
-    exposure: 1.12, envInt: 1.10,
-    mudRough: 0.52, mudEnv: 1.05, puddleRough: 0.05, puddleEnv: 1.90,
+    cloudColor: 0xe2e6ea, cloudIntensity: 0.36,
+    fogColor: 0xa6a196, fogDensity: 0.0125,
+    hemiSky: 0xc2d4e8, hemiGround: 0x4f3f31, hemiInt: 0.88,
+    keyColor: 0xfff5e4, keyPos: [-12, 22, 13], keyInt: 3.20,
+    rimColor: 0xaac4eb, rimPos: [16, 15, -12], rimInt: 0.68,
+    fireInt: 2.0, fireHaloAlpha: 0.20, lampAlpha: 0.0, coneAlpha: 0.0,
+    exposure: 1.04, envInt: 0.46,
+    mudRough: 1.0, mudEnv: 0.20,
     rain: false, lightning: false,
-    particleMode: 'ash_embers', particleCount: 50, particleColor: 0xf5ead8, particleSize: 0.10,
+    particleMode: 'ash_embers', particleCount: 45, particleColor: 0xf5ead8, particleSize: 0.10,
   },
   storm_rain: {
     label: 'Badai Hujan & Petir',
-    topColor: 0x1e2938, midColor: 0x394859, horizonColor: 0x5a6978, groundColor: 0x261d16,
+    topColor: 0x161f2c, midColor: 0x2c3948, horizonColor: 0x495666, groundColor: 0x1e1610,
     sunColor: 0xd6e6ff, sunDir: [-0.42, 0.36, 0.83], sunSize: 0.038,
-    cloudColor: 0x627285, cloudIntensity: 0.65,
-    fogColor: 0x5a6978, fogDensity: 0.0142,
-    hemiSky: 0xbad0e6, hemiGround: 0x382c24, hemiInt: 1.32,
-    keyColor: 0xe2ecff, keyPos: [-12, 22, 15], keyInt: 1.85,
-    rimColor: 0xa8d4ff, rimPos: [15, 13, -12], rimInt: 1.50,
-    fireInt: 6.4, fireHaloAlpha: 0.56, lampAlpha: 0.24, coneAlpha: 0.14,
-    exposure: 1.14, envInt: 1.15,
-    mudRough: 0.24, mudEnv: 1.85, puddleRough: 0.03, puddleEnv: 2.50,
+    cloudColor: 0x526173, cloudIntensity: 0.68,
+    fogColor: 0x3f4c59, fogDensity: 0.0215,
+    hemiSky: 0x7b98b8, hemiGround: 0x221a14, hemiInt: 0.58,
+    keyColor: 0xcfe0fc, keyPos: [-12, 18, 13], keyInt: 2.25,
+    rimColor: 0x89b8f5, rimPos: [14, 12, -12], rimInt: 0.95,
+    fireInt: 5.2, fireHaloAlpha: 0.50, lampAlpha: 0.22, coneAlpha: 0.11,
+    exposure: 1.06, envInt: 0.52,
+    mudRough: 0.86, mudEnv: 0.34,
     rain: true, lightning: true,
-    particleMode: 'embers', particleCount: 65, particleColor: 0xff9a44, particleSize: 0.14,
+    particleMode: 'embers', particleCount: 50, particleColor: 0xff9a44, particleSize: 0.13,
   },
 };
 
@@ -110,11 +110,12 @@ const DEATH_THEMES = {
   _default:               { colors: [0xb91c1c, 0x7f1d1d, 0x450a0a],           poolColor: 0x3b0a0a, poolRad: 0.85, count: 12, impactDelay: 0.52, shake: 0.04, dustScale: 1.0, dustColor: 0x6b533b },
 };
 
-const MAX_DEATH_PUDDLES = 28;
-export const HUMAN_BASE_X = -5.45;
-export const ENEMY_STOP_X = -4.65;
-export const ZOMBIE_BASE_X = 6.40;
-export const SURV_ATTACK_HIVE_X = 5.35;
+const MAX_DEATH_PUDDLES = 24;
+export const HUMAN_BASE_X = -5.25;
+export const ENEMY_STOP_X = -4.45;
+export const SURV_MAX_ADVANCE_X = 5.20;
+export const ENEMY_SPAWN_MIN_X = 6.60;
+export const ENEMY_SPAWN_MAX_X = 9.20;
 
 export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {}) {
   const getStageSize = () => ({
@@ -125,58 +126,58 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
   const { w: initW, h: initH } = getStageSize();
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.45));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.30));
   renderer.setSize(initW, initH, false);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.15;
+  renderer.toneMappingExposure = 1.08;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   stageWrap.insertBefore(renderer.domElement, stageWrap.firstChild);
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x705344);
-  scene.fog = new THREE.FogExp2(0x705344, 0.0118);
+  scene.background = new THREE.Color(0x4b3a32);
+  scene.fog = new THREE.FogExp2(0x4b3a32, 0.0195);
 
-  const camera = new THREE.PerspectiveCamera(62, initW / initH, 0.1, 280);
-  camera.position.set(-6.2, 11.8, 24.8);
+  const camera = new THREE.PerspectiveCamera(58, initW / initH, 0.1, 220);
+  camera.position.set(-4.6, 9.8, 21.8);
 
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
-  controls.target.set(0.2, 1.0, -0.5);
+  controls.target.set(-0.6, 1.1, -0.4);
   controls.maxPolarAngle = Math.PI * 0.485;
   controls.minDistance = 4.0;
-  controls.maxDistance = 62.0;
+  controls.maxDistance = 56.0;
 
   let manualOrbitPause = 0.0;
   controls.addEventListener('start', () => {
     manualOrbitPause = 4.5;
   });
 
-  // Lighting rig
-  const hemi = new THREE.HemisphereLight(0xd4b6a1, 0x3b2a1e, 1.28);
+  // High-contrast atmospheric lighting rig (warm key vs cool fill/rim for crisp 3D depth)
+  const hemi = new THREE.HemisphereLight(0x6f89ad, 0x261b14, 0.62);
   scene.add(hemi);
 
-  const keyLight = new THREE.DirectionalLight(0xffcb96, 2.55);
-  keyLight.position.set(-18, 15, 16);
+  const keyLight = new THREE.DirectionalLight(0xffbc7d, 3.15);
+  keyLight.position.set(-16, 12, 13);
   keyLight.castShadow = true;
-  keyLight.shadow.mapSize.set(2048, 2048);
-  keyLight.shadow.camera.near = 1;
-  keyLight.shadow.camera.far = 58;
-  keyLight.shadow.camera.left = -18;
-  keyLight.shadow.camera.right = 18;
-  keyLight.shadow.camera.top = 14;
-  keyLight.shadow.camera.bottom = -14;
-  keyLight.shadow.bias = -0.00035;
-  keyLight.shadow.normalBias = 0.028;
+  keyLight.shadow.mapSize.set(1024, 1024);
+  keyLight.shadow.camera.near = 2;
+  keyLight.shadow.camera.far = 42;
+  keyLight.shadow.camera.left = -11;
+  keyLight.shadow.camera.right = 12;
+  keyLight.shadow.camera.top = 10;
+  keyLight.shadow.camera.bottom = -10;
+  keyLight.shadow.bias = -0.0004;
+  keyLight.shadow.normalBias = 0.025;
   scene.add(keyLight);
 
-  const rimLight = new THREE.DirectionalLight(0x89b4fa, 1.45);
-  rimLight.position.set(16, 13, -12);
+  const rimLight = new THREE.DirectionalLight(0x6ea0dc, 0.85);
+  rimLight.position.set(14, 11, -12);
   scene.add(rimLight);
 
-  const combatFlashLight = new THREE.PointLight(0xffcf70, 0, 11.0, 1.6);
+  const combatFlashLight = new THREE.PointLight(0xffcf70, 0, 10.0, 1.6);
   scene.add(combatFlashLight);
   const combatFlash = { timer: 0, dur: 0.08, maxInt: 6.0 };
 
@@ -190,38 +191,25 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
     combatFlash.timer = combatFlash.dur;
   }
 
-  // War fire barrel lights (Fortress Gate N/S + Midfield)
-  const fireLightN = new THREE.PointLight(0xff7722, 5.5, 9.5, 1.6);
-  fireLightN.position.set(-5.0, 1.45, -2.4);
-  scene.add(fireLightN);
+  // Consolidated Fortress Gate warm fire light (1 point light instead of 4 static point lights)
+  const fortressFireLight = new THREE.PointLight(0xff7722, 4.8, 11.0, 1.8);
+  fortressFireLight.position.set(-4.65, 1.85, 0.0);
+  scene.add(fortressFireLight);
 
-  const fireLightS = new THREE.PointLight(0xff7722, 5.5, 9.5, 1.6);
-  fireLightS.position.set(-5.0, 1.45, 2.4);
-  scene.add(fireLightS);
-
-  const fireLightMid = new THREE.PointLight(0xff7722, 5.5, 10.0, 1.6);
-  fireLightMid.position.set(0.2, 1.45, -4.1);
-  scene.add(fireLightMid);
-
-  // Zombie Bio-Hive glowing point light
-  const hiveCoreLight = new THREE.PointLight(0x84cc16, 6.2, 11.5, 1.5);
-  hiveCoreLight.position.set(6.2, 1.95, 0.0);
-  scene.add(hiveCoreLight);
-
-  // HDR Selective Bloom pipeline
+  // Optional HDR Selective Bloom pipeline (default OFF for max sharpness & 60 FPS)
   const composerRT = new THREE.WebGLRenderTarget(initW, initH, {
     type: THREE.HalfFloatType,
-    samples: renderer.capabilities.isWebGL2 ? 4 : 0,
+    samples: 0,
   });
   const composer = new EffectComposer(renderer, composerRT);
   composer.setPixelRatio(renderer.getPixelRatio());
   composer.setSize(initW, initH);
   composer.addPass(new RenderPass(scene, camera));
-  const bloomPass = new UnrealBloomPass(new THREE.Vector2(initW, initH), 0.25, 0.42, 1.08);
+  const bloomPass = new UnrealBloomPass(new THREE.Vector2(initW, initH), 0.22, 0.38, 1.28);
   composer.addPass(bloomPass);
   composer.addPass(new OutputPass());
 
-  let bloomEnabled = true;
+  let bloomEnabled = false;
 
   function handleResize() {
     const { w, h } = getStageSize();
@@ -453,47 +441,41 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
   scene.add(atmosphereGroup);
 
   const fireHaloMatN = new THREE.SpriteMaterial({
-    map: softGlowTex, color: 0xff7b1c, transparent: true, opacity: 0.50,
+    map: softGlowTex, color: 0xff7b1c, transparent: true, opacity: 0.44,
     blending: THREE.AdditiveBlending, depthWrite: false, fog: false,
   });
   const fireHaloMatS = fireHaloMatN.clone();
-  const fireHaloMatMid = fireHaloMatN.clone();
 
   const fireHaloN = new THREE.Sprite(fireHaloMatN);
-  fireHaloN.position.set(-5.0, 1.25, -2.4);
-  fireHaloN.scale.set(2.2, 2.2, 1);
+  fireHaloN.position.set(-4.65, 1.25, -2.35);
+  fireHaloN.scale.set(2.1, 2.1, 1);
   atmosphereGroup.add(fireHaloN);
 
   const fireHaloS = new THREE.Sprite(fireHaloMatS);
-  fireHaloS.position.set(-5.0, 1.25, 2.4);
-  fireHaloS.scale.set(2.2, 2.2, 1);
+  fireHaloS.position.set(-4.65, 1.25, 2.35);
+  fireHaloS.scale.set(2.1, 2.1, 1);
   atmosphereGroup.add(fireHaloS);
 
-  const fireHaloMid = new THREE.Sprite(fireHaloMatMid);
-  fireHaloMid.position.set(0.2, 1.25, -4.1);
-  fireHaloMid.scale.set(2.4, 2.4, 1);
-  atmosphereGroup.add(fireHaloMid);
-
-  // Police cruiser alternating siren halos aligned cleanly to (+2.4, 1.5, -4.5)
+  // Police cruiser alternating siren halos aligned cleanly to (+3.3, 1.54, -4.3)
   const policeHaloRed = new THREE.Sprite(new THREE.SpriteMaterial({
     map: softGlowTex, color: 0xff2820, transparent: true, opacity: 0.25,
     blending: THREE.AdditiveBlending, depthWrite: false, fog: false,
   }));
-  policeHaloRed.position.set(2.35, 1.54, -4.22);
-  policeHaloRed.scale.setScalar(1.65);
+  policeHaloRed.position.set(3.25, 1.54, -4.04);
+  policeHaloRed.scale.setScalar(1.55);
   atmosphereGroup.add(policeHaloRed);
 
   const policeHaloBlue = new THREE.Sprite(new THREE.SpriteMaterial({
     map: softGlowTex, color: 0x2688ff, transparent: true, opacity: 0.25,
     blending: THREE.AdditiveBlending, depthWrite: false, fog: false,
   }));
-  policeHaloBlue.position.set(2.50, 1.54, -4.78);
-  policeHaloBlue.scale.setScalar(1.65);
+  policeHaloBlue.position.set(3.40, 1.54, -4.56);
+  policeHaloBlue.scale.setScalar(1.55);
   atmosphereGroup.add(policeHaloBlue);
 
-  // Watchtower Sweeping Searchlight Beam from Fortress Watchtower (-5.37, 4.95, -3.55)
+  // Watchtower Sweeping Searchlight Beam aligned to (-5.15, 4.95, -3.30)
   const searchlightPivot = new THREE.Group();
-  searchlightPivot.position.set(-5.37, 4.95, -3.55);
+  searchlightPivot.position.set(-5.15, 4.95, -3.30);
   atmosphereGroup.add(searchlightPivot);
 
   const beamGeo = new THREE.CylinderGeometry(0.18, 2.35, 12.5, 14, 1, true);
@@ -507,14 +489,32 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
   searchBeamMesh.rotation.x = 0.26;
   searchlightPivot.add(searchBeamMesh);
 
-  // Smoke plumes across Fortress Braziers + Midfield Wreckage
+  // Low-altitude moody fog/mist drifting across East zombie spawn avenue
+  const roadMistMeta = [
+    { x: 4.0, y: 0.85, z: -1.8, sx: 6.2, sy: 2.8, op: 0.12, phase: 0.2 },
+    { x: 5.8, y: 1.05, z:  1.4, sx: 6.8, sy: 3.0, op: 0.14, phase: 1.4 },
+    { x: 7.4, y: 1.10, z: -0.6, sx: 7.2, sy: 3.2, op: 0.16, phase: 2.3 },
+    { x: 8.6, y: 1.25, z:  2.2, sx: 7.0, sy: 3.0, op: 0.14, phase: 3.5 },
+    { x: 6.2, y: 0.78, z: -2.6, sx: 6.4, sy: 2.6, op: 0.12, phase: 4.4 },
+    { x: 9.0, y: 1.35, z: -1.9, sx: 7.6, sy: 3.4, op: 0.15, phase: 5.2 },
+  ].map((cfg) => {
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: mistCloudTex, color: 0xaab8c8, transparent: true, opacity: cfg.op,
+      depthWrite: false, fog: true,
+    }));
+    sp.position.set(cfg.x, cfg.y, cfg.z);
+    sp.scale.set(cfg.sx, cfg.sy, 1);
+    atmosphereGroup.add(sp);
+    return { sprite: sp, baseX: cfg.x, baseZ: cfg.z, baseOp: cfg.op, phase: cfg.phase };
+  });
+
+  // Smoke plumes across Fortress Braziers + Wrecked Car
   const smokeEmitters = [
-    { x: -5.0, y: 1.35, z: -2.4 },
-    { x: -5.0, y: 1.35, z:  2.4 },
-    { x:  0.2, y: 1.35, z: -4.1 },
-    { x: -1.6, y: 0.90, z: -4.4 },
+    { x: -4.65, y: 1.35, z: -2.35 },
+    { x: -4.65, y: 1.35, z:  2.35 },
+    { x: -1.10, y: 0.90, z: -4.20 },
   ];
-  const SMOKE_COUNT = 18;
+  const SMOKE_COUNT = 12;
   const smokePos = new Float32Array(SMOKE_COUNT * 3);
   const smokeMeta = [];
   for (let i = 0; i < SMOKE_COUNT; i++) {
@@ -650,7 +650,7 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
   let baseWeatherId = 'war_dusk';
   let activeWeatherId = 'war_dusk';
   let stormTemporaryTimer = 0.0;
-  let suddenDeathActive = false;
+  let finalWaveActive = false;
   let lightningState = { timer: 4.5, flash: 0.0 };
 
   function rebuildEnvReflections(preset) {
@@ -693,19 +693,16 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
     keyLight.position.set(...p.keyPos);
     keyLight.intensity = p.keyInt;
 
-    rimLight.color.setHex(suddenDeathActive ? 0xff4d4d : p.rimColor);
+    rimLight.color.setHex(finalWaveActive ? 0xff4d4d : p.rimColor);
     rimLight.position.set(...p.rimPos);
-    rimLight.intensity = suddenDeathActive ? p.rimInt + 0.5 : p.rimInt;
-    unitRimUniforms.uRimColor.value.setHex(suddenDeathActive ? 0xff5e5e : p.rimColor);
-    unitRimUniforms.uRimStrength.value = suddenDeathActive ? 0.36 : 0.28;
+    rimLight.intensity = finalWaveActive ? p.rimInt + 0.45 : p.rimInt;
+    unitRimUniforms.uRimColor.value.setHex(finalWaveActive ? 0xff5e5e : p.rimColor);
+    unitRimUniforms.uRimStrength.value = finalWaveActive ? 0.36 : 0.28;
 
     if (envMaterialRefs.Mat_Env_MudWet) {
       envMaterialRefs.Mat_Env_MudWet.roughness = p.mudRough;
+      envMaterialRefs.Mat_Env_MudWet.metalness = 0.0;
       envMaterialRefs.Mat_Env_MudWet.envMapIntensity = p.mudEnv;
-    }
-    if (envMaterialRefs.Mat_Env_MudPuddle) {
-      envMaterialRefs.Mat_Env_MudPuddle.roughness = p.puddleRough;
-      envMaterialRefs.Mat_Env_MudPuddle.envMapIntensity = p.puddleEnv;
     }
 
     rainLines.visible = p.rain;
@@ -719,10 +716,10 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
     skyUniforms.uFlash.value = lightningState.flash;
   }
 
-  // Dual Base Visuals: West Human Fortress Gate Shield + East Zombie Bio-Core Glow
+  // Human Fortress Gate Defense Shield Visual (no Zombie Base)
   const humanShieldMat = new THREE.MeshStandardMaterial({
-    color: 0x22c55e, emissive: 0x22c55e, emissiveIntensity: 0.72,
-    transparent: true, opacity: 0.25, roughness: 0.2, metalness: 0.1,
+    color: 0x22c55e, emissive: 0x22c55e, emissiveIntensity: 0.68,
+    transparent: true, opacity: 0.24, roughness: 0.2, metalness: 0.1,
     side: THREE.DoubleSide, depthWrite: false,
   });
   const humanShieldMesh = new THREE.Mesh(new THREE.PlaneGeometry(2.65, 2.25), humanShieldMat);
@@ -730,19 +727,8 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
   humanShieldMesh.position.set(HUMAN_BASE_X, 1.15, 0);
   scene.add(humanShieldMesh);
 
-  const hiveCoreHaloMat = new THREE.SpriteMaterial({
-    map: softGlowTex, color: 0x84cc16, transparent: true, opacity: 0.65,
-    blending: THREE.AdditiveBlending, depthWrite: false, fog: false,
-  });
-  const hiveCoreHalo = new THREE.Sprite(hiveCoreHaloMat);
-  hiveCoreHalo.position.set(ZOMBIE_BASE_X - 0.15, 1.90, 0);
-  hiveCoreHalo.scale.set(2.8, 2.8, 1);
-  scene.add(hiveCoreHalo);
-
   let humanBaseHpRatio = 1.0;
-  let zombieBaseHpRatio = 1.0;
   let humanSparkCooldown = 0.0;
-  let zombieSparkCooldown = 0.0;
 
   function setHumanBaseVisual(ratio) {
     humanBaseHpRatio = Math.max(0, Math.min(1, ratio));
@@ -752,21 +738,8 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
     humanShieldMesh.visible = humanBaseHpRatio > 0.001;
   }
 
-  function setZombieBaseVisual(ratio) {
-    zombieBaseHpRatio = Math.max(0, Math.min(1, ratio));
-    const col = zombieBaseHpRatio > 0.55 ? 0x84cc16 : (zombieBaseHpRatio > 0.28 ? 0xf59e0b : 0xef4444);
-    hiveCoreHaloMat.color.setHex(col);
-    hiveCoreLight.color.setHex(col);
-    hiveCoreHalo.visible = zombieBaseHpRatio > 0.001;
-    hiveCoreLight.intensity = zombieBaseHpRatio > 0.001 ? 6.2 : 0.0;
-  }
-
-  function flashBaseHit(side) {
-    if (side === 'human') {
-      spawnTimedVfx(VFX_PATHS.spark, new THREE.Vector3(HUMAN_BASE_X + 0.3, 1.0, (Math.random() - 0.5) * 1.8), new THREE.Vector3(1, 0, 0), { scale: 1.0, life: 0.24 });
-    } else {
-      spawnTimedVfx(VFX_PATHS.impact_blood || VFX_PATHS.blood, new THREE.Vector3(ZOMBIE_BASE_X - 0.5, 1.5, (Math.random() - 0.5) * 1.8), new THREE.Vector3(-1, 0, 0), { scale: 1.1, life: 0.26 });
-    }
+  function flashBaseHit() {
+    spawnTimedVfx(VFX_PATHS.spark, new THREE.Vector3(HUMAN_BASE_X + 0.3, 1.0, (Math.random() - 0.5) * 1.8), new THREE.Vector3(1, 0, 0), { scale: 1.0, life: 0.24 });
   }
 
   // Simulation pools
@@ -783,10 +756,11 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
   let paused = false;
   let camMode = 'diagonal';
   let zoomScale = 1.0;
-  const _desiredTarget = new THREE.Vector3(0.2, 1.0, -0.5);
-  const _desiredBasePos = new THREE.Vector3(-6.2, 11.8, 24.8);
+  const _desiredTarget = new THREE.Vector3(-0.6, 1.1, -0.4);
+  const _desiredBasePos = new THREE.Vector3(-4.6, 9.8, 21.8);
   const _desiredCamPos = new THREE.Vector3();
   let rageTimer = 0.0;
+  let hordeRageTimer = 0.0;
   let squadShieldTimer = 0.0;
   let cameraShake = 0.0;
   let hitStopTimer = 0.0;
@@ -1124,17 +1098,17 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
     const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(target.group.quaternion);
     const poolShift = target.specId === 'mutant_arachnid_maw' ? 0.0 : 0.34 * (target.ringScale || 1.0);
     const poolMat = new THREE.MeshStandardMaterial({
-      map: splatterTex, color: theme.poolColor, transparent: true, opacity: 0.88,
-      roughness: 0.24, metalness: 0.06, depthWrite: false,
+      map: splatterTex, color: theme.poolColor, transparent: true, opacity: 0.64,
+      roughness: 0.68, metalness: 0.0, envMapIntensity: 0.22, depthWrite: false,
       polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
     });
     const pool = new THREE.Mesh(contactShadowGeo, poolMat);
     pool.rotation.set(-Math.PI / 2, Math.random() * Math.PI * 2, 0);
     pool.position.set(target.group.position.x + fwd.x * poolShift, 0.008, target.group.position.z + fwd.z * poolShift);
-    pool.scale.setScalar(0.22);
+    pool.scale.setScalar(0.20);
     pool.receiveShadow = true;
     scene.add(pool);
-    deathDecals.push({ kind: 'puddle', mesh: pool, targetScale: theme.poolRad * 2.0, age: 0, growDur: 1.25 });
+    deathDecals.push({ kind: 'puddle', mesh: pool, targetScale: theme.poolRad * 1.55, age: 0, growDur: 1.25 });
 
     pendingDeathImpacts.push({
       timer: theme.impactDelay,
@@ -1360,7 +1334,7 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
       group.add(tr);
     }
 
-    const sx = posOverride ? posOverride.x : (actualIsBoss ? 5.6 : 4.8 + Math.random() * 1.4);
+    const sx = posOverride ? posOverride.x : (ENEMY_SPAWN_MIN_X + Math.random() * (ENEMY_SPAWN_MAX_X - ENEMY_SPAWN_MIN_X));
     const sz = posOverride ? posOverride.z : (Math.random() - 0.5) * 3.8;
     group.position.set(sx, 0, sz);
     group.rotation.set(0, -Math.PI * 0.5, 0);
@@ -1508,7 +1482,7 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
 
   function applyDamage(target, amount, attacker, pushImpulse = 0.0, showText = true) {
     if (!target || target.dead) return;
-    let dmg = Math.round(amount * (suddenDeathActive ? 2.0 : 1.0));
+    let dmg = Math.round(amount * (finalWaveActive ? 1.25 : 1.0));
     if (target.team === 'survivor' && squadShieldTimer > 0) {
       dmg = Math.max(1, Math.round(dmg * 0.45));
     }
@@ -1593,9 +1567,9 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
         }
         const push = Math.min(0.08, (minDist - dist) * Math.min(1.0, 7.0 * dt));
         const nx = dx / dist, nz = dz / dist;
-        a.group.position.x = THREE.MathUtils.clamp(a.group.position.x + nx * push * 0.5, ENEMY_STOP_X - 0.1, SURV_ATTACK_HIVE_X + 0.1);
+        a.group.position.x = THREE.MathUtils.clamp(a.group.position.x + nx * push * 0.5, ENEMY_STOP_X - 0.1, ENEMY_SPAWN_MAX_X + 0.5);
         a.group.position.z = THREE.MathUtils.clamp(a.group.position.z + nz * push * 0.5, -2.5, 2.5);
-        b.group.position.x = THREE.MathUtils.clamp(b.group.position.x - nx * push * 0.5, ENEMY_STOP_X - 0.1, SURV_ATTACK_HIVE_X + 0.1);
+        b.group.position.x = THREE.MathUtils.clamp(b.group.position.x - nx * push * 0.5, ENEMY_STOP_X - 0.1, ENEMY_SPAWN_MAX_X + 0.5);
         b.group.position.z = THREE.MathUtils.clamp(b.group.position.z - nz * push * 0.5, -2.5, 2.5);
       }
     }
@@ -1614,7 +1588,7 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
 
     if (unit.vel.lengthSq() > 1e-5 && dt > 0) {
       unit.group.position.addScaledVector(unit.vel, dt);
-      unit.group.position.x = THREE.MathUtils.clamp(unit.group.position.x, ENEMY_STOP_X - 0.1, SURV_ATTACK_HIVE_X + 0.1);
+      unit.group.position.x = THREE.MathUtils.clamp(unit.group.position.x, ENEMY_STOP_X - 0.1, ENEMY_SPAWN_MAX_X + 0.5);
       unit.group.position.z = THREE.MathUtils.clamp(unit.group.position.z, -2.5, 2.5);
       unit.vel.multiplyScalar(Math.exp((unit.dead ? -13.0 : -8.5) * dt));
     }
@@ -1675,11 +1649,7 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
           const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(unit.group.quaternion);
           spawnTimedVfx(VFX_PATHS.slash, muz, fwd, { groundFlat: false, scale: unit.slashScale || 1.05, life: 0.26 });
           audio.playMelee(ph.push > 2.0);
-          const mult = suddenDeathActive ? 2.0 : 1.0;
-          if (ph.attackHive) {
-            flashBaseHit('zombie');
-            if (callbacks.onZombieBaseDamage) callbacks.onZombieBaseDamage(Math.round(ph.dmg * mult), unit);
-          } else if (ph.target && !ph.target.dead && unit.group.position.distanceTo(ph.target.group.position) <= unit.range + 1.4) {
+          if (ph.target && !ph.target.dead && unit.group.position.distanceTo(ph.target.group.position) <= unit.range + 1.4) {
             applyDamage(ph.target, ph.dmg, unit, ph.push || 1.6);
           }
         } else if (ph.kind === 'enemy_melee') {
@@ -1687,9 +1657,9 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
           const o2 = getEnemyAttackOrigin(unit);
           spawnTimedVfx(unit.vfxGlb, o2, fwd, { groundFlat: ph.isSlam, scale: (ph.isSlam ? 1.05 : 0.95) * (unit.vfxScale || 1.0), life: 0.44 });
           audio.playMonsterAttack(ph.isSlam);
-          const mult = suddenDeathActive ? 2.0 : 1.0;
+          const mult = finalWaveActive ? 1.25 : 1.0;
           if (ph.attackHumanBase) {
-            flashBaseHit('human');
+            flashBaseHit();
             cameraShake = Math.max(cameraShake, unit.isBoss ? 0.14 : 0.05);
             if (callbacks.onHumanBaseDamage) callbacks.onHumanBaseDamage(Math.round(unit.barricadeDmg * mult), unit);
           } else if (ph.target && !ph.target.dead && unit.group.position.distanceTo(ph.target.group.position) <= ph.maxDist) {
@@ -1705,9 +1675,11 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
       return;
     }
 
-    // 2-Base Lane Push AI: ENEMY pushes WEST -> Human Fortress Gate (-4.65)
+    // Fortress Defense AI: ENEMY emerges from East foggy road -> pushes WEST toward defenders / Fortress Gate (-4.45)
     if (unit.team === 'enemy') {
       const stormMult = stormTemporaryTimer > 0 ? 1.35 : 1.0;
+      const hordeMult = hordeRageTimer > 0 ? 1.32 : 1.0;
+      const finalMult = finalWaveActive ? 1.15 : 1.0;
       const { target, dist } = nearestLivingOpponent(unit);
       const distGate = Math.max(0, unit.group.position.x - ENEMY_STOP_X);
       const targetGate = !target || distGate < 0.72 || target.group.position.x < ENEMY_STOP_X;
@@ -1724,7 +1696,7 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
       if (effDist > engageRange) {
         const isSprint = (effDist > engageRange + 2.6) && unit.anims.run && (unit.anims.run !== unit.anims.walk);
         const baseSpd = isSprint ? (unit.sprintSpeed || unit.speed * 1.40) : unit.speed;
-        const moveSpd = baseSpd * stormMult;
+        const moveSpd = baseSpd * stormMult * hordeMult * finalMult;
         const moveClip = isSprint ? unit.anims.run : unit.anims.walk;
         const clipDur = (unit.clipsByName[moveClip]?.duration) || 1.0;
         const strideLen = (isSprint && unit.runStride) ? unit.runStride : (unit.walkStride || 0.96);
@@ -1767,27 +1739,41 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
       return;
     }
 
-    // 2-Base Lane Push AI: SURVIVOR advances EAST -> Zombie Bio-Hive (+5.35 / Core +6.4)
+    // Fortress Defense AI: SURVIVOR holds tactical defense line & intercepts zombies up to SURV_MAX_ADVANCE_X
     const rageMult = rageTimer > 0 ? 1.75 : 1.0;
     const rageDmgMult = rageTimer > 0 ? 1.25 : 1.0;
     const { target, dist } = nearestLivingOpponent(unit);
-    const hiveCorePt = new THREE.Vector3(ZOMBIE_BASE_X, 1.65, 0);
-    const distToHiveEdge = Math.max(0, SURV_ATTACK_HIVE_X - unit.group.position.x);
-    const distToHiveCore = Math.hypot(ZOMBIE_BASE_X - unit.group.position.x, -unit.group.position.z);
+    const hasFieldTarget = Boolean(target && target.group.position.x <= 10.5);
 
-    // Attack Zombie Hive when no living zombie is within attack range OR Hive is already closer/in range
-    const hiveMaxRange = unit.weaponClass === 'melee' ? 0.85 : Math.min(unit.range, 9.2);
-    const attackHive = (!target && (unit.weaponClass === 'melee' ? distToHiveEdge <= 0.85 : distToHiveCore <= hiveMaxRange));
-    const chaseTarget = target ? target.group.position : new THREE.Vector3(SURV_ATTACK_HIVE_X, 0, THREE.MathUtils.clamp(unit.group.position.z, -1.6, 1.6));
-    const goalDist = target ? dist : (unit.weaponClass === 'melee' ? distToHiveEdge : distToHiveCore);
-    const engageDist = target ? unit.range : hiveMaxRange;
+    if (!hasFieldTarget) {
+      const holdX = -3.65 + (unit.uid % 3) * 0.78;
+      const holdZ = ((unit.uid % 5) - 2) * 0.65;
+      const dir = new THREE.Vector3(holdX - unit.group.position.x, 0, holdZ - unit.group.position.z);
+      const dHold = dir.length();
+      if (dHold > 0.25) {
+        dir.normalize();
+        const moveSpd = 2.10;
+        const moveClip = unit.anims.walk;
+        const clipDur = (unit.clipsByName[moveClip]?.duration) || 1.0;
+        const clipScale = THREE.MathUtils.clamp(((moveSpd * clipDur) / 1.07) * unit.animJitter, 0.72, 1.85);
+        lookAtDir(unit, dir, dt);
+        unit.group.position.addScaledVector(dir, moveSpd * dt);
+        playClip(unit, moveClip, false, 0.14, clipScale);
+      } else {
+        lookAtDir(unit, new THREE.Vector3(1, 0, 0), dt);
+        playClip(unit, unit.anims.aim || unit.anims.idle, false, 0.16);
+      }
+      return;
+    }
 
-    const dir = new THREE.Vector3(chaseTarget.x - unit.group.position.x, 0, chaseTarget.z - unit.group.position.z);
+    const goalPos = target.group.position.clone();
+    goalPos.x = Math.min(SURV_MAX_ADVANCE_X, goalPos.x);
+    const dir = new THREE.Vector3(goalPos.x - unit.group.position.x, 0, goalPos.z - unit.group.position.z);
     if (dir.lengthSq() > 1e-6) dir.normalize();
 
-    if (!attackHive && goalDist > engageDist) {
-      // Advance rightward toward combat / Bio-Hive
-      const isSprint = (goalDist > engageDist + 2.4) && Boolean(unit.anims.run);
+    const canAdvanceFurther = unit.group.position.x < SURV_MAX_ADVANCE_X - 0.15 || goalPos.x < unit.group.position.x;
+    if (dist > unit.range && canAdvanceFurther) {
+      const isSprint = (dist > unit.range + 2.4) && Boolean(unit.anims.run);
       const moveSpd = isSprint ? 3.05 : 2.15;
       const moveClip = isSprint ? unit.anims.run : unit.anims.walk;
       const clipDur = (unit.clipsByName[moveClip]?.duration) || 1.0;
@@ -1796,10 +1782,9 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
       lookAtDir(unit, dir, dt);
       unit.group.position.addScaledVector(dir, moveSpd * dt);
       playClip(unit, moveClip, false, 0.14, clipScale);
-    } else if ((target || attackHive) && unit.cooldown <= 0) {
-      const aimDir = attackHive
-        ? new THREE.Vector3(ZOMBIE_BASE_X - unit.group.position.x, 0, -unit.group.position.z).normalize()
-        : dir;
+    } else if (dist <= unit.range && unit.cooldown <= 0) {
+      const aimDir = new THREE.Vector3(target.group.position.x - unit.group.position.x, 0, target.group.position.z - unit.group.position.z);
+      if (aimDir.lengthSq() > 1e-6) aimDir.normalize();
       lookAtDir(unit, aimDir, dt);
       unit.attackCount++;
       const isHeavyMelee = (unit.weaponClass === 'melee') && (unit.attackCount % 2 === 0) && Boolean(unit.anims.skill);
@@ -1820,28 +1805,19 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
           target,
           dmg: isHeavyMelee ? Math.round(finalDmg * 1.28) : finalDmg,
           push: isHeavyMelee ? 2.6 : 1.5,
-          attackHive: !target || attackHive,
         };
       } else {
-        const aimPt = attackHive
-          ? hiveCorePt.clone()
-          : target.group.position.clone().add(new THREE.Vector3(0, target.height * 0.55, 0));
+        const aimPt = target.group.position.clone().add(new THREE.Vector3(0, target.height * 0.55, 0));
         spawnTimedVfx(`../output/vfx/vfx_${unit.vfxId}.glb`, muz, aimDir, { groundFlat: false, scale: 1.0, life: 0.16 });
         triggerFlashLight(muz, unit.weaponClass === 'bow' ? 0xf87171 : 0xffcc66, unit.weaponClass === 'bow' ? 2.2 : 5.2, 0.06);
         audio.playGun(unit.weaponClass);
         const pColor = unit.weaponClass === 'bow' ? 0xf87171 : (rageTimer > 0 ? 0xfacc15 : 0xffe680);
         spawnProjectile(muz, aimPt, pColor, unit.weaponClass === 'bow' ? 21.0 : 34.0, () => {
-          if (attackHive || !target || target.dead) {
-            flashBaseHit('zombie');
-            const mult = suddenDeathActive ? 2.0 : 1.0;
-            if (callbacks.onZombieBaseDamage) callbacks.onZombieBaseDamage(Math.round(finalDmg * mult), unit);
-          } else {
-            applyDamage(target, finalDmg, unit, unit.weaponClass === 'bow' ? 0.9 : 0.4);
-          }
+          applyDamage(target, finalDmg, unit, unit.weaponClass === 'bow' ? 0.9 : 0.4);
         });
       }
     } else {
-      lookAtDir(unit, dir, dt);
+      lookAtDir(unit, new THREE.Vector3(1, 0, 0), dt);
       playClip(unit, unit.anims.aim || unit.anims.idle, false, 0.16);
     }
   }
@@ -1853,7 +1829,7 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
     slowMoTimer = Math.min(0.55, durationSec * 0.65);
   }
 
-  function triggerHealPulse({ amount = 35, shieldSec = 0, repairFlash = false, hiveHealFlash = false } = {}) {
+  function triggerHealPulse({ amount = 35, shieldSec = 0, repairFlash = false } = {}) {
     const aliveSurvs = units.filter((u) => u.team === 'survivor' && !u.dead);
     if (shieldSec > 0) squadShieldTimer = Math.max(squadShieldTimer, shieldSec);
     if (amount > 0) {
@@ -1868,10 +1844,6 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
       spawnExpandingRing(new THREE.Vector3(HUMAN_BASE_X + 0.4, 0.04, 0), 0x38bdf8, 0.8, 3.2, 0.60, 0.85);
       spawnFloatingText(new THREE.Vector3(HUMAN_BASE_X + 0.4, 2.4, 0), '🏰 REPAIR!', '#38bdf8', 14);
     }
-    if (hiveHealFlash) {
-      spawnExpandingRing(new THREE.Vector3(ZOMBIE_BASE_X - 0.5, 0.04, 0), 0x84cc16, 0.8, 3.4, 0.60, 0.85);
-      spawnFloatingText(new THREE.Vector3(ZOMBIE_BASE_X - 0.5, 2.6, 0), '🦠 REGEN!', '#a3e635', 14);
-    }
     audio.playHealPulse();
   }
 
@@ -1880,6 +1852,13 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
     spawnExpandingRing(new THREE.Vector3(-2.8, 0.04, 0), 0xfacc15, 0.6, 3.6, 0.65, 0.90);
     spawnFloatingText(new THREE.Vector3(-2.8, 2.5, 0), '🔥 FRENZY 2x FIRE RATE!', '#facc15', 14);
     audio.playUpgradeFanfare();
+  }
+
+  function triggerHordeFrenzy(durationSec = 6.0) {
+    hordeRageTimer = Math.max(hordeRageTimer, durationSec);
+    spawnExpandingRing(new THREE.Vector3(2.2, 0.04, 0), 0xf97316, 0.6, 3.8, 0.65, 0.88);
+    spawnFloatingText(new THREE.Vector3(2.2, 2.4, 0), '🔥 HORDE FRENZY!', '#fb923c', 14);
+    audio.playBossHorn();
   }
 
   async function triggerSupplyDrop(ownerName, onLanded) {
@@ -1997,10 +1976,6 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
                   applyDamage(u, u.isBoss ? 220 : 320, null, 2.5, true);
                 }
               }
-              if (st.x >= 4.2 && callbacks.onZombieBaseDamage) {
-                flashBaseHit('zombie');
-                callbacks.onZombieBaseDamage(45, null);
-              }
             }
           }
         },
@@ -2038,9 +2013,10 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
     }
     transientProps.length = 0;
     rageTimer = 0;
+    hordeRageTimer = 0;
     squadShieldTimer = 0;
     stormTemporaryTimer = 0;
-    suddenDeathActive = false;
+    finalWaveActive = false;
     dramaticFocus = null;
     slowMoScale = 1.0;
     slowMoTimer = 0;
@@ -2048,7 +2024,6 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
     hitStopTimer = 0;
     applyWeatherPreset(baseWeatherId, false);
     setHumanBaseVisual(1.0);
-    setZombieBaseVisual(1.0);
   }
 
   async function initEnvironment() {
@@ -2059,17 +2034,27 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
     envScene.traverse((o) => {
       if (o.isMesh || o.isSkinnedMesh) {
         const nm = o.name || (o.parent ? o.parent.name : '');
-        const noCast = nm.includes('Env_DistantSkyline') || nm.includes('Env_MuddyBattlefield');
+        const noCast = nm.includes('Env_MuddyGround');
         o.castShadow = !noCast;
         o.receiveShadow = true;
-        o.frustumCulled = false;
+        o.frustumCulled = true;
         const mats = Array.isArray(o.material) ? o.material : [o.material];
         for (const mt of mats) {
           if (mt && mt.name) {
             envMaterialRefs[mt.name] = mt;
-            if (mt.name === 'Mat_Env_MudWet') mt.envMapIntensity = 1.25;
-            else if (mt.name === 'Mat_Env_MudPuddle') mt.envMapIntensity = 2.40;
-            else if ('envMapIntensity' in mt) mt.envMapIntensity = 0.75;
+            if (mt.roughnessMap && 'roughness' in mt) {
+              mt.roughness = 1.0;
+            }
+            if (mt.name === 'Mat_Env_MudWet') {
+              mt.metalness = 0.0;
+              mt.envMapIntensity = 0.24;
+            } else if (/Concrete|Brick|Plaster|Wood|Sandbag|Grass|Rust/.test(mt.name)) {
+              mt.envMapIntensity = 0.28;
+            } else if (/Steel|Wire|Metal|CarPaint|PoliceWhite|Hazard|Barrel|Glass/.test(mt.name)) {
+              mt.envMapIntensity = 0.52;
+            } else if ('envMapIntensity' in mt) {
+              mt.envMapIntensity = 0.35;
+            }
           }
         }
       }
@@ -2109,6 +2094,7 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
 
     if (manualOrbitPause > 0) manualOrbitPause = Math.max(0, manualOrbitPause - rawDt);
     if (rageTimer > 0 && simDt > 0) rageTimer = Math.max(0, rageTimer - simDt);
+    if (hordeRageTimer > 0 && simDt > 0) hordeRageTimer = Math.max(0, hordeRageTimer - simDt);
     if (squadShieldTimer > 0 && simDt > 0) squadShieldTimer = Math.max(0, squadShieldTimer - simDt);
     if (stormTemporaryTimer > 0 && simDt > 0) {
       stormTemporaryTimer -= simDt;
@@ -2225,7 +2211,7 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
       }
     }
 
-    // Animate Dual Base Health & Crisis Visuals
+    // Animate Fortress Defense Gate Shield Visuals
     const tNow = nowMs * 0.001;
     if (humanBaseHpRatio < 0.28 && humanBaseHpRatio > 0.001) {
       const flash = 0.5 + 0.5 * Math.sin(tNow * 10.5);
@@ -2239,34 +2225,24 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
       humanShieldMat.opacity = squadShieldTimer > 0 ? 0.36 : 0.22;
     }
 
-    if (zombieBaseHpRatio > 0.001) {
-      const hPulse = 0.78 + 0.22 * Math.sin(tNow * (zombieBaseHpRatio < 0.28 ? 9.5 : 3.2));
-      hiveCoreHaloMat.opacity = 0.55 * hPulse;
-      hiveCoreHalo.scale.setScalar(2.6 + 0.35 * hPulse);
-      hiveCoreLight.intensity = 5.4 * hPulse;
-      if (zombieBaseHpRatio < 0.28) {
-        zombieSparkCooldown -= rawDt;
-        if (zombieSparkCooldown <= 0) {
-          zombieSparkCooldown = 0.70;
-          spawnTimedVfx(VFX_PATHS.blood, new THREE.Vector3(ZOMBIE_BASE_X - 0.5, 1.4, (Math.random() - 0.5) * 1.8), new THREE.Vector3(-1, 0, 0), { scale: 0.95, life: 0.24 });
-        }
-      }
-    }
-
-    // Sweep Watchtower Searchlight across wet muddy ground
+    // Sweep Watchtower Searchlight across brown earth combat zone
     searchlightPivot.rotation.y = Math.sin(tNow * 0.55) * 0.38;
+
+    // Gentle drift of moody East fog/mist sprites
+    for (const m of roadMistMeta) {
+      m.sprite.position.x = m.baseX + Math.sin(tNow * 0.28 + m.phase) * 0.45;
+      m.sprite.position.z = m.baseZ + Math.cos(tNow * 0.22 + m.phase) * 0.28;
+      m.sprite.material.opacity = m.baseOp * (0.85 + 0.15 * Math.sin(tNow * 0.55 + m.phase));
+    }
 
     // Atmosphere & Weather FX
     skyUniforms.uTime.value = tNow;
     skyDome.position.set(camera.position.x, 0, camera.position.z);
     const wPreset = WEATHER_PRESETS[activeWeatherId] || WEATHER_PRESETS.war_dusk;
     const fBase = wPreset.fireInt;
-    fireLightN.intensity = fBase * (0.86 + 0.14 * Math.sin(tNow * 8.2));
-    fireLightS.intensity = fBase * (0.86 + 0.14 * Math.cos(tNow * 8.9));
-    fireLightMid.intensity = fBase * (0.86 + 0.14 * Math.sin(tNow * 9.5 + 1.0));
+    fortressFireLight.intensity = fBase * (0.86 + 0.14 * Math.sin(tNow * 8.4));
     fireHaloMatN.opacity = wPreset.fireHaloAlpha * (0.78 + 0.22 * Math.sin(tNow * 10.0));
     fireHaloMatS.opacity = wPreset.fireHaloAlpha * (0.78 + 0.22 * Math.cos(tNow * 10.4));
-    fireHaloMatMid.opacity = wPreset.fireHaloAlpha * (0.78 + 0.22 * Math.sin(tNow * 9.8 + 1.2));
 
     const sirenWave = Math.sin(tNow * 6.4);
     const sirenPeak = (activeWeatherId === 'war_dusk' || activeWeatherId === 'storm_rain') ? 0.45 : 0.20;
@@ -2287,7 +2263,7 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
         hemi.intensity = wPreset.hemiInt + fp * 0.8;
       } else {
         skyUniforms.uFlash.value = 0;
-        rimLight.intensity = suddenDeathActive ? wPreset.rimInt + 0.5 : wPreset.rimInt;
+        rimLight.intensity = finalWaveActive ? wPreset.rimInt + 0.45 : wPreset.rimInt;
         hemi.intensity = wPreset.hemiInt;
       }
     }
@@ -2349,43 +2325,39 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
 
       if (dramaticFocus && dramaticFocus.timer > 0) {
         dramaticFocus.timer -= rawDt;
-        const tx = THREE.MathUtils.clamp(dramaticFocus.targetPos.x, -5.0, 5.8);
+        const tx = THREE.MathUtils.clamp(dramaticFocus.targetPos.x, -4.6, 5.4);
         _desiredTarget.set(tx, 1.35, dramaticFocus.targetPos.z * 0.35);
-        _desiredBasePos.set(tx - 0.6, 6.6, 15.6);
+        _desiredBasePos.set(tx - 0.6, 6.4, 15.2);
         targetFov = 54;
         trackLerp = 0.09;
       } else if (camMode === 'over_fortress') {
-        _desiredTarget.set(2.2, 1.0, -0.6);
-        _desiredBasePos.set(-13.6, 9.8, 8.0);
-        targetFov = 62;
+        _desiredTarget.set(0.8, 1.0, -0.3);
+        _desiredBasePos.set(-10.2, 10.6, 8.8);
+        targetFov = 60;
       } else if (camMode === 'wide') {
-        _desiredTarget.set(0.0, 1.1, -0.5);
-        _desiredBasePos.set(0.0, 12.6, 28.5);
-        targetFov = 62;
+        _desiredTarget.set(-0.2, 1.1, -0.4);
+        _desiredBasePos.set(-0.4, 11.4, 25.4);
+        targetFov = 60;
       } else if (camMode === 'topdown') {
-        _desiredTarget.set(0.0, 0.4, -0.2);
-        _desiredBasePos.set(0.0, 22.0, 16.5);
-        targetFov = 56;
+        _desiredTarget.set(-0.4, 0.4, -0.2);
+        _desiredBasePos.set(-0.4, 19.5, 14.5);
+        targetFov = 54;
       } else if (camMode === 'fortress') {
-        _desiredTarget.set(-5.2, 1.5, -0.4);
-        _desiredBasePos.set(-4.0, 7.6, 18.5);
-        targetFov = 56;
-      } else if (camMode === 'hive') {
-        _desiredTarget.set(5.6, 1.5, -0.2);
-        _desiredBasePos.set(4.2, 7.6, 18.5);
-        targetFov = 56;
+        _desiredTarget.set(-4.8, 1.5, -0.3);
+        _desiredBasePos.set(-3.4, 6.8, 16.5);
+        targetFov = 54;
       } else if (camMode === 'auto') {
-        const maxSurvX = aliveSurvs.length > 0 ? aliveSurvs.reduce((mx, u) => Math.max(mx, u.group.position.x), -4.5) : -3.5;
-        const minEnmX = aliveEnms.length > 0 ? aliveEnms.reduce((mn, u) => Math.min(mn, u.group.position.x), 5.0) : 4.0;
-        const frontX = THREE.MathUtils.clamp(0.5 * (maxSurvX + minEnmX), -2.4, 2.4);
+        const maxSurvX = aliveSurvs.length > 0 ? aliveSurvs.reduce((mx, u) => Math.max(mx, u.group.position.x), -4.2) : -3.4;
+        const minEnmX = aliveEnms.length > 0 ? aliveEnms.reduce((mn, u) => Math.min(mn, u.group.position.x), 4.5) : 3.0;
+        const frontX = THREE.MathUtils.clamp(0.5 * (maxSurvX + minEnmX), -3.0, 2.4);
         _desiredTarget.set(frontX, 1.15, -0.4);
-        _desiredBasePos.set(frontX, hasBoss ? 10.8 : 9.8, hasBoss ? 25.0 : 23.2);
-        targetFov = 58;
+        _desiredBasePos.set(frontX, hasBoss ? 10.4 : 9.4, hasBoss ? 23.6 : 21.8);
+        targetFov = 56;
       } else {
-        // Default 'diagonal' (Opsi 1: Diagonal 3/4 wide)
-        _desiredTarget.set(0.2, 1.0, -0.5);
-        _desiredBasePos.set(-6.2, 11.8, 24.8);
-        targetFov = 62;
+        // Default 'diagonal' (Opsi 1: Diagonal 3/4)
+        _desiredTarget.set(-0.6, 1.1, -0.4);
+        _desiredBasePos.set(-4.6, 9.8, 21.8);
+        targetFov = 58;
       }
 
       _desiredCamPos.copy(_desiredBasePos).sub(_desiredTarget).multiplyScalar(zoomScale).add(_desiredTarget);
@@ -2415,7 +2387,7 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
       }
       let anchorH = u.height + 0.28;
       if (u.dead) anchorH = THREE.MathUtils.lerp(u.height + 0.25, 0.55, Math.min(1, u.deadTimer / 0.7));
-      _tmpVec.copy(u.group.position).add(new THREE.Vector3(0, anchorH, 0)).project(camera);
+      _tmpVec.set(u.group.position.x, u.group.position.y + anchorH, u.group.position.z).project(camera);
       if (_tmpVec.z > 1 || _tmpVec.x < -1.12 || _tmpVec.x > 1.12 || _tmpVec.y < -1.1 || _tmpVec.y > 1.1) {
         u.hudEl.style.display = 'none';
       } else {
@@ -2471,24 +2443,43 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
     setZoomScale(val) { zoomScale = THREE.MathUtils.clamp(Number(val) || 1.0, 0.60, 1.65); manualOrbitPause = 0; },
     setWeather(weatherId) { stormTemporaryTimer = 0; applyWeatherPreset(weatherId, false); },
     setBloom(val) { bloomEnabled = Boolean(val); syncBloomSkyMaterial(); },
-    setSuddenDeath(val) { suddenDeathActive = Boolean(val); applyWeatherPreset(activeWeatherId, activeWeatherId === 'storm_rain'); },
+    setFinalWave(val) { finalWaveActive = Boolean(val); applyWeatherPreset(activeWeatherId, activeWeatherId === 'storm_rain'); },
     setHumanBaseVisual,
-    setZombieBaseVisual,
     spawnSurvivor,
     upgradeSurvivor,
     spawnEnemy,
     evolveEnemy,
     triggerHealPulse,
     triggerRageAura,
+    triggerHordeFrenzy,
     triggerSupplyDrop,
     triggerAirstrike,
     triggerStormCurse,
     resetUnitsAndFx,
     getUnits() { return units; },
+    getDiagnostics() {
+      const mud = envMaterialRefs.Mat_Env_MudWet;
+      return {
+        fps: currentFps,
+        drawCalls: renderer.info.render.calls,
+        triangles: renderer.info.render.triangles,
+        textures: renderer.info.memory.textures,
+        geometries: renderer.info.memory.geometries,
+        bloomEnabled,
+        activeWeatherId,
+        mudMat: mud ? {
+          roughness: mud.roughness,
+          metalness: mud.metalness,
+          envMapIntensity: mud.envMapIntensity,
+          hasRoughnessMap: Boolean(mud.roughnessMap),
+          hasVertexColors: Boolean(mud.vertexColors),
+        } : null,
+      };
+    },
     getStats() {
       let survAlive = 0, enmAlive = 0;
       let topBoss = null;
-      let maxSurvX = HUMAN_BASE_X, minEnmX = SURV_ATTACK_HIVE_X;
+      let maxSurvX = HUMAN_BASE_X, minEnmX = ENEMY_SPAWN_MAX_X;
       for (const u of units) {
         if (u.dead) continue;
         if (u.team === 'survivor') {
@@ -2500,15 +2491,13 @@ export function createArenaEngine(stageWrap, labelsLayer, audio, callbacks = {})
           if (u.isBoss && (!topBoss || u.hp > topBoss.hp)) topBoss = u;
         }
       }
-      const frontMid = 0.5 * (maxSurvX + minEnmX);
-      const tugPct = Math.round(THREE.MathUtils.clamp(((frontMid - ENEMY_STOP_X) / (SURV_ATTACK_HIVE_X - ENEMY_STOP_X)) * 100, 4, 96));
       return {
         fps: currentFps,
         survAlive,
         enmAlive,
         topBoss,
-        tugPct,
         rageActive: rageTimer > 0,
+        hordeRageActive: hordeRageTimer > 0,
         shieldActive: squadShieldTimer > 0,
         stormActive: stormTemporaryTimer > 0,
       };

@@ -1,6 +1,6 @@
 // Canonical asset catalog, upgrade tiers, TikTok gift economy, and mock stream templates
 
-export const ASSET_VER = '?v=13';
+export const ASSET_VER = '?v=14';
 
 export const ENV_PATHS = {
   warBattlefield: '../output/environment/battlefield_fortress_war.glb',
@@ -413,7 +413,7 @@ export const GIFT_CATALOG = {
     coins: 1,
     faction: 'sabotage',
     tier: 'micro',
-    shortDesc: 'Join/Mutasi Zombie + Heal Sarang • x10 = +3 Feral',
+    shortDesc: 'Join/Spawn Zombie Serbu Benteng • x10 = +3 Feral',
     accent: '#f97316',
   },
   finger_heart: {
@@ -433,7 +433,7 @@ export const GIFT_CATALOG = {
     coins: 5,
     faction: 'sabotage',
     tier: 'small',
-    shortDesc: 'Heal Sarang +8% & Mutasi Spitter',
+    shortDesc: 'Mutasi Spitter + Horde Frenzy Speed 6s',
     accent: '#fb923c',
   },
   doughnut: {
@@ -519,32 +519,27 @@ export const MOCK_CHAT_POOL = {
   idle: [
     { msg: '!manusia', tag: 'cmd' },
     { msg: '!manusia ikut jaga benteng min!', tag: 'cmd' },
-    { msg: '!zombie ikut serang benteng!!', tag: 'cmd' },
-    { msg: 'Seru banget benteng vs sarang zombie 3D!', tag: 'talk' },
-    { msg: 'Medannya berlumpur parah epik banget!!', tag: 'talk' },
-    { msg: 'Gas tap-tap layar bantu kubu masing2', tag: 'talk' },
+    { msg: '!zombie ikut serbu benteng!!', tag: 'cmd' },
+    { msg: 'Seru banget pertahanan benteng apokalips 3D!', tag: 'talk' },
+    { msg: 'Suasana perang gerbang bentengnya dapet banget!!', tag: 'talk' },
+    { msg: 'Gas tap-tap layar bantu repair gerbang!', tag: 'talk' },
   ],
   defend: [
     'Jaga gerbang benteng jgn sampe jebol!!',
     'Kirim rose biar nembak makin ngebut!',
-    'Donat auto upgrade senjata menuju Sarang!',
-    'Dorong garis depan hancurin Sarang Zombie!',
+    'Donat auto upgrade senjata menuju Lv.8 LMG!',
+    'Tahan gelombang zombie sampe evakuasi tiba!',
   ],
   sabotage: [
-    'WKWK hancurin benteng bajanya!!',
+    'WKWK hancurin gerbang bajanya!!',
     'Kirim es krim biar evolusi jadi Brute/Boss!',
-    'Penghancur menang perang 2 base ini fix!',
+    'Penghancur jebol benteng menang ronde ini fix!',
     'Panggil badai petir + Titan Boss sekarang!',
   ],
   criticalHuman: [
     'WADUH BENTENG MERAH!! KIRIM HEART!!',
     'GERBANG BENTENG MAU JEBOL WOI!!',
     'SAATNYA COMEBACK KIRIM SUPPLY & MONEY GUN!!',
-  ],
-  criticalZombie: [
-    'SARANG ZOMBIE MAU HANCUR!! KIRIM GG / BADAI!!',
-    'HEAL SARANG ZOMBIE GUYS SURVIVOR UDAH MAJU!!',
-    'SAATNYA BALIKKAN KEADAAN KIRIM GALAXY BOSS!!',
   ],
   boss: [
     'GEDE BANGET TITAN BOSSNYA 😱',

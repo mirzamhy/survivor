@@ -450,19 +450,9 @@
               <span id="hud-round-badge" style="font-size:10.5px;font-weight:700;color:var(--muted);">Ronde #1</span>
             </div>
 
-            <div class="goals-grid">
-              <div class="bar-track" style="height:15px;">
-                <div id="hud-human-fill" class="bar-fill" style="width:100%;background:#22c55e;"></div>
-                <div id="hud-human-text" class="bar-label" style="font-size:9.5px;">🏰 Benteng 100%</div>
-              </div>
-              <div class="bar-track" style="height:15px;">
-                <div id="hud-zombie-fill" class="bar-fill" style="width:100%;background:#84cc16;"></div>
-                <div id="hud-zombie-text" class="bar-label" style="font-size:9.5px;">🦠 Sarang 100%</div>
-              </div>
-            </div>
-
-            <div style="position:relative;height:6px;background:rgba(132,204,22,0.28);border-radius:99px;border:1px solid rgba(255,255,255,0.12);overflow:visible;">
-              <div id="frontline-marker" style="position:absolute;top:-3px;left:50%;transform:translateX(-50%);width:10px;height:10px;border-radius:50%;background:#facc15;box-shadow:0 0 6px #facc15;transition:left 0.15s;"></div>
+            <div class="bar-track" style="height:16px;">
+              <div id="hud-human-fill" class="bar-fill" style="width:100%;background:#22c55e;"></div>
+              <div id="hud-human-text" class="bar-label" style="font-size:10px;">🏰 HP Benteng Manusia 100%</div>
             </div>
 
             <div class="goals-grid">
@@ -606,8 +596,7 @@
           </div>
           <div class="row">
             <button data-cam="auto">🎯 Auto Duel</button>
-            <button data-cam="fortress">Benteng</button>
-            <button data-cam="hive">Sarang</button>
+            <button data-cam="fortress">🏰 Fokus Benteng</button>
           </div>
           <div>
             <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);margin-bottom:3px;">
@@ -621,14 +610,14 @@
             <label style="display:flex;align-items:center;gap:5px;"><input id="chk-mini-labels" type="checkbox" checked /> Label Mini</label>
           </div>
           <select id="sel-weather">
-            <option value="war_dusk" selected>Sore Perang Berkabut (War Dusk)</option>
+            <option value="war_dusk" selected>Senja Perang Atmosferik (War Dusk)</option>
             <option value="apoc_sunset">Sore Senja Emas</option>
             <option value="apoc_morning">Pagi Berkabut</option>
             <option value="apoc_noon">Siang Cerah</option>
             <option value="storm_rain">Badai Hujan &amp; Petir</option>
           </select>
           <div class="row" style="font-size:11.5px;">
-            <label style="display:flex;align-items:center;gap:5px;"><input id="chk-bloom" type="checkbox" checked /> HDR Bloom</label>
+            <label style="display:flex;align-items:center;gap:5px;"><input id="chk-bloom" type="checkbox" /> HDR Bloom</label>
             <label style="display:flex;align-items:center;gap:5px;"><input id="chk-sfx" type="checkbox" checked /> Audio SFX</label>
           </div>
           <div class="row">

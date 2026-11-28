@@ -1,4 +1,4 @@
-// Core 2-Base War Game Loop, AI Tension Director, Dual Evolution (Lv.1-8), Infection & HUD Controller
+// Core Fortress Defense Game Loop, AI Tension Director, Dual Evolution (Lv.1-8), Infection & HUD Controller
 
 import {
   SURVIVORS,
@@ -31,9 +31,6 @@ const hudTimer = $('hud-timer');
 const hudRoundBadge = $('hud-round-badge');
 const hudHumanFill = $('hud-human-fill');
 const hudHumanText = $('hud-human-text');
-const hudZombieFill = $('hud-zombie-fill');
-const hudZombieText = $('hud-zombie-text');
-const frontlineMarker = $('frontline-marker');
 const goalDefendFill = $('goal-defend-fill');
 const goalDefendText = $('goal-defend-text');
 const goalSabotageFill = $('goal-sabotage-fill');
@@ -110,7 +107,7 @@ if (startMute) {
 
 const bus = new LiveEventBus();
 
-// 2-Base War Economy & Round Constants
+// Fortress Defense Economy & Round Constants
 const MAX_SURVIVORS = 8;
 const MAX_ENEMIES = 12;
 const ROUND_COMBAT_SEC = 180;
@@ -121,14 +118,12 @@ const BASE_MAX_HP = 3000;
 
 const state = {
   roundNumber: 1,
-  phase: 'PREP', // 'PREP' | 'COMBAT' | 'SUDDEN_DEATH' | 'ENDED'
+  phase: 'PREP', // 'PREP' | 'COMBAT' | 'FINAL_WAVE' | 'ENDED'
   phaseTimer: PREP_SEC,
   combatTimeLeft: ROUND_COMBAT_SEC,
   wave: 1,
   humanBaseMaxHp: BASE_MAX_HP,
   humanBaseHp: BASE_MAX_HP,
-  zombieBaseMaxHp: BASE_MAX_HP,
-  zombieBaseHp: BASE_MAX_HP,
   sessionStartMs: Date.now(),
   sessionCoins: 0,
   roundCoins: 0,
@@ -214,15 +209,7 @@ const engine = createArenaEngine(stageWrap, labelsLayer, audio, {
     state.humanBaseHp = Math.max(0, state.humanBaseHp - dmg);
     engine.setHumanBaseVisual(state.humanBaseHp / state.humanBaseMaxHp);
     if (state.humanBaseHp <= 0) {
-      finishRound(false, 'Benteng Manusia Jebol oleh Serbuan Zombie!');
-    }
-  },
-  onZombieBaseDamage(dmg) {
-    if (state.phase === 'ENDED') return;
-    state.zombieBaseHp = Math.max(0, state.zombieBaseHp - dmg);
-    engine.setZombieBaseVisual(state.zombieBaseHp / state.zombieBaseMaxHp);
-    if (state.zombieBaseHp <= 0) {
-      finishRound(true, 'Sarang Bio-Hive Zombie Berhasil Dihancurkan!');
+      finishRound(false, 'Gerbang Benteng Jebol oleh Serbuan Zombie!');
     }
   },
   onUnitDied(unit) {
@@ -254,8 +241,8 @@ const mockStream = new MockTikTokStream(
   bus,
   () => ({
     humanBaseRatio: state.humanBaseHp / state.humanBaseMaxHp,
-    zombieBaseRatio: state.zombieBaseHp / state.zombieBaseMaxHp,
     bossAlive: getActiveBosses().length > 0,
+    finalWave: state.phase === 'FINAL_WAVE',
     phase: state.phase,
   }),
   (action) => {
@@ -362,15 +349,10 @@ async function spawnOrEvolveZombie({ user, minLevel = 1, upgradeBy = 0 }) {
   });
 }
 
-function healBase(side, amount) {
-  if (state.phase === 'SUDDEN_DEATH' || state.phase === 'ENDED') return;
-  if (side === 'human') {
-    state.humanBaseHp = Math.min(state.humanBaseMaxHp, state.humanBaseHp + amount);
-    engine.setHumanBaseVisual(state.humanBaseHp / state.humanBaseMaxHp);
-  } else {
-    state.zombieBaseHp = Math.min(state.zombieBaseMaxHp, state.zombieBaseHp + amount);
-    engine.setZombieBaseVisual(state.zombieBaseHp / state.zombieBaseMaxHp);
-  }
+function healBase(amount) {
+  if (state.phase === 'ENDED') return;
+  state.humanBaseHp = Math.min(state.humanBaseMaxHp, state.humanBaseHp + amount);
+  engine.setHumanBaseVisual(state.humanBaseHp / state.humanBaseMaxHp);
 }
 
 async function handleGiftEvent(evt) {
@@ -422,7 +404,7 @@ async function handleGiftEvent(evt) {
   switch (evt.giftId) {
     case 'rose': {
       engine.triggerHealPulse({ amount: 35 * Math.min(3, rep), shieldSec: 0 });
-      healBase('human', 20 * rep);
+      healBase(20 * rep);
       cureInfectedCopy(evt.user);
       state.microCounterDefend += rep;
       if (state.microCounterDefend >= 10) {
@@ -435,7 +417,6 @@ async function handleGiftEvent(evt) {
 
     case 'ice_cream': {
       await spawnOrEvolveZombie({ user: evt.user, minLevel: 2, upgradeBy: rep >= 5 ? 1 : 0 });
-      healBase('zombie', 20 * rep);
       state.microCounterSabotage += rep;
       if (state.microCounterSabotage >= 10) {
         state.microCounterSabotage %= 10;
@@ -450,15 +431,14 @@ async function handleGiftEvent(evt) {
     }
 
     case 'finger_heart': {
-      healBase('human', Math.round(state.humanBaseMaxHp * 0.08 * Math.min(3, rep)));
+      healBase(Math.round(state.humanBaseMaxHp * 0.08 * Math.min(3, rep)));
       engine.triggerHealPulse({ amount: 60, shieldSec: 5.0 * Math.min(2, rep), repairFlash: true });
       break;
     }
 
     case 'gg_troll': {
-      healBase('zombie', Math.round(state.zombieBaseMaxHp * 0.08 * Math.min(3, rep)));
+      engine.triggerHordeFrenzy(6.0);
       await spawnOrEvolveZombie({ user: evt.user, minLevel: 3, upgradeBy: 1 });
-      engine.triggerHealPulse({ amount: 0, hiveHealFlash: true });
       break;
     }
 
@@ -485,7 +465,7 @@ async function handleGiftEvent(evt) {
           const prof = state.survivorProfiles.get(u.ownerName.toLowerCase());
           if (prof) prof.level = u.level;
         }
-        healBase('human', Math.round(state.humanBaseMaxHp * 0.14));
+        healBase(Math.round(state.humanBaseMaxHp * 0.14));
         if (state.fallenHeroes.length > 0 && countLiving('survivor') < MAX_SURVIVORS) {
           const revived = state.fallenHeroes.shift();
           await spawnOrPromoteHero({ user: revived.ownerName, minLevel: Math.max(2, revived.level), upgradeBy: 0, isVip: true });
@@ -504,7 +484,7 @@ async function handleGiftEvent(evt) {
     case 'money_gun': {
       await spawnOrPromoteHero({ user: evt.user, minLevel: 8, upgradeBy: 8, isVip: true, isSultan: true });
       engine.triggerAirstrike(evt.user);
-      healBase('human', Math.round(state.humanBaseMaxHp * 0.20));
+      healBase(Math.round(state.humanBaseMaxHp * 0.20));
       break;
     }
 
@@ -531,17 +511,17 @@ async function handleGiftEvent(evt) {
     showGiftBanner({
       emoji: '✈️',
       title: `PENENTU: @${evt.user}!`,
-      sub: 'Goal 100 Koin → AIRSTRIKE ke Sarang Zombie!',
+      sub: 'Goal 100 Koin → AIRSTRIKE ke Gerombolan Zombie!',
       combo: 'GOAL 100%',
       faction: 'defend',
       duration: 3.4,
     });
     engine.triggerAirstrike(evt.user);
-    healBase('human', Math.round(state.humanBaseMaxHp * 0.10));
+    healBase(Math.round(state.humanBaseMaxHp * 0.10));
   }
 
   if (triggeredSabotageGoal) {
-    addChatLine('👾 GOAL SARANG', `100 Koin oleh @${evt.user}! GIANT MUTANT BOSS!`, 'gift-sab');
+    addChatLine('👾 GOAL HORDE', `100 Koin oleh @${evt.user}! GIANT MUTANT BOSS!`, 'gift-sab');
     showGiftBanner({
       emoji: '👾',
       title: `INVASI BOSS: @${evt.user}!`,
@@ -580,7 +560,7 @@ async function handleChatEvent(evt) {
       return;
     }
     await spawnOrEvolveZombie({ user: evt.user, minLevel: 1, upgradeBy: 0 });
-    addChatLine(`🦠 @${evt.user}`, `keluar dari Sarang sebagai Walker Lv.1!`, 'gift-sab');
+    addChatLine(`☠️ @${evt.user}`, `datang dari kabut timur sebagai Walker Lv.1!`, 'gift-sab');
     return;
   }
 
@@ -592,7 +572,7 @@ function handleLikeEvent(evt) {
   const bucket = Math.floor(state.likesCount / 100);
   if (bucket > state.likesMilestoneMod) {
     state.likesMilestoneMod = bucket;
-    healBase('human', Math.round(state.humanBaseMaxHp * 0.03));
+    healBase(Math.round(state.humanBaseMaxHp * 0.03));
     engine.triggerHealPulse({ amount: 22, shieldSec: 0 });
     addChatLine('❤️ 100 TAP LIKES', 'Bantuan Amunisi & +3% Repair Benteng!', 'gift-def');
   }
@@ -618,7 +598,6 @@ async function startNewRound() {
     state.combatTimeLeft = ROUND_COMBAT_SEC;
     state.wave = 1;
     state.humanBaseHp = state.humanBaseMaxHp;
-    state.zombieBaseHp = state.zombieBaseMaxHp;
     state.roundCoins = 0;
     state.directorTimer = 1.4;
     state.fallenHeroes = [];
@@ -627,13 +606,12 @@ async function startNewRound() {
     state.survivorProfiles.clear();
     state.zombieProfiles.clear();
     engine.setHumanBaseVisual(1.0);
-    engine.setZombieBaseVisual(1.0);
-    engine.setSuddenDeath(false);
+    engine.setFinalWave(false);
     recapOverlay.classList.remove('show');
     vignetteCrisis.classList.remove('active');
     crisisBanner.classList.remove('show');
 
-    // Starter 2-Base Clash Squads (3 Fortress Defenders vs 3 Hive Raiders)
+    // Starter Fortress Defenders vs Incoming Zombie Wave
     await engine.spawnSurvivor({ specId: 'jake_male',   ownerName: 'Unit-Alpha', level: 2, isVip: false });
     await engine.spawnSurvivor({ specId: 'lena_female', ownerName: 'Unit-Bravo', level: 2, isVip: false });
     await engine.spawnSurvivor({ specId: 'rico_male',   ownerName: 'Unit-Delta', level: 2, isVip: false });
@@ -642,7 +620,7 @@ async function startNewRound() {
     await engine.spawnEnemy({ specId: 'zombie_walker_shambler', level: 1, waveMult: 1.0 });
     await engine.spawnEnemy({ specId: 'zombie_crawler_stalker', level: 2, waveMult: 1.0 });
 
-    addChatLine('⚔️ PERANG 2 BASE', `Ronde #${state.roundNumber}! Ketik !manusia (1) atau !zombie (2)!`, 'gift-def');
+    addChatLine('🛡️ PERTAHANAN BENTENG', `Ronde #${state.roundNumber}! Ketik !manusia (1) atau !zombie (2)!`, 'gift-def');
   } finally {
     state.spawningLock = false;
   }
@@ -661,10 +639,10 @@ function finishRound(humanWon, reasonText) {
   if (state.phase === 'ENDED') return;
   state.phase = 'ENDED';
   state.phaseTimer = RECAP_SEC;
-  engine.setSuddenDeath(false);
+  engine.setFinalWave(false);
   audio.playRoundEnd(humanWon);
 
-  recapTitle.textContent = humanWon ? '🏰 BENTENG MANUSIA MENANG!' : '🦠 SARANG ZOMBIE MENANG!';
+  recapTitle.textContent = humanWon ? '🏆 BENTENG BERTAHAN!' : '☠️ BENTENG JEBOL!';
   recapTitle.style.color = humanWon ? '#4ade80' : '#f87171';
   recapSub.textContent = `${reasonText} • Total ${state.roundCoins} Koin Ronde Ini`;
 
@@ -678,8 +656,8 @@ function finishRound(humanWon, reasonText) {
   }
 
   recapMvpList.innerHTML = `
-    <div class="recap-row"><span>🏰 Top Penyelamat</span><strong>${topEntry(state.defendLeaderboard)}</strong></div>
-    <div class="recap-row"><span>🦠 Top Penghancur</span><strong>${topEntry(state.sabotageLeaderboard)}</strong></div>
+    <div class="recap-row"><span>🛡️ Top Penyelamat</span><strong>${topEntry(state.defendLeaderboard)}</strong></div>
+    <div class="recap-row"><span>☠️ Top Penghancur</span><strong>${topEntry(state.sabotageLeaderboard)}</strong></div>
     <div class="recap-row"><span>🎯 Kill Terbanyak</span><strong>${killLeader}</strong></div>
   `;
   recapOverlay.classList.add('show');
@@ -740,39 +718,35 @@ engine.onTick((simDt, rawDt) => {
   if (state.phase === 'PREP') {
     state.phaseTimer -= simDt;
     if (state.phaseTimer <= 0) state.phase = 'COMBAT';
-  } else if (state.phase === 'COMBAT' || state.phase === 'SUDDEN_DEATH') {
-    if (state.phase === 'COMBAT') {
-      state.combatTimeLeft -= simDt;
-      const elapsed = ROUND_COMBAT_SEC - state.combatTimeLeft;
-      state.wave = Math.min(5, 1 + Math.floor(elapsed / 32));
-      if (state.combatTimeLeft <= 0) {
-        state.combatTimeLeft = 0;
-        state.phase = 'SUDDEN_DEATH';
-        engine.setSuddenDeath(true);
-        audio.playBossHorn();
-        addChatLine('💀 SUDDEN DEATH!', 'WAKTU HABIS! 2x DAMAGE TANPA HEAL BASE!', 'alert-sab');
-      }
+  } else if (state.phase === 'COMBAT' || state.phase === 'FINAL_WAVE') {
+    state.combatTimeLeft -= simDt;
+    const elapsed = ROUND_COMBAT_SEC - state.combatTimeLeft;
+    state.wave = Math.min(5, 1 + Math.floor(elapsed / 32));
+    if (state.phase === 'COMBAT' && state.combatTimeLeft <= 30) {
+      state.phase = 'FINAL_WAVE';
+      engine.setFinalWave(true);
+      audio.playBossHorn();
+      addChatLine('🔥 FINAL WAVE!', '30 DETIK TERAKHIR! ZOMBIE MENGGILA!', 'alert-sab');
+    }
+    if (state.combatTimeLeft <= 0) {
+      state.combatTimeLeft = 0;
+      finishRound(true, 'Benteng Manusia Berhasil Bertahan Hingga Evakuasi!');
+      return;
     }
 
-    // Dual Base Cliffhanger Check
+    // Fortress Critical Health Check
     const hRatio = state.humanBaseHp / state.humanBaseMaxHp;
-    const zRatio = state.zombieBaseHp / state.zombieBaseMaxHp;
     const isHumanCrit = hRatio < 0.30;
-    const isZombieCrit = zRatio < 0.30;
-    const anyCrit = isHumanCrit || isZombieCrit;
 
-    vignetteCrisis.classList.toggle('active', anyCrit || state.phase === 'SUDDEN_DEATH');
+    vignetteCrisis.classList.toggle('active', isHumanCrit || state.phase === 'FINAL_WAVE');
     if (isHumanCrit) {
       crisisBanner.textContent = '⚠️ BENTENG MANUSIA KRITIS! KIRIM 🌹 ROSE / 🫶 HEART!';
-      crisisBanner.classList.add('show');
-    } else if (isZombieCrit) {
-      crisisBanner.textContent = '⚠️ SARANG ZOMBIE KRITIS! KIRIM 🍦 ES KRIM / 🌌 BOSS!';
       crisisBanner.classList.add('show');
     } else {
       crisisBanner.classList.remove('show');
     }
 
-    if (anyCrit) {
+    if (isHumanCrit) {
       state.crisisAlertTimer -= rawDt;
       if (state.crisisAlertTimer <= 0) {
         state.crisisAlertTimer = 3.2;
@@ -780,7 +754,7 @@ engine.onTick((simDt, rawDt) => {
       }
     }
 
-    // Ambient Reinforcement Director for BOTH Bases so 2-base clash stays relentless
+    // Ambient Wave Spawner Director from East fog road
     state.directorTimer -= simDt;
     if (state.directorTimer <= 0) {
       const waveMult = 1 + (state.wave - 1) * 0.12;
@@ -788,7 +762,7 @@ engine.onTick((simDt, rawDt) => {
         const pick = SURVIVORS[Math.floor(Math.random() * SURVIVORS.length)];
         engine.spawnSurvivor({ specId: pick.id, ownerName: `Unit-${1 + Math.floor(Math.random() * 9)}`, level: Math.min(3, state.wave), isVip: false });
       }
-      const targetPop = state.phase === 'SUDDEN_DEATH' ? 6 : Math.min(5, 2 + state.wave);
+      const targetPop = state.phase === 'FINAL_WAVE' ? 7 : Math.min(5, 2 + state.wave);
       if (countLiving('enemy') < targetPop) {
         const pool = state.wave <= 2
           ? ['zombie_walker_shambler', 'zombie_crawler_stalker', 'zombie_spitter_hazmat']
@@ -796,7 +770,7 @@ engine.onTick((simDt, rawDt) => {
         const pick = pool[Math.floor(Math.random() * pool.length)];
         engine.spawnEnemy({ specId: pick, level: state.wave, waveMult });
       }
-      state.directorTimer = Math.max(2.0, 3.8 - state.wave * 0.32);
+      state.directorTimer = state.phase === 'FINAL_WAVE' ? 1.8 : Math.max(2.1, 3.8 - state.wave * 0.32);
     }
   } else if (state.phase === 'ENDED') {
     state.phaseTimer -= rawDt;
@@ -825,18 +799,16 @@ function renderSultanList(el, map) {
 function refreshHUD() {
   const stats = engine.getStats();
   const hPct = Math.max(0, Math.round((state.humanBaseHp / state.humanBaseMaxHp) * 100));
-  const zPct = Math.max(0, Math.round((state.zombieBaseHp / state.zombieBaseMaxHp) * 100));
 
   hudRoundBadge.textContent = `Ronde #${state.roundNumber}`;
   if (state.phase === 'PREP') hudTimer.textContent = `00:0${Math.ceil(state.phaseTimer)}`;
-  else if (state.phase === 'SUDDEN_DEATH') hudTimer.textContent = '2x DMG';
   else hudTimer.textContent = fmtTime(state.combatTimeLeft);
 
   if (state.phase === 'PREP') {
     hudPhasePill.textContent = 'PERSIAPAN';
     hudPhasePill.className = 'phase-pill prep';
-  } else if (state.phase === 'SUDDEN_DEATH') {
-    hudPhasePill.textContent = 'SUDDEN DEATH';
+  } else if (state.phase === 'FINAL_WAVE') {
+    hudPhasePill.textContent = 'FINAL WAVE';
     hudPhasePill.className = 'phase-pill crisis';
   } else if (state.phase === 'ENDED') {
     hudPhasePill.textContent = 'RECAP MVP';
@@ -848,15 +820,7 @@ function refreshHUD() {
 
   hudHumanFill.style.width = `${hPct}%`;
   hudHumanFill.style.background = hPct > 55 ? '#22c55e' : (hPct > 28 ? '#f59e0b' : '#ef4444');
-  hudHumanText.textContent = `🏰 Benteng ${hPct}%`;
-
-  hudZombieFill.style.width = `${zPct}%`;
-  hudZombieFill.style.background = zPct > 55 ? '#84cc16' : (zPct > 28 ? '#f97316' : '#ef4444');
-  hudZombieText.textContent = `🦠 Sarang ${zPct}%`;
-
-  if (frontlineMarker) {
-    frontlineMarker.style.left = `${stats.tugPct}%`;
-  }
+  hudHumanText.textContent = `🏰 HP Benteng Manusia ${hPct}%`;
 
   const defPct = Math.min(100, Math.round((state.goalDefend / GOAL_TARGET) * 100));
   const sabPct = Math.min(100, Math.round((state.goalSabotage / GOAL_TARGET) * 100));
@@ -867,6 +831,7 @@ function refreshHUD() {
 
   const buffs = [];
   if (stats.rageActive) buffs.push('<span class="buff-pill fire">🔥 FRENZY 2x</span>');
+  if (stats.hordeRageActive) buffs.push('<span class="buff-pill storm">☠️ HORDE SPEED</span>');
   if (stats.shieldActive) buffs.push('<span class="buff-pill shield">🛡️ PERISAI</span>');
   if (stats.stormActive) buffs.push('<span class="buff-pill storm">⛈️ BADAI ZOMBIE</span>');
   hudBuffs.innerHTML = buffs.join('');
@@ -889,8 +854,8 @@ function refreshHUD() {
   if (telCpm) telCpm.textContent = `${Math.round(state.sessionCoins / mins)} / mnt`;
   const totalSide = state.defendCoins + state.sabotageCoins;
   const dShare = totalSide > 0 ? Math.round((state.defendCoins / totalSide) * 100) : 50;
-  if (telDefPct) telDefPct.textContent = `🏰 ${dShare}%`;
-  if (telSabPct) telSabPct.textContent = `${100 - dShare}% 🦠`;
+  if (telDefPct) telDefPct.textContent = `🛡️ ${dShare}%`;
+  if (telSabPct) telSabPct.textContent = `${100 - dShare}% ☠️`;
   if (telTugDefBar) telTugDefBar.style.width = `${dShare}%`;
   if (telUnits) telUnits.textContent = `${stats.survAlive} Surv / ${stats.enmAlive} Zomb`;
   if (telFps) telFps.textContent = `${stats.fps} FPS`;
@@ -990,7 +955,10 @@ document.querySelectorAll('[data-cam]').forEach((btn) => {
 });
 
 if (selWeather) selWeather.addEventListener('change', () => engine.setWeather(selWeather.value));
-if (chkBloom) chkBloom.addEventListener('change', () => engine.setBloom(chkBloom.checked));
+if (chkBloom) {
+  chkBloom.checked = false;
+  chkBloom.addEventListener('change', () => engine.setBloom(chkBloom.checked));
+}
 if (chkSfx) chkSfx.addEventListener('change', () => audio.setEnabled(chkSfx.checked));
 if (sliderZoom) {
   sliderZoom.addEventListener('input', () => {
@@ -1030,6 +998,19 @@ if (btnConnectWs) {
     }
   });
 }
+
+window.__GAME_DEBUG__ = {
+  getDiagnostics: () => engine.getDiagnostics(),
+  getState: () => ({
+    roundNumber: state.roundNumber,
+    phase: state.phase,
+    wave: state.wave,
+    humanBaseHp: state.humanBaseHp,
+    goalDefend: state.goalDefend,
+    goalSabotage: state.goalSabotage,
+    sessionCoins: state.sessionCoins,
+  }),
+};
 
 (async () => {
   try {
