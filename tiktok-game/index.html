@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DEADLINE: LAST STAND — TikTok LIVE 3D Game</title>
+  <style>
+    :root {
+      --bg: #070a10;
+      --panel: rgba(14, 19, 30, 0.94);
+      --border: rgba(255, 255, 255, 0.10);
+      --accent: #38bdf8;
+      --def: #22c55e;
+      --sab: #ef4444;
+      --gold: #facc15;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      background: radial-gradient(circle at center, #111827 0%, #05070c 100%);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 12px;
+      user-select: none;
+    }
+
+    /* 3-Column Studio Layout */
+    #studio-layout {
+      display: grid;
+      grid-template-columns: 330px minmax(280px, 1fr) 330px;
+      gap: 14px;
+      height: 100vh;
+      padding: 12px 14px;
+      align-items: center;
+    }
+
+    .studio-panel {
+      height: calc(100vh - 24px);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+    }
+    .sp-head {
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(255,255,255,0.02);
+    }
+    .sp-title { font-size: 13px; font-weight: 800; letter-spacing: 0.3px; }
+    .sp-sub { font-size: 11px; color: var(--muted); }
+    .sp-body {
+      flex: 1; overflow-y: auto; padding: 11px 12px;
+      display: flex; flex-direction: column; gap: 11px;
+    }
+    .sp-body::-webkit-scrollbar { width: 5px; }
+    .sp-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.16); border-radius: 3px; }
+
+    .card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 10px;
+      padding: 9px 10px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .card-title {
+      font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.7px;
+      color: var(--accent); display: flex; justify-content: space-between; align-items: center;
+    }
+    .card-title.def { color: #4ade80; }
+    .card-title.sab { color: #f87171; }
+
+    .row { display: flex; gap: 6px; align-items: center; }
+    .row > * { flex: 1; }
+    input[type="text"], select {
+      width: 100%; background: #0f1623; color: var(--text);
+      border: 1px solid rgba(255,255,255,0.14); border-radius: 7px;
+      padding: 6px 8px; font-size: 12px; outline: none;
+    }
+    input[type="text"]:focus, select:focus { border-color: var(--accent); }
+
+    button {
+      background: #1e293b; color: var(--text);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 7px; padding: 6px 9px;
+      font-size: 11.5px; font-weight: 600; cursor: pointer;
+      transition: transform 0.08s, border-color 0.14s, background 0.14s;
+    }
+    button:hover { background: #283549; border-color: rgba(255,255,255,0.28); }
+    button:active { transform: scale(0.97); }
+    button.active { background: #0284c7; border-color: #38bdf8; color: #fff; }
+    button.primary { background: #0284c7; border-color: #38bdf8; color: #fff; }
+    button.good { background: #15803d; border-color: #22c55e; color: #fff; }
+    button.danger { background: #b91c1c; border-color: #ef4444; color: #fff; }
+    button.active-auto { background: linear-gradient(90deg, #16a34a, #0284c7); border-color: #4ade80; color: #fff; }
+
+    /* Gift Buttons */
+    .gift-grid { display: flex; flex-direction: column; gap: 6px; }
+    .gift-btn {
+      text-align: left; padding: 7px 9px; border-radius: 8px;
+      display: flex; flex-direction: column; gap: 2px;
+      background: rgba(15, 23, 42, 0.85);
+    }
+    .gift-btn.defend { border-left: 3px solid var(--def); }
+    .gift-btn.sabotage { border-left: 3px solid var(--sab); }
+    .gift-btn.tier-sultan {
+      background: linear-gradient(135deg, rgba(250,204,21,0.16), rgba(236,72,153,0.14));
+      border-color: rgba(250,204,21,0.45);
+    }
+    .gb-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+    .gb-emoji { font-size: 15px; }
+    .gb-name { font-weight: 700; font-size: 12px; flex: 1; }
+    .gb-coin { font-size: 10.5px; font-weight: 800; color: var(--gold); background: rgba(250,204,21,0.12); padding: 2px 6px; border-radius: 99px; }
+    .gb-desc { font-size: 10.5px; color: var(--muted); }
+
+    /* Center 9:16 TikTok Phone Frame */
+    #stage-center {
+      display: flex; align-items: center; justify-content: center;
+      height: calc(100vh - 24px);
+    }
+    #phone-frame {
+      position: relative;
+      height: min(95vh, 920px);
+      aspect-ratio: 9 / 16;
+      max-width: 100%;
+      border-radius: 22px;
+      border: 3px solid #263143;
+      background: #0a0d14;
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255,255,255,0.08);
+    }
+    #stage-wrap {
+      position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden;
+    }
+    #stage-wrap canvas {
+      display: block; width: 100%; height: 100%;
+    }
+    #labels-layer {
+      position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 4;
+    }
+    #vignette-crisis {
+      position: absolute; inset: 0; pointer-events: none; z-index: 5; opacity: 0;
+      background: radial-gradient(circle at center, rgba(0,0,0,0) 48%, rgba(220,38,38,0.52) 100%);
+      transition: opacity 0.25s;
+    }
+    #vignette-crisis.active {
+      opacity: 1; animation: pulseVignette 0.9s infinite alternate;
+    }
+    @keyframes pulseVignette {
+      from { opacity: 0.45; }
+      to { opacity: 1.0; }
+    }
+
+    /* Compact 9:16 Projected Unit HUD */
+    .unit-hud {
+      position: absolute; transform: translate(-50%, -100%);
+      background: rgba(9, 13, 21, 0.80);
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 5px; padding: 2px 5px;
+      min-width: 68px; text-align: center;
+      pointer-events: none;
+    }
+    .unit-hud.sultan {
+      border-color: var(--gold);
+      box-shadow: 0 0 8px rgba(250,204,21,0.5);
+    }
+    .unit-hud.boss-unit {
+      border-color: #ef4444; background: rgba(69,10,10,0.88);
+    }
+    .unit-hud.dead { opacity: 0.35; }
+    .unit-name { font-size: 9px; font-weight: 700; white-space: nowrap; margin-bottom: 2px; }
+    .hp-track { width: 100%; height: 3.5px; background: rgba(255,255,255,0.14); border-radius: 2px; overflow: hidden; }
+    .hp-fill { height: 100%; transition: width 0.1s; }
+    .hp-fill.survivor { background: #22c55e; }
+    .hp-fill.zombie { background: #f59e0b; }
+    .hp-fill.mutant { background: #ef4444; }
+    .float-dmg {
+      position: absolute; transform: translate(-50%, -50%);
+      font-weight: 900; text-shadow: 0 2px 4px rgba(0,0,0,0.95);
+      white-space: nowrap; pointer-events: none;
+    }
+
+    /* 9:16 Safe-Zone In-Game Overlays */
+    #top-safe-zone {
+      position: absolute; top: 8px; left: 10px; right: 10px; z-index: 8; pointer-events: none;
+      display: flex; flex-direction: column; gap: 5px;
+    }
+    .tz-tiktok-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 10px; color: rgba(255,255,255,0.72);
+      padding: 2px 6px;
+    }
+    .live-dot {
+      display: inline-flex; align-items: center; gap: 4px; font-weight: 800;
+      background: rgba(225, 29, 72, 0.85); color: #fff; padding: 2px 7px; border-radius: 5px; font-size: 9.5px;
+    }
+
+    .hud-header-card {
+      background: rgba(10, 15, 24, 0.82); backdrop-filter: blur(6px);
+      border: 1px solid rgba(255,255,255,0.12); border-radius: 10px;
+      padding: 6px 9px; display: flex; flex-direction: column; gap: 5px;
+    }
+    .hh-top { display: flex; align-items: center; justify-content: space-between; }
+    .phase-pill {
+      padding: 2px 8px; border-radius: 99px; font-weight: 800; font-size: 10px;
+      background: rgba(56,189,248,0.2); color: #7dd3fc; border: 1px solid rgba(56,189,248,0.4);
+    }
+    .phase-pill.prep { background: rgba(250,204,21,0.2); color: #fde047; border-color: rgba(250,204,21,0.45); }
+    .phase-pill.crisis { background: rgba(239,68,68,0.3); color: #fca5a5; border-color: #ef4444; animation: pulseVignette 0.5s infinite alternate; }
+    .timer-big { font-size: 18px; font-weight: 900; letter-spacing: 0.8px; font-variant-numeric: tabular-nums; }
+
+    .bar-track {
+      position: relative; width: 100%; height: 15px; background: rgba(0,0,0,0.55);
+      border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.12);
+    }
+    .bar-fill { height: 100%; transition: width 0.16s, background 0.2s; }
+    .bar-label {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 800; text-shadow: 0 1px 3px rgba(0,0,0,0.95);
+    }
+
+    .goals-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+    .sultan-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 5px;
+    }
+    .sultan-box {
+      background: rgba(10, 15, 24, 0.72); border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 8px; padding: 4px 6px;
+    }
+    .sb-h { font-size: 9px; font-weight: 800; text-transform: uppercase; margin-bottom: 2px; }
+    .sultan-row { display: flex; justify-content: space-between; font-size: 9.5px; color: #e2e8f0; }
+    .sultan-empty { font-size: 9px; color: var(--muted); }
+
+    #hud-buffs { display: flex; gap: 4px; flex-wrap: wrap; }
+    .buff-pill { font-size: 9.5px; font-weight: 800; padding: 2px 7px; border-radius: 99px; }
+    .buff-pill.fire { background: rgba(250,204,21,0.22); border: 1px solid #facc15; color: #fef08a; }
+    .buff-pill.shield { background: rgba(56,189,248,0.22); border: 1px solid #38bdf8; color: #bae6fd; }
+    .buff-pill.storm { background: rgba(239,68,68,0.25); border: 1px solid #ef4444; color: #fecaca; }
+
+    #boss-hud {
+      display: none; background: rgba(69,10,10,0.88); border: 1px solid #ef4444;
+      border-radius: 8px; padding: 4px 7px;
+    }
+    #boss-hud.show { display: block; }
+
+    #gift-banner {
+      display: none;
+      align-items: center; gap: 8px;
+      padding: 6px 9px; border-radius: 10px;
+      background: rgba(15, 23, 42, 0.90);
+      border: 1.5px solid var(--def);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.55);
+    }
+    #gift-banner.show { display: flex; }
+    #gift-banner.sabotage { border-color: var(--sab); background: rgba(45, 10, 15, 0.92); }
+    #gift-banner-emoji { font-size: 20px; }
+    #gift-banner-title { font-size: 11px; font-weight: 900; }
+    #gift-banner-sub { font-size: 9.5px; color: #cbd5e1; }
+    #gift-banner-combo {
+      background: var(--gold); color: #000; font-weight: 900; font-size: 11px;
+      padding: 2px 6px; border-radius: 6px;
+    }
+
+    #crisis-banner {
+      display: none;
+      background: rgba(185, 28, 28, 0.90); border: 1px solid #fca5a5;
+      color: #fff; text-align: center; font-weight: 900; font-size: 10px;
+      padding: 4px 7px; border-radius: 7px;
+      animation: pulseVignette 0.55s infinite alternate;
+    }
+    #crisis-banner.show { display: block; }
+
+    /* Bottom Cheat Sheet & Chat Safe Zone */
+    #bottom-safe-zone {
+      position: absolute; bottom: 8px; left: 10px; right: 10px; z-index: 8; pointer-events: none;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .cheat-strip {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+      background: rgba(9, 13, 22, 0.80); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 9px; padding: 5px 7px;
+      font-size: 9.5px; font-weight: 700; text-align: center;
+    }
+    #chat-feed {
+      display: flex; flex-direction: column; gap: 3px; min-height: 76px; justify-content: flex-end;
+    }
+    .chat-line {
+      background: rgba(0, 0, 0, 0.48); padding: 3px 7px; border-radius: 7px;
+      font-size: 10.5px; line-height: 1.25; width: fit-content; max-width: 96%;
+    }
+    .chat-line.gift-def { border-left: 2px solid var(--def); background: rgba(20, 83, 45, 0.62); }
+    .chat-line.gift-sab { border-left: 2px solid var(--sab); background: rgba(127, 29, 29, 0.62); }
+    .chat-line.alert-sab { border-left: 2px solid var(--gold); background: rgba(153, 27, 27, 0.82); font-weight: 700; }
+    .chat-badge { font-weight: 800; color: #7dd3fc; }
+
+    /* Round Recap Overlay */
+    #recap-overlay {
+      position: absolute; inset: 0; z-index: 20;
+      display: none; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+      background: rgba(6, 9, 15, 0.88); backdrop-filter: blur(6px);
+      padding: 20px; text-align: center;
+    }
+    #recap-overlay.show { display: flex; }
+    .recap-box {
+      width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 6px;
+    }
+    .recap-row { display: flex; justify-content: space-between; font-size: 11px; }
+
+    /* Telemetry UI */
+    .tel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .tel-box {
+      background: rgba(0,0,0,0.32); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px; padding: 7px 8px;
+    }
+    .tel-k { font-size: 10px; color: var(--muted); }
+    .tel-v { font-size: 14px; font-weight: 900; margin-top: 2px; }
+    .tug-bar {
+      width: 100%; height: 10px; background: var(--sab); border-radius: 99px; overflow: hidden;
+    }
+    .tug-fill { height: 100%; background: var(--def); transition: width 0.2s; }
+
+    .conn-pill { padding: 2px 8px; border-radius: 99px; font-size: 10px; font-weight: 800; }
+    .conn-pill.mock { background: rgba(56,189,248,0.18); color: #7dd3fc; }
+    .conn-pill.live { background: rgba(34,197,94,0.22); color: #86efac; }
+
+    /* OBS Fullscreen Clean 9:16 Mode */
+    body.obs-mode #studio-layout {
+      grid-template-columns: 1fr; padding: 0; gap: 0; background: #000;
+    }
+    body.obs-mode .studio-panel { display: none; }
+    body.obs-mode #stage-center { height: 100vh; }
+    body.obs-mode #phone-frame {
+      height: 100vh; border: none; border-radius: 0; box-shadow: none;
+    }
+    body.obs-mode #chat-feed { display: none; } /* Clean area for native TikTok chat */
+    #btn-exit-obs {
+      display: none; position: fixed; top: 10px; right: 10px; z-index: 40;
+      opacity: 0.72;
+    }
+    body.obs-mode #btn-exit-obs { display: block; }
+    body.obs-locked #btn-exit-obs { display: none !important; }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <button id="btn-exit-obs" class="primary">✕ Keluar Mode OBS</button>
+
+  <div id="studio-layout">
+    <!-- LEFT PANEL: Gift Simulator Deck -->
+    <aside class="studio-panel">
+      <div class="sp-head">
+        <div>
+          <div class="sp-title">🎁 Simulator Gift TikTok</div>
+          <div class="sp-sub">Klik gift untuk lihat aksi 3D real-time</div>
+        </div>
+      </div>
+
+      <div class="sp-body">
+        <div class="card">
+          <div class="card-title">Pengirim &amp; Combo Streak</div>
+          <div class="row">
+            <input id="inp-username" type="text" value="SultanJakarta" placeholder="Username..." />
+            <button id="btn-random-user" style="flex:0 0 auto;">🎲</button>
+          </div>
+          <div class="row">
+            <button data-combo="1" class="active">x1</button>
+            <button data-combo="5">x5</button>
+            <button data-combo="10">x10</button>
+            <button data-combo="25">x25</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title def">🛡️ Kubu Penyelamat (Defend)</div>
+          <div id="defend-gift-grid" class="gift-grid"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title sab">☠️ Kubu Penghancur (Sabotage)</div>
+          <div id="sabotage-gift-grid" class="gift-grid"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">💬 Chat &amp; Tap Likes Gratis</div>
+          <div class="row">
+            <button id="btn-quick-join" class="good">!join Hero</button>
+            <button id="btn-quick-zombie" class="danger">!zombie</button>
+          </div>
+          <div class="row">
+            <button id="btn-like-25">❤️ +25 Likes</button>
+            <button id="btn-like-100">🔥 +100 Likes</button>
+          </div>
+          <div id="like-progress-text" style="font-size:10.5px;color:var(--muted);">Tap Likes: 0 (Bonus tiap 100)</div>
+          <div class="row">
+            <input id="inp-chat" type="text" placeholder="Ketik komentar..." />
+            <button id="btn-send-chat" style="flex:0 0 auto;">Kirim</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER STAGE: Authentic 9:16 TikTok LIVE View -->
+    <main id="stage-center">
+      <div id="phone-frame">
+        <div id="stage-wrap"></div>
+        <div id="labels-layer"></div>
+        <div id="vignette-crisis"></div>
+
+        <!-- Top HUD (Safe below TikTok header) -->
+        <div id="top-safe-zone">
+          <div class="tz-tiktok-bar">
+            <span class="live-dot">● LIVE 9:16</span>
+            <span>DEADLINE: LAST STAND</span>
+          </div>
+
+          <div class="hud-header-card">
+            <div class="hh-top">
+              <span id="hud-phase-pill" class="phase-pill">PERSIAPAN</span>
+              <span id="hud-timer" class="timer-big">03:00</span>
+              <span id="hud-round-badge" style="font-size:10.5px;font-weight:700;color:var(--muted);">Ronde #1</span>
+            </div>
+
+            <div class="bar-track">
+              <div id="hud-barricade-fill" class="bar-fill" style="width:100%;background:#22c55e;"></div>
+              <div id="hud-barricade-text" class="bar-label">🛡️ Markas 100% (1200)</div>
+            </div>
+
+            <div class="goals-grid">
+              <div class="bar-track" style="height:13px;">
+                <div id="goal-defend-fill" class="bar-fill" style="width:0%;background:#38bdf8;"></div>
+                <div id="goal-defend-text" class="bar-label" style="font-size:9px;">✈️ Airstrike 0/100</div>
+              </div>
+              <div class="bar-track" style="height:13px;">
+                <div id="goal-sabotage-fill" class="bar-fill" style="width:0%;background:#f97316;"></div>
+                <div id="goal-sabotage-text" class="bar-label" style="font-size:9px;">👾 Boss 0/100</div>
+              </div>
+            </div>
+
+            <div id="hud-buffs"></div>
+          </div>
+
+          <div class="sultan-grid">
+            <div class="sultan-box">
+              <div class="sb-h" style="color:#4ade80;">🛡️ Top Penyelamat</div>
+              <div id="sultan-defend-list"></div>
+            </div>
+            <div class="sultan-box">
+              <div class="sb-h" style="color:#f87171;">☠️ Top Penghancur</div>
+              <div id="sultan-sabotage-list"></div>
+            </div>
+          </div>
+
+          <div id="boss-hud">
+            <div style="display:flex;justify-content:space-between;font-size:10px;font-weight:800;margin-bottom:2px;">
+              <span id="boss-hud-name">💀 GIANT BOSS</span>
+              <span id="boss-hud-hp-text">880 / 880</span>
+            </div>
+            <div class="bar-track" style="height:9px;">
+              <div id="boss-hud-hp-fill" class="bar-fill" style="width:100%;background:#ef4444;"></div>
+            </div>
+          </div>
+
+          <div id="crisis-banner">⚠️ MARKAS KRITIS! KIRIM 🌹 ROSE / 🫶 HEART SEKARANG!</div>
+
+          <div id="gift-banner">
+            <div id="gift-banner-emoji">🔫</div>
+            <div style="flex:1;">
+              <div id="gift-banner-title">@SultanJakarta</div>
+              <div id="gift-banner-sub">AIRSTRIKE!</div>
+            </div>
+            <div id="gift-banner-combo">x5</div>
+          </div>
+        </div>
+
+        <!-- Bottom Safe-Zone (Cheat Sheet + Simulated Comments) -->
+        <div id="bottom-safe-zone">
+          <div id="chat-feed"></div>
+          <div class="cheat-strip">
+            <span>🌹1 Heal</span>
+            <span>🍩30 Hero+</span>
+            <span>🔫500 Airstrike</span>
+            <span>🍦1 Zombie</span>
+            <span>⛈️99 Badai</span>
+            <span>🌌1K Boss!</span>
+          </div>
+        </div>
+
+        <div id="recap-overlay">
+          <h2 id="recap-title" style="font-size:20px;font-weight:900;">🏆 EVAKUASI BERHASIL!</h2>
+          <div id="recap-sub" style="font-size:12px;color:#cbd5e1;"></div>
+          <div id="recap-mvp-list" class="recap-box"></div>
+          <div id="recap-countdown" style="font-size:12px;font-weight:800;color:var(--gold);">Ronde berikutnya...</div>
+        </div>
+      </div>
+    </main>
+
+    <!-- RIGHT PANEL: Auto-Crowd, Drama Scenarios, Telemetry & TikTok Bridge -->
+    <aside class="studio-panel">
+      <div class="sp-head">
+        <div>
+          <div class="sp-title">🎛️ Kontrol Studio &amp; Analitik</div>
+          <div class="sp-sub">Simulasi crowd, kamera &amp; mode OBS</div>
+        </div>
+        <span id="conn-badge" class="conn-pill mock">SIMULASI</span>
+      </div>
+
+      <div class="sp-body">
+        <div class="card">
+          <div class="card-title">🤖 Auto-Live Crowd Simulator</div>
+          <button id="btn-auto-live">🤖 Auto-Live Ramai: OFF</button>
+          <select id="sel-auto-intensity">
+            <option value="low">Keramaian Santai (1 event / ~3s)</option>
+            <option value="medium" selected>Keramaian Aktif (1 event / ~1.5s)</option>
+            <option value="viral">Room Viral FYP (Super Ramai!)</option>
+          </select>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🎬 Skenario Drama 1-Klik</div>
+          <div class="row">
+            <button data-scenario="rose_war">🌹 War Rose vs 🍦</button>
+            <button data-scenario="boss_invasion">🌌 Badai + Boss</button>
+          </div>
+          <div class="row">
+            <button data-scenario="critical_comeback">🐶 Comeback Kritis</button>
+            <button data-scenario="sultan_clash">🔫 Sultan Showdown</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📊 Telemetri Monetisasi &amp; Balance</div>
+          <div class="tel-grid">
+            <div class="tel-box">
+              <div class="tel-k">Total Koin Sesi</div>
+              <div id="tel-coins" class="tel-v" style="color:var(--gold);">0 Koin</div>
+            </div>
+            <div class="tel-box">
+              <div class="tel-k">Estimasi Laju Koin</div>
+              <div id="tel-cpm" class="tel-v" style="color:#4ade80;">0 / mnt</div>
+            </div>
+            <div class="tel-box">
+              <div class="tel-k">Unit Aktif</div>
+              <div id="tel-units" class="tel-v">3 Surv / 3 Musuh</div>
+            </div>
+            <div class="tel-box">
+              <div class="tel-k">Performa Render</div>
+              <div id="tel-fps" class="tel-v">60 FPS</div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:700;">
+            <span id="tel-def-pct" style="color:#4ade80;">🛡️ 50%</span>
+            <span id="tel-sab-pct" style="color:#f87171;">50% ☠️</span>
+          </div>
+          <div class="tug-bar">
+            <div id="tel-tug-def-bar" class="tug-fill" style="width:50%;"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🎥 Kamera, Cuaca &amp; Kontrol OBS</div>
+          <div class="row">
+            <button data-cam="auto" class="active">Auto AI</button>
+            <button data-cam="frontline">Duel</button>
+            <button data-cam="barricade">Markas</button>
+            <button data-cam="wide">Wide</button>
+          </div>
+          <select id="sel-weather">
+            <option value="apoc_sunset" selected>Sore Senja Emas (Default TikTok)</option>
+            <option value="apoc_morning">Pagi Berkabut</option>
+            <option value="apoc_noon">Siang Cerah</option>
+            <option value="apoc_overcast">Mendung Berkabut</option>
+            <option value="storm_rain">Badai Hujan &amp; Petir</option>
+          </select>
+          <div class="row" style="font-size:11.5px;">
+            <label style="display:flex;align-items:center;gap:5px;"><input id="chk-bloom" type="checkbox" checked /> HDR Bloom</label>
+            <label style="display:flex;align-items:center;gap:5px;"><input id="chk-sfx" type="checkbox" checked /> Audio SFX</label>
+          </div>
+          <div class="row">
+            <button id="btn-pause">⏸ Jeda</button>
+            <button id="btn-next-round" class="primary">↻ Ronde Baru</button>
+          </div>
+          <button id="btn-obs-mode" class="good">📺 Mode OBS Fullscreen 9:16</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🔗 Sambungan TikTok LIVE (Fase 2)</div>
+          <div style="font-size:10.5px;color:var(--muted);">
+            Siap menerima stream JSON dari <code>tiktok-live-connector</code> via WebSocket tanpa ubah gameplay.
+          </div>
+          <div class="row">
+            <input id="inp-ws-url" type="text" value="ws://127.0.0.1:8787" />
+            <button id="btn-connect-ws" style="flex:0 0 auto;">Hubungkan Bridge</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <script type="module" src="./js/game.js"></script>
+</body>
+</html>
