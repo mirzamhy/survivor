@@ -223,6 +223,14 @@ MATERIAL_SPECS = [
     ("Mat_Env_MedCanvas",       "#C6CEC4", 0.88, 0.00),
     ("Mat_Env_MedCross",        "#BA2626", 0.78, 0.00),
     ("Mat_Env_CrateGreen",      "#3E4D33", 0.74, 0.16),
+
+    # War-Torn Fortress, Wet Mud & Bio-Hive Kit (6 PBR materials)
+    ("Mat_Env_MudWet",          "#3D281A", 0.42, 0.04),
+    ("Mat_Env_MudPuddle",       "#1A120C", 0.04, 0.22),
+    ("Mat_Env_FortressSteel",   "#3B3E44", 0.56, 0.72),
+    ("Mat_Env_BarbedWire",      "#4A3A32", 0.58, 0.78),
+    ("Mat_Env_HiveFlesh",       "#2B1822", 0.44, 0.05),
+    ("Mat_Env_HiveGlow",        "#98F228", 0.18, 0.00, "#7CE018", 5.0),
 ]
 
 

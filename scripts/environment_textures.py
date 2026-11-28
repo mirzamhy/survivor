@@ -180,6 +180,62 @@ def _generate_env_archetype(arch, mat_name, base_hex, base_roughness):
         rough_map = np.clip(0.82 + 0.10 * (1.0 - grain), 0.72, 0.94)
         norm_rgba = _height_to_normal_rgba(height, strength=2.8)
 
+    elif arch == "mud_wet":
+        # War-torn dark muddy brown soil with churned boot/wheel ruts & glossy wet hollows
+        fbm_macro = _periodic_fbm(n, 5, seed=809)
+        fbm_clump = _periodic_fbm(n, 6, seed=811)
+        wx = _periodic_fbm(n, 4, seed=821)
+        wy = _periodic_fbm(n, 4, seed=823)
+        rut_wave = 0.5 + 0.5 * np.sin(gy * 2.0 * np.pi * 3.0 + wx * 3.2)
+        mud_warp = _domain_warp(fbm_macro, wx, wy, 7.5)
+        wet_pocket = np.clip((0.52 - mud_warp) / 0.34, 0.0, 1.0) ** 1.3
+        rut_trough = np.clip((0.46 - rut_wave) / 0.38, 0.0, 1.0) * 0.55
+        moisture = np.clip(wet_pocket * 0.85 + rut_trough * 0.45, 0.0, 1.0)
+
+        dry_ridge = _mix(_c("#422C1D"), _c("#573B27"), fbm_clump)
+        damp_soil = _mix(_c("#2C1C12"), _c("#3D281A"), fbm_macro)
+        rgb = _mix(dry_ridge, damp_soil, moisture)
+        rgb = _mix(rgb, _c("#1A1009"), np.clip(moisture - 0.52, 0.0, 1.0) * 1.15)
+
+        height = np.clip(0.68 + 0.18 * fbm_clump - 0.48 * moisture, 0.0, 1.0)
+        rough_map = np.clip(0.76 - 0.58 * moisture + 0.08 * fbm_clump, 0.15, 0.82)
+        norm_rgba = _height_to_normal_rgba(height, strength=4.4)
+
+    elif arch == "fortress_steel":
+        # Heavy corrugated scrap-metal wall plates with ribs, welded seams, soot & rust blotches
+        fbm_a = _periodic_fbm(n, 5, seed=907)
+        fbm_b = _periodic_fbm(n, 4, seed=911)
+        corr = 0.5 + 0.5 * np.sin(gx * 2.0 * np.pi * 10.0)
+        seam_y = np.clip(1.0 - np.abs((gy * 2.0) % 1.0 - 0.03) / 0.028, 0.0, 1.0)
+        rust_mask = np.clip((fbm_a * 0.68 + fbm_b * 0.32 - 0.44) / 0.42, 0.0, 1.0)
+        soot = np.clip((fbm_b - 0.56) / 0.44, 0.0, 1.0)
+
+        steel_base = _mix(_c("#2E3238"), _c("#4A5058"), 0.60 * corr + 0.40 * fbm_b)
+        if mat_name == "Mat_Env_BarbedWire":
+            steel_base = _mix(_c("#3B3430"), _c("#584C44"), 0.55 * corr + 0.45 * fbm_b)
+        rgb = _mix(steel_base, _c("#70361E"), rust_mask * 0.62)
+        rgb = _mix(rgb, _c("#1C1D20"), soot * 0.42 + seam_y * 0.55)
+
+        height = np.clip(0.54 + 0.28 * corr - 0.32 * seam_y - 0.14 * rust_mask, 0.0, 1.0)
+        rough_map = np.clip(0.46 + 0.36 * rust_mask + 0.10 * soot, 0.40, 0.90)
+        norm_rgba = _height_to_normal_rgba(height, strength=3.5)
+
+    elif arch == "hive_organic":
+        # Glistening dark bruised chitin & bio-hive tissue with toxic olive veins
+        fbm_a = _periodic_fbm(n, 5, seed=953)
+        wx = _periodic_fbm(n, 4, seed=967)
+        wy = _periodic_fbm(n, 4, seed=971)
+        _, v_edge, _ = _periodic_voronoi(n, 11, seed=977)
+        edge_w = _domain_warp(v_edge, wx, wy, 10.0)
+        vein = np.clip(1.0 - edge_w / 0.068, 0.0, 1.0) ** 1.3
+
+        flesh = _mix(_c("#1B0F18"), _c("#461C27"), fbm_a)
+        rgb = _mix(flesh, _c("#546B1E"), vein * 0.72)
+
+        height = np.clip(0.55 + 0.18 * fbm_a + 0.22 * vein, 0.0, 1.0)
+        rough_map = np.clip(0.56 - 0.28 * vein - 0.12 * fbm_a, 0.24, 0.66)
+        norm_rgba = _height_to_normal_rgba(height, strength=3.6)
+
     else:  # grass_organic (mottled foliage & dried vegetation without artificial stripe bands)
         fbm_a = _periodic_fbm(n, 5, seed=701)
         fbm_b = _periodic_fbm(n, 4, seed=709)
@@ -235,6 +291,10 @@ ENV_MAT_TEX_MAP = {
     "Mat_Env_MedCross":        ("fabric_burlap",    0.68, 0.22),
     "Mat_Env_GrassDry":        ("grass_organic",    0.55, 0.22),
     "Mat_Env_GrassLush":       ("grass_organic",    0.55, 0.24),
+    "Mat_Env_MudWet":          ("mud_wet",          1.10, 0.52),
+    "Mat_Env_FortressSteel":   ("fortress_steel",   0.95, 0.45),
+    "Mat_Env_BarbedWire":      ("fortress_steel",   0.80, 0.48),
+    "Mat_Env_HiveFlesh":       ("hive_organic",     0.95, 0.42),
 }
 
 
