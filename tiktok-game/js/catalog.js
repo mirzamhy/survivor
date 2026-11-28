@@ -1,8 +1,9 @@
 // Canonical asset catalog, upgrade tiers, TikTok gift economy, and mock stream templates
 
-export const ASSET_VER = '?v=12';
+export const ASSET_VER = '?v=13';
 
 export const ENV_PATHS = {
+  warBattlefield: '../output/environment/battlefield_fortress_war.glb',
   streetScene: '../output/environment/apocalypse_street_scene.glb',
   sandbagBarricade: '../output/environment/env_sandbag_barricade.glb',
   supplyCrate: '../output/environment/env_supply_crate_loot.glb',
@@ -360,6 +361,40 @@ export const MUTANT_BOSSES = [
   },
 ];
 
+export const ZOMBIE_ELITE_MUTANTS = [
+  'mutant_scythe_stalker',
+  'mutant_arachnid_maw',
+  'mutant_rafflesia',
+  'mutant_thorn_shroud',
+];
+
+export const ZOMBIE_EVOLUTION_TIERS = [
+  { level: 1, specId: 'zombie_walker_shambler', title: 'Walker',       ringColor: 0x84cc16, badgeColor: '#84cc16', isBoss: false },
+  { level: 2, specId: 'zombie_crawler_stalker', title: 'Feral',        ringColor: 0xa3e635, badgeColor: '#a3e635', isBoss: false },
+  { level: 3, specId: 'zombie_spitter_hazmat',  title: 'Spitter',      ringColor: 0xf59e0b, badgeColor: '#f59e0b', isBoss: false },
+  { level: 4, specId: 'zombie_banshee_screamer',title: 'Banshee',      ringColor: 0xf97316, badgeColor: '#f97316', isBoss: false },
+  { level: 5, specId: 'zombie_bloater_boomer',  title: 'Boomer',       ringColor: 0xf43f5e, badgeColor: '#f43f5e', isBoss: false },
+  { level: 6, specId: 'zombie_juggernaut_brute',title: 'Brute SWAT',   ringColor: 0xef4444, badgeColor: '#ef4444', isBoss: false },
+  { level: 7, specId: 'mutant_scythe_stalker',  title: 'Mutant Elite', ringColor: 0xd946ef, badgeColor: '#d946ef', isBoss: false },
+  { level: 8, specId: 'mutant_bile_juggernaut', title: 'TITAN BILE',   ringColor: 0xff1e56, badgeColor: '#ff1e56', isBoss: true },
+];
+
+export function getZombieTierMeta(level, variantIdx = 0) {
+  const idx = Math.min(8, Math.max(1, level)) - 1;
+  const tier = ZOMBIE_EVOLUTION_TIERS[idx];
+  const specId = idx === 6
+    ? ZOMBIE_ELITE_MUTANTS[Math.abs(variantIdx) % ZOMBIE_ELITE_MUTANTS.length]
+    : tier.specId;
+  const bossObj = MUTANT_BOSSES.find((b) => b.id === specId);
+  const zmbObj = ZOMBIES[specId];
+  return {
+    ...tier,
+    specId,
+    title: idx === 6 && bossObj ? bossObj.title : tier.title,
+    enemyMeta: bossObj || zmbObj || ZOMBIES.zombie_walker_shambler,
+  };
+}
+
 export const GIFT_CATALOG = {
   rose: {
     id: 'rose',
@@ -368,7 +403,7 @@ export const GIFT_CATALOG = {
     coins: 1,
     faction: 'defend',
     tier: 'micro',
-    shortDesc: 'Heal Skuad +35 • x10 = Frenzy 2x',
+    shortDesc: 'Heal Skuad + Repair Benteng • x10 = Frenzy 2x',
     accent: '#22c55e',
   },
   ice_cream: {
@@ -378,7 +413,7 @@ export const GIFT_CATALOG = {
     coins: 1,
     faction: 'sabotage',
     tier: 'micro',
-    shortDesc: '1 Walker @User • x10 = +3 Feral',
+    shortDesc: 'Join/Mutasi Zombie + Heal Sarang • x10 = +3 Feral',
     accent: '#f97316',
   },
   finger_heart: {
@@ -388,7 +423,7 @@ export const GIFT_CATALOG = {
     coins: 5,
     faction: 'defend',
     tier: 'small',
-    shortDesc: 'Repair Barikade +8% & Perisai 5s',
+    shortDesc: 'Repair Benteng +8% & Perisai 5s',
     accent: '#38bdf8',
   },
   gg_troll: {
@@ -398,7 +433,7 @@ export const GIFT_CATALOG = {
     coins: 5,
     faction: 'sabotage',
     tier: 'small',
-    shortDesc: 'Spawn Spitter Asam (Serang Jauh)',
+    shortDesc: 'Heal Sarang +8% & Mutasi Spitter',
     accent: '#fb923c',
   },
   doughnut: {
@@ -408,7 +443,7 @@ export const GIFT_CATALOG = {
     coins: 30,
     faction: 'defend',
     tier: 'mid',
-    shortDesc: 'VIP Hero Lv.3 / Upgrade Senjata +1',
+    shortDesc: 'Join/Upgrade Hero Manusia +1 Tier (Lv.1→8)',
     accent: '#60a5fa',
   },
   cap_horde: {
@@ -418,7 +453,7 @@ export const GIFT_CATALOG = {
     coins: 30,
     faction: 'sabotage',
     tier: 'mid',
-    shortDesc: 'Turunkan 3 Elite (Feral+Banshee+Boomer)',
+    shortDesc: 'Mutasi Zombie @User +1 Tier + 2 Pengawal',
     accent: '#f43f5e',
   },
   corgi_supply: {
@@ -428,7 +463,7 @@ export const GIFT_CATALOG = {
     coins: 99,
     faction: 'defend',
     tier: 'big',
-    shortDesc: 'Crate Jatuh: Semua +1 Tier + Revive',
+    shortDesc: 'Supply Crate: Semua Hero +1 Tier & Revive',
     accent: '#a855f7',
   },
   storm_curse: {
@@ -438,7 +473,7 @@ export const GIFT_CATALOG = {
     coins: 99,
     faction: 'sabotage',
     tier: 'big',
-    shortDesc: 'Blackout Badai + Brute SWAT @User',
+    shortDesc: 'Badai Petir 16s + Mutasi Brute SWAT Lv.6',
     accent: '#ef4444',
   },
   money_gun: {
@@ -448,7 +483,7 @@ export const GIFT_CATALOG = {
     coins: 500,
     faction: 'defend',
     tier: 'sultan',
-    shortDesc: 'AIRSTRIKE 6 Roket + Sultan Lv.8 LMG',
+    shortDesc: 'AIRSTRIKE 6 Roket + Hero 👑 Lv.8 LMG',
     accent: '#facc15',
   },
   galaxy_boss: {
@@ -458,7 +493,7 @@ export const GIFT_CATALOG = {
     coins: 1000,
     faction: 'sabotage',
     tier: 'sultan',
-    shortDesc: 'Summon GIANT MUTANT BOSS @User!',
+    shortDesc: 'Evolusi 👑 Lv.8 GIANT MUTANT BOSS @User!',
     accent: '#ec4899',
   },
 };
@@ -482,35 +517,38 @@ export const MOCK_USERS = [
 
 export const MOCK_CHAT_POOL = {
   idle: [
-    { msg: '!join', tag: 'cmd' },
-    { msg: '!join ikutan min!', tag: 'cmd' },
-    { msg: '!zombie serang!!', tag: 'cmd' },
-    { msg: 'Seru banget grafiknya 3D gini', tag: 'talk' },
-    { msg: 'Ayo bertahan sampai evakuasi!!', tag: 'talk' },
-    { msg: 'Gas tap-tap layar biar rame', tag: 'talk' },
+    { msg: '!manusia', tag: 'cmd' },
+    { msg: '!manusia ikut jaga benteng min!', tag: 'cmd' },
+    { msg: '!zombie ikut serang benteng!!', tag: 'cmd' },
+    { msg: 'Seru banget benteng vs sarang zombie 3D!', tag: 'talk' },
+    { msg: 'Medannya berlumpur parah epik banget!!', tag: 'talk' },
+    { msg: 'Gas tap-tap layar bantu kubu masing2', tag: 'talk' },
   ],
   defend: [
-    'Tahan barikade jgn sampe jebol!!',
-    'Kasih rose biar nembak makin ngebut!',
-    'Donat auto upgrade senjata tuh GG!',
-    'Kawal sampai 00:00 cuy!',
+    'Jaga gerbang benteng jgn sampe jebol!!',
+    'Kirim rose biar nembak makin ngebut!',
+    'Donat auto upgrade senjata menuju Sarang!',
+    'Dorong garis depan hancurin Sarang Zombie!',
   ],
   sabotage: [
-    'WKWK robohin pagarnya!!',
-    'Kirim zombie terus jgn kasih nafas!',
-    'Penghancur menang ronde ini fix!',
-    'Panggil badai petir biar kelar tuh!',
+    'WKWK hancurin benteng bajanya!!',
+    'Kirim es krim biar evolusi jadi Brute/Boss!',
+    'Penghancur menang perang 2 base ini fix!',
+    'Panggil badai petir + Titan Boss sekarang!',
   ],
-  critical: [
-    'WADUH BARIKADE MERAH!! KIRIM HEART!!',
-    'TOLONGIN MARKAS UDAH KRITIS WOI!!',
-    'SAATNYA COMEBACK KIRIM SUPPLY!!',
-    'JEBOL DIKIT LAGI GAS SABOTASE!!',
+  criticalHuman: [
+    'WADUH BENTENG MERAH!! KIRIM HEART!!',
+    'GERBANG BENTENG MAU JEBOL WOI!!',
+    'SAATNYA COMEBACK KIRIM SUPPLY & MONEY GUN!!',
+  ],
+  criticalZombie: [
+    'SARANG ZOMBIE MAU HANCUR!! KIRIM GG / BADAI!!',
+    'HEAL SARANG ZOMBIE GUYS SURVIVOR UDAH MAJU!!',
+    'SAATNYA BALIKKAN KEADAAN KIRIM GALAXY BOSS!!',
   ],
   boss: [
-    'GEDE BANGET MUTANT BOSSNYA 😱',
-    'BUSUKIN BARIKADE BOSS!!',
+    'GEDE BANGET TITAN BOSSNYA 😱',
+    'HANCURIN GERBANG BENTENG BOSS!!',
     'KITA BUTUH MONEY GUN AIRSTRIKE!!',
-    'TEMBAK KEPALA BOSSNYA GUYS!!',
   ],
 };

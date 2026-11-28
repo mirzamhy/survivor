@@ -329,6 +329,23 @@
     .conn-pill.mock { background: rgba(56,189,248,0.18); color: #7dd3fc; }
     .conn-pill.live { background: rgba(34,197,94,0.22); color: #86efac; }
 
+    /* Compact HUD & Mini Unit Label Optimizations for 9:16 Viewport Space */
+    body.compact-hud #top-safe-zone { top: 5px; left: 8px; right: 8px; gap: 3px; }
+    body.compact-hud .tz-tiktok-bar { padding: 1px 4px; font-size: 9px; }
+    body.compact-hud .hud-header-card { padding: 4px 7px; gap: 3px; border-radius: 8px; }
+    body.compact-hud .timer-big { font-size: 14px; }
+    body.compact-hud .sultan-box { padding: 3px 5px; }
+    body.compact-hud .sultan-row:nth-child(n+2) { display: none; }
+    body.compact-hud #chat-feed { min-height: 44px; gap: 2px; }
+    body.compact-hud #chat-feed .chat-line:nth-last-child(n+4) { display: none; }
+    body.compact-hud .chat-line { padding: 2px 6px; font-size: 9.5px; }
+    body.mini-labels .unit-hud {
+      padding: 1.5px 4px; min-width: 48px; border-radius: 4px;
+      background: rgba(9, 13, 21, 0.68);
+    }
+    body.mini-labels .unit-name { font-size: 7.5px; margin-bottom: 1.5px; }
+    body.mini-labels .hp-track { height: 2.5px; }
+
     /* OBS Fullscreen Clean 9:16 Mode */
     body.obs-mode #studio-layout {
       grid-template-columns: 1fr; padding: 0; gap: 0; background: #000;
@@ -355,7 +372,7 @@
     }
   </script>
 </head>
-<body>
+<body class="compact-hud mini-labels">
   <button id="btn-exit-obs" class="primary">✕ Keluar Mode OBS</button>
 
   <div id="studio-layout">
@@ -396,8 +413,8 @@
         <div class="card">
           <div class="card-title">💬 Chat &amp; Tap Likes Gratis</div>
           <div class="row">
-            <button id="btn-quick-join" class="good">!join Hero</button>
-            <button id="btn-quick-zombie" class="danger">!zombie</button>
+            <button id="btn-quick-manusia" class="good">!manusia (1)</button>
+            <button id="btn-quick-zombie" class="danger">!zombie (2)</button>
           </div>
           <div class="row">
             <button id="btn-like-25">❤️ +25 Likes</button>
@@ -433,9 +450,19 @@
               <span id="hud-round-badge" style="font-size:10.5px;font-weight:700;color:var(--muted);">Ronde #1</span>
             </div>
 
-            <div class="bar-track">
-              <div id="hud-barricade-fill" class="bar-fill" style="width:100%;background:#22c55e;"></div>
-              <div id="hud-barricade-text" class="bar-label">🛡️ Markas 100% (1200)</div>
+            <div class="goals-grid">
+              <div class="bar-track" style="height:15px;">
+                <div id="hud-human-fill" class="bar-fill" style="width:100%;background:#22c55e;"></div>
+                <div id="hud-human-text" class="bar-label" style="font-size:9.5px;">🏰 Benteng 100%</div>
+              </div>
+              <div class="bar-track" style="height:15px;">
+                <div id="hud-zombie-fill" class="bar-fill" style="width:100%;background:#84cc16;"></div>
+                <div id="hud-zombie-text" class="bar-label" style="font-size:9.5px;">🦠 Sarang 100%</div>
+              </div>
+            </div>
+
+            <div style="position:relative;height:6px;background:rgba(132,204,22,0.28);border-radius:99px;border:1px solid rgba(255,255,255,0.12);overflow:visible;">
+              <div id="frontline-marker" style="position:absolute;top:-3px;left:50%;transform:translateX(-50%);width:10px;height:10px;border-radius:50%;background:#facc15;box-shadow:0 0 6px #facc15;transition:left 0.15s;"></div>
             </div>
 
             <div class="goals-grid">
@@ -489,12 +516,12 @@
         <div id="bottom-safe-zone">
           <div id="chat-feed"></div>
           <div class="cheat-strip">
-            <span>🌹1 Heal</span>
-            <span>🍩30 Hero+</span>
+            <span>🌹1 Heal/Frenzy</span>
+            <span>🍩30 Hero Lv+</span>
             <span>🔫500 Airstrike</span>
-            <span>🍦1 Zombie</span>
-            <span>⛈️99 Badai</span>
-            <span>🌌1K Boss!</span>
+            <span>🍦1 Zomb/Swarm</span>
+            <span>🧢30 Mutasi+</span>
+            <span>🌌1K Titan Boss!</span>
           </div>
         </div>
 
@@ -570,18 +597,34 @@
         </div>
 
         <div class="card">
-          <div class="card-title">🎥 Kamera, Cuaca &amp; Kontrol OBS</div>
+          <div class="card-title">🎥 Bandingkan Opsi View 9:16</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
+            <button data-cam="diagonal" class="active">📐 Opsi 1: Diagonal 3/4</button>
+            <button data-cam="over_fortress">🏰 Opsi 2: Over-Fortress</button>
+            <button data-cam="wide">🗺️ Opsi 3: Wide Full</button>
+            <button data-cam="topdown">🛰️ Taktikal Atas</button>
+          </div>
           <div class="row">
-            <button data-cam="auto" class="active">Auto AI</button>
-            <button data-cam="frontline">Duel</button>
-            <button data-cam="barricade">Markas</button>
-            <button data-cam="wide">Wide</button>
+            <button data-cam="auto">🎯 Auto Duel</button>
+            <button data-cam="fortress">Benteng</button>
+            <button data-cam="hive">Sarang</button>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);margin-bottom:3px;">
+              <span>🔍 Jarak Zoom Kamera</span>
+              <span id="zoom-val" style="color:var(--text);font-weight:700;">1.00x</span>
+            </div>
+            <input id="slider-zoom" type="range" min="0.65" max="1.50" step="0.05" value="1.00" style="width:100%;accent-color:var(--accent);" />
+          </div>
+          <div class="row" style="font-size:11px;">
+            <label style="display:flex;align-items:center;gap:5px;"><input id="chk-compact-hud" type="checkbox" checked /> HUD Ringkas</label>
+            <label style="display:flex;align-items:center;gap:5px;"><input id="chk-mini-labels" type="checkbox" checked /> Label Mini</label>
           </div>
           <select id="sel-weather">
-            <option value="apoc_sunset" selected>Sore Senja Emas (Default TikTok)</option>
+            <option value="war_dusk" selected>Sore Perang Berkabut (War Dusk)</option>
+            <option value="apoc_sunset">Sore Senja Emas</option>
             <option value="apoc_morning">Pagi Berkabut</option>
             <option value="apoc_noon">Siang Cerah</option>
-            <option value="apoc_overcast">Mendung Berkabut</option>
             <option value="storm_rain">Badai Hujan &amp; Petir</option>
           </select>
           <div class="row" style="font-size:11.5px;">

@@ -286,8 +286,13 @@ export class MockTikTokStream {
 
     // 45% realistic reactive chat or command
     if (r < 0.44) {
-      if (st.barricadeRatio !== undefined && st.barricadeRatio < 0.34 && Math.random() < 0.55) {
-        const line = MOCK_CHAT_POOL.critical[Math.floor(Math.random() * MOCK_CHAT_POOL.critical.length)];
+      if (st.humanBaseRatio !== undefined && st.humanBaseRatio < 0.34 && Math.random() < 0.55) {
+        const line = MOCK_CHAT_POOL.criticalHuman[Math.floor(Math.random() * MOCK_CHAT_POOL.criticalHuman.length)];
+        this.bus.emitChat({ user, message: line });
+        return;
+      }
+      if (st.zombieBaseRatio !== undefined && st.zombieBaseRatio < 0.34 && Math.random() < 0.55) {
+        const line = MOCK_CHAT_POOL.criticalZombie[Math.floor(Math.random() * MOCK_CHAT_POOL.criticalZombie.length)];
         this.bus.emitChat({ user, message: line });
         return;
       }
@@ -296,7 +301,7 @@ export class MockTikTokStream {
         this.bus.emitChat({ user, message: line });
         return;
       }
-      if (Math.random() < 0.34) {
+      if (Math.random() < 0.36) {
         const pool = MOCK_CHAT_POOL.idle;
         const pick = pool[Math.floor(Math.random() * pool.length)];
         this.bus.emitChat({ user, message: pick.msg });
@@ -313,9 +318,12 @@ export class MockTikTokStream {
       return;
     }
 
-    // 36% weighted Save vs Sabotage gift event (rubber-banded to drama)
-    const isCritical = st.barricadeRatio !== undefined && st.barricadeRatio < 0.35;
-    const defendBias = isCritical ? 0.66 : (st.bossAlive ? 0.58 : 0.48);
+    // 36% weighted Save vs Sabotage gift event (rubber-banded to 2-base drama)
+    const humanLow = st.humanBaseRatio !== undefined && st.humanBaseRatio < 0.35;
+    const zombieLow = st.zombieBaseRatio !== undefined && st.zombieBaseRatio < 0.35;
+    let defendBias = st.bossAlive ? 0.58 : 0.50;
+    if (humanLow && !zombieLow) defendBias = 0.68;
+    else if (zombieLow && !humanLow) defendBias = 0.32;
     const isDefend = Math.random() < defendBias;
     const roll = Math.random();
 

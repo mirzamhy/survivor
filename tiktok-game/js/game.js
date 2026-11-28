@@ -1,11 +1,11 @@
-// Core Game Loop, AI Tension Director, Gift Executor, and HUD/Simulator Controller
+// Core 2-Base War Game Loop, AI Tension Director, Dual Evolution (Lv.1-8), Infection & HUD Controller
 
 import {
   SURVIVORS,
-  ZOMBIES,
   MUTANT_BOSSES,
   GIFT_CATALOG,
   GIFT_LIST,
+  getZombieTierMeta,
 } from './catalog.js';
 import { createAudioEngine } from './audio.js';
 import { LiveEventBus, MockTikTokStream } from './eventBus.js';
@@ -21,7 +21,6 @@ if (isObsLocked) {
   document.body.classList.add('obs-mode', 'obs-locked');
 }
 
-// DOM References
 const $ = (id) => document.getElementById(id);
 const stageWrap = $('stage-wrap');
 const labelsLayer = $('labels-layer');
@@ -30,8 +29,11 @@ const vignetteCrisis = $('vignette-crisis');
 const hudPhasePill = $('hud-phase-pill');
 const hudTimer = $('hud-timer');
 const hudRoundBadge = $('hud-round-badge');
-const hudBarricadeFill = $('hud-barricade-fill');
-const hudBarricadeText = $('hud-barricade-text');
+const hudHumanFill = $('hud-human-fill');
+const hudHumanText = $('hud-human-text');
+const hudZombieFill = $('hud-zombie-fill');
+const hudZombieText = $('hud-zombie-text');
+const frontlineMarker = $('frontline-marker');
 const goalDefendFill = $('goal-defend-fill');
 const goalDefendText = $('goal-defend-text');
 const goalSabotageFill = $('goal-sabotage-fill');
@@ -71,7 +73,7 @@ const btnLike100 = $('btn-like-100');
 const likeProgressText = $('like-progress-text');
 const inpChat = $('inp-chat');
 const btnSendChat = $('btn-send-chat');
-const btnQuickJoin = $('btn-quick-join');
+const btnQuickManusia = $('btn-quick-manusia');
 const btnQuickZombie = $('btn-quick-zombie');
 
 const btnAutoLive = $('btn-auto-live');
@@ -87,6 +89,10 @@ const telFps = $('tel-fps');
 const selWeather = $('sel-weather');
 const chkBloom = $('chk-bloom');
 const chkSfx = $('chk-sfx');
+const sliderZoom = $('slider-zoom');
+const zoomVal = $('zoom-val');
+const chkCompactHud = $('chk-compact-hud');
+const chkMiniLabels = $('chk-mini-labels');
 const btnPause = $('btn-pause');
 const btnNextRound = $('btn-next-round');
 const btnObsMode = $('btn-obs-mode');
@@ -96,7 +102,6 @@ const connBadge = $('conn-badge');
 const inpWsUrl = $('inp-ws-url');
 const btnConnectWs = $('btn-connect-ws');
 
-// Modules
 const audio = createAudioEngine();
 if (startMute) {
   audio.setEnabled(false);
@@ -105,22 +110,25 @@ if (startMute) {
 
 const bus = new LiveEventBus();
 
-// Round & Economy State
+// 2-Base War Economy & Round Constants
 const MAX_SURVIVORS = 8;
-const MAX_ENEMIES = 14;
+const MAX_ENEMIES = 12;
 const ROUND_COMBAT_SEC = 180;
 const PREP_SEC = 5.0;
 const RECAP_SEC = 10.0;
 const GOAL_TARGET = 100;
+const BASE_MAX_HP = 3000;
 
 const state = {
   roundNumber: 1,
-  phase: 'PREP', // 'PREP' | 'COMBAT' | 'FINAL_STAND' | 'ENDED'
+  phase: 'PREP', // 'PREP' | 'COMBAT' | 'SUDDEN_DEATH' | 'ENDED'
   phaseTimer: PREP_SEC,
   combatTimeLeft: ROUND_COMBAT_SEC,
   wave: 1,
-  barricadeMaxHp: 1200,
-  barricadeHp: 1200,
+  humanBaseMaxHp: BASE_MAX_HP,
+  humanBaseHp: BASE_MAX_HP,
+  zombieBaseMaxHp: BASE_MAX_HP,
+  zombieBaseHp: BASE_MAX_HP,
   sessionStartMs: Date.now(),
   sessionCoins: 0,
   roundCoins: 0,
@@ -133,17 +141,18 @@ const state = {
   selectedCombo: 1,
   microCounterDefend: 0,
   microCounterSabotage: 0,
-  finalBossSpawned: false,
   crisisAlertTimer: 0,
   directorTimer: 1.5,
   spawningLock: false,
   bannerTimer: 0,
-  defendLeaderboard: new Map(),   // user -> coins
-  sabotageLeaderboard: new Map(), // user -> coins
-  heroRosterMeta: new Map(),      // userLower -> { ownerName, specId, track, level }
-  fallenHeroes: [],               // [{ ownerName, specId, level }]
-  joinQueue: [],                  // [user]
-  botIndex: 1,
+  variantSeq: 0,
+  defendLeaderboard: new Map(),
+  sabotageLeaderboard: new Map(),
+  survivorProfiles: new Map(), // userLower -> { ownerName, specId, level }
+  zombieProfiles: new Map(),   // userLower -> { ownerName, level, variantIdx }
+  respawnQueue: [],            // [{ faction, user, delay, pos }]
+  fallenHeroes: [],
+  joinQueue: [],
 };
 
 function fmtTime(sec) {
@@ -170,7 +179,7 @@ function addChatLine(badge, text, kind = 'talk') {
   }
 }
 
-function showGiftBanner({ emoji, title, sub, combo = '', faction = 'defend', duration = 2.6 }) {
+function showGiftBanner({ emoji, title, sub, combo = '', faction = 'defend', duration = 2.5 }) {
   if (!giftBanner) return;
   giftBannerEmoji.textContent = emoji;
   giftBannerTitle.textContent = title;
@@ -186,6 +195,11 @@ function getHeroByOwner(user) {
   return engine.getUnits().find((u) => u.team === 'survivor' && !u.dead && u.ownerName.toLowerCase() === lower);
 }
 
+function getEnemyByOwner(user) {
+  const lower = user.toLowerCase();
+  return engine.getUnits().find((u) => u.team === 'enemy' && !u.dead && u.ownerName && u.ownerName.toLowerCase() === lower);
+}
+
 function countLiving(team) {
   return engine.getUnits().filter((u) => u.team === team && !u.dead).length;
 }
@@ -195,20 +209,42 @@ function getActiveBosses() {
 }
 
 const engine = createArenaEngine(stageWrap, labelsLayer, audio, {
-  onBarricadeDamage(dmg) {
+  onHumanBaseDamage(dmg) {
     if (state.phase === 'ENDED') return;
-    state.barricadeHp = Math.max(0, state.barricadeHp - dmg);
-    engine.setBarricadeVisual(state.barricadeHp / state.barricadeMaxHp);
-    if (state.barricadeHp <= 0) {
-      finishRound(false, 'Barikade Evakuasi Jebol!');
+    state.humanBaseHp = Math.max(0, state.humanBaseHp - dmg);
+    engine.setHumanBaseVisual(state.humanBaseHp / state.humanBaseMaxHp);
+    if (state.humanBaseHp <= 0) {
+      finishRound(false, 'Benteng Manusia Jebol oleh Serbuan Zombie!');
+    }
+  },
+  onZombieBaseDamage(dmg) {
+    if (state.phase === 'ENDED') return;
+    state.zombieBaseHp = Math.max(0, state.zombieBaseHp - dmg);
+    engine.setZombieBaseVisual(state.zombieBaseHp / state.zombieBaseMaxHp);
+    if (state.zombieBaseHp <= 0) {
+      finishRound(true, 'Sarang Bio-Hive Zombie Berhasil Dihancurkan!');
     }
   },
   onUnitDied(unit) {
     if (unit.team === 'survivor' && !unit.isBot) {
-      state.fallenHeroes.push({
-        ownerName: unit.ownerName,
-        specId: unit.specId,
-        level: unit.level,
+      state.fallenHeroes.push({ ownerName: unit.ownerName, specId: unit.specId, level: unit.level });
+      // Schedule Turned-Zombie Infection + Hero Respawn
+      state.respawnQueue.push({
+        kind: 'infect',
+        user: unit.ownerName,
+        delay: 2.6,
+        pos: unit.group.position.clone(),
+      });
+      state.respawnQueue.push({
+        kind: 'human_respawn',
+        user: unit.ownerName,
+        delay: 6.2,
+      });
+    } else if (unit.team === 'enemy' && unit.ownerName && !unit.isInfected) {
+      state.respawnQueue.push({
+        kind: 'zombie_respawn',
+        user: unit.ownerName,
+        delay: 5.2,
       });
     }
   },
@@ -217,80 +253,161 @@ const engine = createArenaEngine(stageWrap, labelsLayer, audio, {
 const mockStream = new MockTikTokStream(
   bus,
   () => ({
-    barricadeRatio: state.barricadeHp / state.barricadeMaxHp,
+    humanBaseRatio: state.humanBaseHp / state.humanBaseMaxHp,
+    zombieBaseRatio: state.zombieBaseHp / state.zombieBaseMaxHp,
     bossAlive: getActiveBosses().length > 0,
-    aliveSurvivors: countLiving('survivor'),
     phase: state.phase,
   }),
   (action) => {
     if (action === 'drop_barricade_critical' && state.phase !== 'ENDED') {
-      state.barricadeHp = Math.min(state.barricadeHp, Math.round(state.barricadeMaxHp * 0.22));
-      engine.setBarricadeVisual(state.barricadeHp / state.barricadeMaxHp);
-      addChatLine('⚠️ ALERT', 'Barikade kritis tersisa 22%!!', 'alert-sab');
+      state.humanBaseHp = Math.min(state.humanBaseHp, Math.round(state.humanBaseMaxHp * 0.22));
+      engine.setHumanBaseVisual(state.humanBaseHp / state.humanBaseMaxHp);
+      addChatLine('⚠️ ALERT', 'Gerbang Benteng Manusia kritis tersisa 22%!!', 'alert-sab');
     }
   }
 );
 
-async function spawnOrPromoteHero({ user, minLevel = 3, upgradeBy = 1, isVip = true, isSultan = false }) {
+function cureInfectedCopy(user) {
+  const lower = user.toLowerCase();
+  const inf = engine.getUnits().find((u) => u.team === 'enemy' && !u.dead && u.isInfected && u.ownerName?.toLowerCase() === lower);
+  if (inf) {
+    inf.hp = 0;
+    inf.dead = true;
+    inf.deadTimer = 4.6;
+    if (inf.hudEl) inf.hudEl.style.display = 'none';
+    addChatLine('💊 DISEMBUHKAN', `@${user} pulih dari infeksi zombie!`, 'gift-def');
+  }
+}
+
+async function spawnOrPromoteHero({ user, minLevel = 1, upgradeBy = 1, isVip = true, isSultan = false }) {
+  const lower = user.toLowerCase();
+  cureInfectedCopy(user);
+
+  const prof = state.survivorProfiles.get(lower) || {
+    ownerName: user,
+    specId: SURVIVORS[Math.floor(Math.random() * SURVIVORS.length)].id,
+    level: 1,
+  };
+  prof.level = Math.min(8, Math.max(prof.level, minLevel));
+  state.survivorProfiles.set(lower, prof);
+
   const existing = getHeroByOwner(user);
   if (existing) {
     await engine.upgradeSurvivor(existing, upgradeBy, minLevel > existing.level ? minLevel : null);
+    prof.level = existing.level;
     return existing;
   }
 
-  let livingSurvs = engine.getUnits().filter((u) => u.team === 'survivor' && !u.dead);
+  const livingSurvs = engine.getUnits().filter((u) => u.team === 'survivor' && !u.dead);
   if (livingSurvs.length >= MAX_SURVIVORS) {
-    // VIP Cut-Line: sacrifice a bot or lowest-level non-Sultan unit so gift sender enters immediately
     const sacrificial = livingSurvs.find((u) => u.isBot)
       || livingSurvs.filter((u) => !u.isSultan).sort((a, b) => a.level - b.level)[0];
     if (sacrificial) {
       sacrificial.dead = true;
-      sacrificial.deadTimer = 4.5; // fade out cleanly
+      sacrificial.deadTimer = 4.5;
       if (sacrificial.hudEl) sacrificial.hudEl.style.display = 'none';
     }
   }
 
-  const pick = SURVIVORS[Math.floor(Math.random() * SURVIVORS.length)];
-  const hero = await engine.spawnSurvivor({
-    specId: pick.id,
+  return engine.spawnSurvivor({
+    specId: prof.specId,
     ownerName: user,
-    level: minLevel,
+    level: prof.level,
     isVip,
-    isSultan,
+    isSultan: isSultan || prof.level >= 8,
   });
-  return hero;
+}
+
+async function spawnOrEvolveZombie({ user, minLevel = 1, upgradeBy = 0 }) {
+  const lower = user.toLowerCase();
+  const prof = state.zombieProfiles.get(lower) || {
+    ownerName: user,
+    level: 1,
+    variantIdx: state.variantSeq++,
+  };
+  const nextLv = Math.min(8, Math.max(prof.level + upgradeBy, minLevel));
+  prof.level = nextLv;
+  state.zombieProfiles.set(lower, prof);
+
+  const waveMult = 1 + (state.wave - 1) * 0.14;
+  const existing = getEnemyByOwner(user);
+  if (existing && !existing.isInfected) {
+    if (nextLv > existing.level) {
+      return engine.evolveEnemy(existing, nextLv, waveMult);
+    }
+    existing.hp = existing.maxHp;
+    return existing;
+  }
+
+  const livingEnm = engine.getUnits().filter((u) => u.team === 'enemy' && !u.dead);
+  if (livingEnm.length >= MAX_ENEMIES) {
+    const sacrificial = livingEnm.find((u) => u.isBot && !u.isBoss)
+      || livingEnm.filter((u) => !u.isBoss).sort((a, b) => (a.level || 1) - (b.level || 1))[0];
+    if (sacrificial) {
+      sacrificial.dead = true;
+      sacrificial.deadTimer = 4.5;
+      if (sacrificial.hudEl) sacrificial.hudEl.style.display = 'none';
+    }
+  }
+
+  const meta = getZombieTierMeta(prof.level, prof.variantIdx);
+  return engine.spawnEnemy({
+    specId: meta.specId,
+    ownerName: user,
+    level: prof.level,
+    variantIdx: prof.variantIdx,
+    isBoss: meta.isBoss,
+    isElite: prof.level >= 6,
+    waveMult,
+  });
+}
+
+function healBase(side, amount) {
+  if (state.phase === 'SUDDEN_DEATH' || state.phase === 'ENDED') return;
+  if (side === 'human') {
+    state.humanBaseHp = Math.min(state.humanBaseMaxHp, state.humanBaseHp + amount);
+    engine.setHumanBaseVisual(state.humanBaseHp / state.humanBaseMaxHp);
+  } else {
+    state.zombieBaseHp = Math.min(state.zombieBaseMaxHp, state.zombieBaseHp + amount);
+    engine.setZombieBaseVisual(state.zombieBaseHp / state.zombieBaseMaxHp);
+  }
 }
 
 async function handleGiftEvent(evt) {
   const gMeta = GIFT_CATALOG[evt.giftId];
-  if (!gMeta) return;
-  if (state.phase === 'ENDED') return;
+  if (!gMeta || state.phase === 'ENDED') return;
 
   const rep = evt.repeatCount || 1;
   const coins = evt.coins || (gMeta.coins * rep);
   state.sessionCoins += coins;
   state.roundCoins += coins;
 
-  // Sultan gifts (500/1K) already unleash their own Airstrike/Boss; cap their community bar contribution to 99 so they don't loop infinite goal triggers
+  // Sultan gifts (500/1K) already unleash their own Airstrike/Boss; process goal modulo synchronously before any await
   const goalDelta = Math.min(GOAL_TARGET - 1, coins);
+  let triggeredDefendGoal = false;
+  let triggeredSabotageGoal = false;
   if (gMeta.faction === 'defend') {
     state.defendCoins += coins;
     state.goalDefend += goalDelta;
+    if (state.goalDefend >= GOAL_TARGET) {
+      state.goalDefend = state.goalDefend % GOAL_TARGET;
+      triggeredDefendGoal = true;
+    }
     state.defendLeaderboard.set(evt.user, (state.defendLeaderboard.get(evt.user) || 0) + coins);
   } else {
     state.sabotageCoins += coins;
     state.goalSabotage += goalDelta;
+    if (state.goalSabotage >= GOAL_TARGET) {
+      state.goalSabotage = state.goalSabotage % GOAL_TARGET;
+      triggeredSabotageGoal = true;
+    }
     state.sabotageLeaderboard.set(evt.user, (state.sabotageLeaderboard.get(evt.user) || 0) + coins);
   }
 
   audio.playCoinChime(evt.comboCount || rep, gMeta.faction);
 
   const comboTag = evt.comboCount > 1 ? `x${evt.comboCount}` : '';
-  addChatLine(
-    `${gMeta.emoji} @${evt.user}`,
-    `kirim ${rep}x ${gMeta.name} (${coins} koin)`,
-    gMeta.faction === 'defend' ? 'gift-def' : 'gift-sab'
-  );
+  addChatLine(`${gMeta.emoji} @${evt.user}`, `kirim ${rep}x ${gMeta.name} (${coins} koin)`, gMeta.faction === 'defend' ? 'gift-def' : 'gift-sab');
 
   showGiftBanner({
     emoji: gMeta.emoji,
@@ -298,36 +415,27 @@ async function handleGiftEvent(evt) {
     sub: gMeta.shortDesc,
     combo: comboTag,
     faction: gMeta.faction,
-    duration: gMeta.coins >= 99 ? 3.4 : 2.3,
+    duration: gMeta.coins >= 99 ? 3.2 : 2.2,
   });
 
-  // Execute gift gameplay mechanics
   const waveMult = 1 + (state.wave - 1) * 0.14;
   switch (evt.giftId) {
     case 'rose': {
-      engine.triggerHealPulse({ amount: 35 * Math.min(3, rep), shieldSec: 0, repairFlash: false });
-      state.barricadeHp = Math.min(state.barricadeMaxHp, state.barricadeHp + 18 * rep);
-      engine.setBarricadeVisual(state.barricadeHp / state.barricadeMaxHp);
+      engine.triggerHealPulse({ amount: 35 * Math.min(3, rep), shieldSec: 0 });
+      healBase('human', 20 * rep);
+      cureInfectedCopy(evt.user);
       state.microCounterDefend += rep;
       if (state.microCounterDefend >= 10) {
         state.microCounterDefend %= 10;
         engine.triggerRageAura(7.5);
-        addChatLine('🔥 COMBO x10!', 'FRENZY FIRE RATE 2x AKTIF (7.5s)!', 'gift-def');
+        addChatLine('🔥 COMBO x10!', 'FRENZY FIRE RATE 2x BENTENG AKTIF!', 'gift-def');
       }
       break;
     }
 
     case 'ice_cream': {
-      const cap = Math.min(4, rep);
-      for (let i = 0; i < cap; i++) {
-        if (countLiving('enemy') < MAX_ENEMIES) {
-          engine.spawnEnemy({
-            specId: 'zombie_walker_shambler',
-            ownerName: i === 0 ? evt.user : null,
-            waveMult,
-          });
-        }
-      }
+      await spawnOrEvolveZombie({ user: evt.user, minLevel: 2, upgradeBy: rep >= 5 ? 1 : 0 });
+      healBase('zombie', 20 * rep);
       state.microCounterSabotage += rep;
       if (state.microCounterSabotage >= 10) {
         state.microCounterSabotage %= 10;
@@ -336,26 +444,21 @@ async function handleGiftEvent(evt) {
             engine.spawnEnemy({ specId: 'zombie_crawler_stalker', waveMult });
           }
         }
-        addChatLine('☠️ SWARM x10!', '+3 Feral Crawler menyerbu barikade!', 'gift-sab');
+        addChatLine('☠️ SWARM x10!', '+3 Feral Crawler menyerbu Gerbang Benteng!', 'gift-sab');
       }
       break;
     }
 
     case 'finger_heart': {
-      const repair = Math.round(state.barricadeMaxHp * 0.08 * Math.min(3, rep));
-      state.barricadeHp = Math.min(state.barricadeMaxHp, state.barricadeHp + repair);
-      engine.setBarricadeVisual(state.barricadeHp / state.barricadeMaxHp);
+      healBase('human', Math.round(state.humanBaseMaxHp * 0.08 * Math.min(3, rep)));
       engine.triggerHealPulse({ amount: 60, shieldSec: 5.0 * Math.min(2, rep), repairFlash: true });
       break;
     }
 
     case 'gg_troll': {
-      const n = Math.min(3, rep);
-      for (let i = 0; i < n; i++) {
-        if (countLiving('enemy') < MAX_ENEMIES) {
-          engine.spawnEnemy({ specId: 'zombie_spitter_hazmat', ownerName: evt.user, waveMult });
-        }
-      }
+      healBase('zombie', Math.round(state.zombieBaseMaxHp * 0.08 * Math.min(3, rep)));
+      await spawnOrEvolveZombie({ user: evt.user, minLevel: 3, upgradeBy: 1 });
+      engine.triggerHealPulse({ amount: 0, hiveHealFlash: true });
       break;
     }
 
@@ -365,10 +468,10 @@ async function handleGiftEvent(evt) {
     }
 
     case 'cap_horde': {
-      const squad = ['zombie_crawler_stalker', 'zombie_banshee_screamer', 'zombie_bloater_boomer'];
-      for (const specId of squad) {
-        if (countLiving('enemy') < MAX_ENEMIES + 2) {
-          engine.spawnEnemy({ specId, ownerName: evt.user, isElite: true, waveMult });
+      await spawnOrEvolveZombie({ user: evt.user, minLevel: 4, upgradeBy: 1 });
+      for (const specId of ['zombie_crawler_stalker', 'zombie_bloater_boomer']) {
+        if (countLiving('enemy') < MAX_ENEMIES + 1) {
+          engine.spawnEnemy({ specId, isElite: true, waveMult });
         }
       }
       break;
@@ -379,14 +482,14 @@ async function handleGiftEvent(evt) {
         const alive = engine.getUnits().filter((u) => u.team === 'survivor' && !u.dead);
         for (const u of alive) {
           await engine.upgradeSurvivor(u, 1);
+          const prof = state.survivorProfiles.get(u.ownerName.toLowerCase());
+          if (prof) prof.level = u.level;
         }
-        state.barricadeHp = Math.min(state.barricadeMaxHp, state.barricadeHp + Math.round(state.barricadeMaxHp * 0.15));
-        engine.setBarricadeVisual(state.barricadeHp / state.barricadeMaxHp);
-
+        healBase('human', Math.round(state.humanBaseMaxHp * 0.14));
         if (state.fallenHeroes.length > 0 && countLiving('survivor') < MAX_SURVIVORS) {
           const revived = state.fallenHeroes.shift();
           await spawnOrPromoteHero({ user: revived.ownerName, minLevel: Math.max(2, revived.level), upgradeBy: 0, isVip: true });
-          addChatLine('🐶 REVIVE', `@${revived.ownerName} bangkit kembali ke arena!`, 'gift-def');
+          addChatLine('🐶 REVIVE', `@${revived.ownerName} bangkit di Gerbang Benteng!`, 'gift-def');
         }
       });
       break;
@@ -394,93 +497,90 @@ async function handleGiftEvent(evt) {
 
     case 'storm_curse': {
       engine.triggerStormCurse(16.0);
-      engine.spawnEnemy({ specId: 'zombie_juggernaut_brute', ownerName: evt.user, isElite: true, waveMult });
+      await spawnOrEvolveZombie({ user: evt.user, minLevel: 6, upgradeBy: 1 });
       break;
     }
 
     case 'money_gun': {
       await spawnOrPromoteHero({ user: evt.user, minLevel: 8, upgradeBy: 8, isVip: true, isSultan: true });
       engine.triggerAirstrike(evt.user);
-      state.barricadeHp = Math.min(state.barricadeMaxHp, state.barricadeHp + Math.round(state.barricadeMaxHp * 0.22));
-      engine.setBarricadeVisual(state.barricadeHp / state.barricadeMaxHp);
+      healBase('human', Math.round(state.humanBaseMaxHp * 0.20));
       break;
     }
 
     case 'galaxy_boss': {
       const bosses = getActiveBosses();
-      if (bosses.length >= 2) {
+      const existingOwner = getEnemyByOwner(evt.user);
+      if (bosses.length >= 2 && (!existingOwner || !existingOwner.isBoss)) {
         for (const b of bosses) {
-          b.maxHp += 350;
-          b.hp += 350;
-          b.dmg = Math.round(b.dmg * 1.15);
+          b.maxHp += 380;
+          b.hp += 380;
         }
         audio.playBossHorn();
-        addChatLine('🌌 ENRAGE BOSS', `@${evt.user} memperkuat semua Boss (+350 HP)!`, 'gift-sab');
+        addChatLine('🌌 ENRAGE TITAN', `@${evt.user} memacu semua Boss Titan (+380 HP)!`, 'gift-sab');
       } else {
-        const bossSpec = MUTANT_BOSSES[Math.floor(Math.random() * MUTANT_BOSSES.length)];
-        await engine.spawnEnemy({ specId: bossSpec.id, ownerName: evt.user, isBoss: true, waveMult });
+        await spawnOrEvolveZombie({ user: evt.user, minLevel: 8, upgradeBy: 8 });
       }
       break;
     }
   }
 
-  // Collective Dual Goal Milestones (0 -> 100 coins, bounded modulo)
-  if (state.goalDefend >= GOAL_TARGET) {
-    state.goalDefend = state.goalDefend % GOAL_TARGET;
-    addChatLine('✈️ GOAL PENYELAMAT', `100 Koin tembus oleh @${evt.user}! COMMUNITY AIRSTRIKE!`, 'gift-def');
+  // Collective Dual Goal Milestones (triggered via pre-clamped flags so HUD never shows >=100)
+  if (triggeredDefendGoal) {
+    addChatLine('✈️ GOAL BENTENG', `100 Koin oleh @${evt.user}! COMMUNITY AIRSTRIKE!`, 'gift-def');
     showGiftBanner({
       emoji: '✈️',
       title: `PENENTU: @${evt.user}!`,
-      sub: 'Community Goal 100 Koin → AIRSTRIKE + REPAIR!',
+      sub: 'Goal 100 Koin → AIRSTRIKE ke Sarang Zombie!',
       combo: 'GOAL 100%',
       faction: 'defend',
-      duration: 3.5,
+      duration: 3.4,
     });
     engine.triggerAirstrike(evt.user);
-    state.barricadeHp = Math.min(state.barricadeMaxHp, state.barricadeHp + Math.round(state.barricadeMaxHp * 0.12));
-    engine.setBarricadeVisual(state.barricadeHp / state.barricadeMaxHp);
+    healBase('human', Math.round(state.humanBaseMaxHp * 0.10));
   }
 
-  if (state.goalSabotage >= GOAL_TARGET) {
-    state.goalSabotage = state.goalSabotage % GOAL_TARGET;
-    addChatLine('👾 GOAL PENGHANCUR', `100 Koin tembus oleh @${evt.user}! MUTANT BOSS INVASION!`, 'gift-sab');
+  if (triggeredSabotageGoal) {
+    addChatLine('👾 GOAL SARANG', `100 Koin oleh @${evt.user}! GIANT MUTANT BOSS!`, 'gift-sab');
     showGiftBanner({
       emoji: '👾',
       title: `INVASI BOSS: @${evt.user}!`,
-      sub: 'Sabotage Goal 100 Koin → GIANT MUTANT TURUN!',
+      sub: 'Goal 100 Koin → GIANT MUTANT BOSS TURUN!',
       combo: 'GOAL 100%',
       faction: 'sabotage',
-      duration: 3.5,
+      duration: 3.4,
     });
     const bossSpec = MUTANT_BOSSES[Math.floor(Math.random() * MUTANT_BOSSES.length)];
-    engine.spawnEnemy({ specId: bossSpec.id, ownerName: evt.user, isBoss: true, waveMult });
+    engine.spawnEnemy({ specId: bossSpec.id, ownerName: evt.user, level: 8, isBoss: true, waveMult });
   }
 }
 
 async function handleChatEvent(evt) {
   const msgLower = evt.message.toLowerCase();
-  if (msgLower.startsWith('!join') || msgLower === '1') {
+  if (msgLower.startsWith('!manusia') || msgLower.startsWith('!join') || msgLower === '1') {
     const existing = getHeroByOwner(evt.user);
     if (existing) {
-      addChatLine(`@${evt.user}`, 'Hero kamu sudah bertahan di arena!', 'talk');
+      addChatLine(`@${evt.user}`, 'Hero kamu sudah berjuang di medan perang!', 'talk');
       return;
     }
     if (countLiving('survivor') < MAX_SURVIVORS) {
-      const pick = SURVIVORS[Math.floor(Math.random() * SURVIVORS.length)];
-      await engine.spawnSurvivor({ specId: pick.id, ownerName: evt.user, level: 1, isVip: false });
-      addChatLine(`🛡️ @${evt.user}`, `bergabung membawa Pistol Lv.1!`, 'gift-def');
+      await spawnOrPromoteHero({ user: evt.user, minLevel: 1, upgradeBy: 0, isVip: false });
+      addChatLine(`🏰 @${evt.user}`, `bergabung membela Benteng (Lv.1 Pistol)!`, 'gift-def');
     } else {
       if (!state.joinQueue.includes(evt.user)) state.joinQueue.push(evt.user);
-      addChatLine(`⏳ @${evt.user}`, `masuk antrean (${state.joinQueue.length}). Kirim 🍩 Donat untuk potong!`, 'talk');
+      addChatLine(`⏳ @${evt.user}`, `antrean penuh (${state.joinQueue.length}). Kirim 🍩 Donat potong antrean!`, 'talk');
     }
     return;
   }
 
   if (msgLower.startsWith('!zombie') || msgLower === '2') {
-    if (countLiving('enemy') < MAX_ENEMIES) {
-      await engine.spawnEnemy({ specId: 'zombie_walker_shambler', ownerName: evt.user, waveMult: 1 + (state.wave - 1) * 0.14 });
-      addChatLine(`☠️ @${evt.user}`, `mengirim 1 Walker gratis!`, 'gift-sab');
+    const existing = getEnemyByOwner(evt.user);
+    if (existing) {
+      addChatLine(`@${evt.user}`, `Zombie Lv.${existing.level || 1} kamu sedang menyerbu Benteng!`, 'talk');
+      return;
     }
+    await spawnOrEvolveZombie({ user: evt.user, minLevel: 1, upgradeBy: 0 });
+    addChatLine(`🦠 @${evt.user}`, `keluar dari Sarang sebagai Walker Lv.1!`, 'gift-sab');
     return;
   }
 
@@ -492,11 +592,9 @@ function handleLikeEvent(evt) {
   const bucket = Math.floor(state.likesCount / 100);
   if (bucket > state.likesMilestoneMod) {
     state.likesMilestoneMod = bucket;
-    const repair = Math.round(state.barricadeMaxHp * 0.03);
-    state.barricadeHp = Math.min(state.barricadeMaxHp, state.barricadeHp + repair);
-    engine.setBarricadeVisual(state.barricadeHp / state.barricadeMaxHp);
-    engine.triggerHealPulse({ amount: 22, shieldSec: 0, repairFlash: false });
-    addChatLine('❤️ 100 TAP LIKES', 'Mini Supply aktif! Barikade +3% & Heal Skuad!', 'gift-def');
+    healBase('human', Math.round(state.humanBaseMaxHp * 0.03));
+    engine.triggerHealPulse({ amount: 22, shieldSec: 0 });
+    addChatLine('❤️ 100 TAP LIKES', 'Bantuan Amunisi & +3% Repair Benteng!', 'gift-def');
   }
 }
 
@@ -519,29 +617,32 @@ async function startNewRound() {
     state.phaseTimer = PREP_SEC;
     state.combatTimeLeft = ROUND_COMBAT_SEC;
     state.wave = 1;
-    state.barricadeMaxHp = 1200;
-    state.barricadeHp = 1200;
+    state.humanBaseHp = state.humanBaseMaxHp;
+    state.zombieBaseHp = state.zombieBaseMaxHp;
     state.roundCoins = 0;
-    state.finalBossSpawned = false;
-    state.directorTimer = 1.2;
+    state.directorTimer = 1.4;
     state.fallenHeroes = [];
     state.joinQueue = [];
-    engine.setBarricadeVisual(1.0);
+    state.respawnQueue = [];
+    state.survivorProfiles.clear();
+    state.zombieProfiles.clear();
+    engine.setHumanBaseVisual(1.0);
+    engine.setZombieBaseVisual(1.0);
+    engine.setSuddenDeath(false);
     recapOverlay.classList.remove('show');
     vignetteCrisis.classList.remove('active');
     crisisBanner.classList.remove('show');
 
-    // Spawn 3 starter defenders right away so arena feels alive immediately
+    // Starter 2-Base Clash Squads (3 Fortress Defenders vs 3 Hive Raiders)
     await engine.spawnSurvivor({ specId: 'jake_male',   ownerName: 'Unit-Alpha', level: 2, isVip: false });
     await engine.spawnSurvivor({ specId: 'lena_female', ownerName: 'Unit-Bravo', level: 2, isVip: false });
     await engine.spawnSurvivor({ specId: 'rico_male',   ownerName: 'Unit-Delta', level: 2, isVip: false });
 
-    // Early wave scouts walking toward barricade
-    await engine.spawnEnemy({ specId: 'zombie_walker_shambler', waveMult: 1.0 });
-    await engine.spawnEnemy({ specId: 'zombie_walker_shambler', waveMult: 1.0 });
-    await engine.spawnEnemy({ specId: 'zombie_crawler_stalker', waveMult: 1.0 });
+    await engine.spawnEnemy({ specId: 'zombie_walker_shambler', level: 1, waveMult: 1.0 });
+    await engine.spawnEnemy({ specId: 'zombie_walker_shambler', level: 1, waveMult: 1.0 });
+    await engine.spawnEnemy({ specId: 'zombie_crawler_stalker', level: 2, waveMult: 1.0 });
 
-    addChatLine('📢 RONDE BARU', `Ronde #${state.roundNumber} dimulai! Ketik !join atau kirim gift!`, 'gift-def');
+    addChatLine('⚔️ PERANG 2 BASE', `Ronde #${state.roundNumber}! Ketik !manusia (1) atau !zombie (2)!`, 'gift-def');
   } finally {
     state.spawningLock = false;
   }
@@ -556,84 +657,122 @@ function topEntry(map) {
   return bestName;
 }
 
-function finishRound(survivorsWon, reasonText) {
+function finishRound(humanWon, reasonText) {
   if (state.phase === 'ENDED') return;
   state.phase = 'ENDED';
   state.phaseTimer = RECAP_SEC;
-  audio.playRoundEnd(survivorsWon);
+  engine.setSuddenDeath(false);
+  audio.playRoundEnd(humanWon);
 
-  recapTitle.textContent = survivorsWon ? '🏆 EVAKUASI BERHASIL!' : '☠️ MARKAS JEBOL!';
-  recapTitle.style.color = survivorsWon ? '#4ade80' : '#f87171';
+  recapTitle.textContent = humanWon ? '🏰 BENTENG MANUSIA MENANG!' : '🦠 SARANG ZOMBIE MENANG!';
+  recapTitle.style.color = humanWon ? '#4ade80' : '#f87171';
   recapSub.textContent = `${reasonText} • Total ${state.roundCoins} Koin Ronde Ini`;
 
   let killLeader = '-';
   let maxKills = 0;
   for (const u of engine.getUnits()) {
-    if (u.team === 'survivor' && (u.kills || 0) > maxKills) {
+    if ((u.kills || 0) > maxKills) {
       maxKills = u.kills;
-      killLeader = `@${u.ownerName} (${maxKills} Kill)`;
+      killLeader = `@${u.ownerName || u.shortName} (${maxKills} Kill)`;
     }
   }
 
   recapMvpList.innerHTML = `
-    <div class="recap-row"><span>🛡️ Top Penyelamat</span><strong>${topEntry(state.defendLeaderboard)}</strong></div>
-    <div class="recap-row"><span>☠️ Top Penghancur</span><strong>${topEntry(state.sabotageLeaderboard)}</strong></div>
+    <div class="recap-row"><span>🏰 Top Penyelamat</span><strong>${topEntry(state.defendLeaderboard)}</strong></div>
+    <div class="recap-row"><span>🦠 Top Penghancur</span><strong>${topEntry(state.sabotageLeaderboard)}</strong></div>
     <div class="recap-row"><span>🎯 Kill Terbanyak</span><strong>${killLeader}</strong></div>
   `;
   recapOverlay.classList.add('show');
 }
 
-// AI Tension Director & Simulation Step
+// AI Tension Director, Respawn & Infection Tick
 engine.onTick((simDt, rawDt) => {
   bus.pump(2);
 
   if (state.bannerTimer > 0) {
     state.bannerTimer -= rawDt;
-    if (state.bannerTimer <= 0) {
-      giftBanner.classList.remove('show');
+    if (state.bannerTimer <= 0) giftBanner.classList.remove('show');
+  }
+
+  // Process respawns & Turned-Zombie Infection timers
+  if (state.phase !== 'ENDED' && simDt > 0) {
+    for (let i = state.respawnQueue.length - 1; i >= 0; i--) {
+      const rq = state.respawnQueue[i];
+      rq.delay -= simDt;
+      if (rq.delay <= 0) {
+        state.respawnQueue.splice(i, 1);
+        if (rq.kind === 'infect') {
+          // Turn fallen survivor into infected zombie if not already alive on human side
+          if (!getHeroByOwner(rq.user) && countLiving('enemy') < MAX_ENEMIES + 2) {
+            engine.spawnEnemy({
+              specId: 'zombie_crawler_stalker',
+              ownerName: rq.user,
+              level: 2,
+              isInfected: true,
+              waveMult: 1 + (state.wave - 1) * 0.14,
+              posOverride: rq.pos,
+            });
+            addChatLine('☣️ TERINFEKSI!', `@${rq.user} bangkit jadi ZOMBIE menyerang Benteng!`, 'alert-sab');
+          }
+        } else if (rq.kind === 'human_respawn') {
+          const prof = state.survivorProfiles.get(rq.user.toLowerCase());
+          if (prof && !getHeroByOwner(rq.user) && countLiving('survivor') < MAX_SURVIVORS) {
+            spawnOrPromoteHero({ user: prof.ownerName, minLevel: prof.level, upgradeBy: 0, isVip: prof.level >= 3 });
+          }
+        } else if (rq.kind === 'zombie_respawn') {
+          const zprof = state.zombieProfiles.get(rq.user.toLowerCase());
+          if (zprof && !getEnemyByOwner(rq.user) && countLiving('enemy') < MAX_ENEMIES) {
+            spawnOrEvolveZombie({ user: zprof.ownerName, minLevel: zprof.level, upgradeBy: 0 });
+          }
+        }
+      }
     }
   }
 
-  // Promote free !join queue if slot opened
+  // Promote free !manusia queue
   if (state.phase !== 'ENDED' && state.joinQueue.length > 0 && countLiving('survivor') < MAX_SURVIVORS) {
     const nextUser = state.joinQueue.shift();
     if (!getHeroByOwner(nextUser)) {
-      const pick = SURVIVORS[Math.floor(Math.random() * SURVIVORS.length)];
-      engine.spawnSurvivor({ specId: pick.id, ownerName: nextUser, level: 1, isVip: false });
+      spawnOrPromoteHero({ user: nextUser, minLevel: 1, upgradeBy: 0, isVip: false });
     }
   }
 
   if (state.phase === 'PREP') {
     state.phaseTimer -= simDt;
-    if (state.phaseTimer <= 0) {
-      state.phase = 'COMBAT';
-    }
-  } else if (state.phase === 'COMBAT' || state.phase === 'FINAL_STAND') {
-    state.combatTimeLeft -= simDt;
-    const elapsed = ROUND_COMBAT_SEC - state.combatTimeLeft;
-    state.wave = Math.min(5, 1 + Math.floor(elapsed / 32));
-
-    if (state.combatTimeLeft <= 30 && state.phase !== 'FINAL_STAND') {
-      state.phase = 'FINAL_STAND';
-      addChatLine('🚨 FINAL STAND', '30 DETIK TERAKHIR! Serbuan puncak dimulai!', 'alert-sab');
-      if (!state.finalBossSpawned && getActiveBosses().length === 0) {
-        state.finalBossSpawned = true;
-        const bossSpec = MUTANT_BOSSES[Math.floor(Math.random() * MUTANT_BOSSES.length)];
-        engine.spawnEnemy({ specId: bossSpec.id, ownerName: 'WaveAkhir', isBoss: true, waveMult: 1.25 });
+    if (state.phaseTimer <= 0) state.phase = 'COMBAT';
+  } else if (state.phase === 'COMBAT' || state.phase === 'SUDDEN_DEATH') {
+    if (state.phase === 'COMBAT') {
+      state.combatTimeLeft -= simDt;
+      const elapsed = ROUND_COMBAT_SEC - state.combatTimeLeft;
+      state.wave = Math.min(5, 1 + Math.floor(elapsed / 32));
+      if (state.combatTimeLeft <= 0) {
+        state.combatTimeLeft = 0;
+        state.phase = 'SUDDEN_DEATH';
+        engine.setSuddenDeath(true);
+        audio.playBossHorn();
+        addChatLine('💀 SUDDEN DEATH!', 'WAKTU HABIS! 2x DAMAGE TANPA HEAL BASE!', 'alert-sab');
       }
     }
 
-    if (state.combatTimeLeft <= 0) {
-      finishRound(true, 'Helikopter Evakuasi Tiba!');
+    // Dual Base Cliffhanger Check
+    const hRatio = state.humanBaseHp / state.humanBaseMaxHp;
+    const zRatio = state.zombieBaseHp / state.zombieBaseMaxHp;
+    const isHumanCrit = hRatio < 0.30;
+    const isZombieCrit = zRatio < 0.30;
+    const anyCrit = isHumanCrit || isZombieCrit;
+
+    vignetteCrisis.classList.toggle('active', anyCrit || state.phase === 'SUDDEN_DEATH');
+    if (isHumanCrit) {
+      crisisBanner.textContent = '⚠️ BENTENG MANUSIA KRITIS! KIRIM 🌹 ROSE / 🫶 HEART!';
+      crisisBanner.classList.add('show');
+    } else if (isZombieCrit) {
+      crisisBanner.textContent = '⚠️ SARANG ZOMBIE KRITIS! KIRIM 🍦 ES KRIM / 🌌 BOSS!';
+      crisisBanner.classList.add('show');
+    } else {
+      crisisBanner.classList.remove('show');
     }
 
-    // Emergency Cliffhanger check
-    const hpRatio = state.barricadeHp / state.barricadeMaxHp;
-    const survCount = countLiving('survivor');
-    const isCritical = hpRatio < 0.30 || survCount <= 1;
-    vignetteCrisis.classList.toggle('active', isCritical);
-    crisisBanner.classList.toggle('show', isCritical);
-    if (isCritical) {
+    if (anyCrit) {
       state.crisisAlertTimer -= rawDt;
       if (state.crisisAlertTimer <= 0) {
         state.crisisAlertTimer = 3.2;
@@ -641,30 +780,27 @@ engine.onTick((simDt, rawDt) => {
       }
     }
 
-    // Ensure at least 1 NPC bot keeps fighting if all defenders died so barricade battle stays dramatic until barricade breaks or hero arrives
-    // Ambient zombie spawner
+    // Ambient Reinforcement Director for BOTH Bases so 2-base clash stays relentless
     state.directorTimer -= simDt;
     if (state.directorTimer <= 0) {
-      const enmAlive = countLiving('enemy');
-      const targetPop = state.phase === 'FINAL_STAND' ? 7 : Math.min(6, 2 + state.wave);
-      if (enmAlive < targetPop) {
-        const pool = state.wave === 1
-          ? ['zombie_walker_shambler', 'zombie_walker_shambler', 'zombie_crawler_stalker']
-          : state.wave === 2
-            ? ['zombie_walker_shambler', 'zombie_crawler_stalker', 'zombie_spitter_hazmat']
-            : state.wave === 3
-              ? ['zombie_crawler_stalker', 'zombie_banshee_screamer', 'zombie_spitter_hazmat', 'zombie_bloater_boomer']
-              : ['zombie_crawler_stalker', 'zombie_banshee_screamer', 'zombie_bloater_boomer', 'zombie_juggernaut_brute'];
-        const pick = pool[Math.floor(Math.random() * pool.length)];
-        engine.spawnEnemy({ specId: pick, waveMult: 1 + (state.wave - 1) * 0.12 });
+      const waveMult = 1 + (state.wave - 1) * 0.12;
+      if (countLiving('survivor') < 3) {
+        const pick = SURVIVORS[Math.floor(Math.random() * SURVIVORS.length)];
+        engine.spawnSurvivor({ specId: pick.id, ownerName: `Unit-${1 + Math.floor(Math.random() * 9)}`, level: Math.min(3, state.wave), isVip: false });
       }
-      state.directorTimer = hpRatio < 0.30 ? 3.8 : Math.max(1.8, 3.6 - state.wave * 0.35);
+      const targetPop = state.phase === 'SUDDEN_DEATH' ? 6 : Math.min(5, 2 + state.wave);
+      if (countLiving('enemy') < targetPop) {
+        const pool = state.wave <= 2
+          ? ['zombie_walker_shambler', 'zombie_crawler_stalker', 'zombie_spitter_hazmat']
+          : ['zombie_crawler_stalker', 'zombie_banshee_screamer', 'zombie_spitter_hazmat', 'zombie_bloater_boomer', 'zombie_juggernaut_brute'];
+        const pick = pool[Math.floor(Math.random() * pool.length)];
+        engine.spawnEnemy({ specId: pick, level: state.wave, waveMult });
+      }
+      state.directorTimer = Math.max(2.0, 3.8 - state.wave * 0.32);
     }
   } else if (state.phase === 'ENDED') {
     state.phaseTimer -= rawDt;
-    if (recapCountdown) {
-      recapCountdown.textContent = `Ronde berikutnya dalam ${Math.max(1, Math.ceil(state.phaseTimer))}s...`;
-    }
+    if (recapCountdown) recapCountdown.textContent = `Ronde berikutnya dalam ${Math.max(1, Math.ceil(state.phaseTimer))}s...`;
     if (state.phaseTimer <= 0) {
       state.roundNumber++;
       startNewRound();
@@ -688,16 +824,19 @@ function renderSultanList(el, map) {
 
 function refreshHUD() {
   const stats = engine.getStats();
-  const hpPct = Math.max(0, Math.round((state.barricadeHp / state.barricadeMaxHp) * 100));
+  const hPct = Math.max(0, Math.round((state.humanBaseHp / state.humanBaseMaxHp) * 100));
+  const zPct = Math.max(0, Math.round((state.zombieBaseHp / state.zombieBaseMaxHp) * 100));
 
   hudRoundBadge.textContent = `Ronde #${state.roundNumber}`;
-  hudTimer.textContent = state.phase === 'PREP' ? `00:0${Math.ceil(state.phaseTimer)}` : fmtTime(state.combatTimeLeft);
+  if (state.phase === 'PREP') hudTimer.textContent = `00:0${Math.ceil(state.phaseTimer)}`;
+  else if (state.phase === 'SUDDEN_DEATH') hudTimer.textContent = '2x DMG';
+  else hudTimer.textContent = fmtTime(state.combatTimeLeft);
 
   if (state.phase === 'PREP') {
     hudPhasePill.textContent = 'PERSIAPAN';
     hudPhasePill.className = 'phase-pill prep';
-  } else if (state.phase === 'FINAL_STAND') {
-    hudPhasePill.textContent = 'FINAL STAND!';
+  } else if (state.phase === 'SUDDEN_DEATH') {
+    hudPhasePill.textContent = 'SUDDEN DEATH';
     hudPhasePill.className = 'phase-pill crisis';
   } else if (state.phase === 'ENDED') {
     hudPhasePill.textContent = 'RECAP MVP';
@@ -707,9 +846,17 @@ function refreshHUD() {
     hudPhasePill.className = 'phase-pill combat';
   }
 
-  hudBarricadeFill.style.width = `${hpPct}%`;
-  hudBarricadeFill.style.background = hpPct > 55 ? '#22c55e' : (hpPct > 28 ? '#f59e0b' : '#ef4444');
-  hudBarricadeText.textContent = `🛡️ Markas ${hpPct}% (${Math.round(state.barricadeHp)})`;
+  hudHumanFill.style.width = `${hPct}%`;
+  hudHumanFill.style.background = hPct > 55 ? '#22c55e' : (hPct > 28 ? '#f59e0b' : '#ef4444');
+  hudHumanText.textContent = `🏰 Benteng ${hPct}%`;
+
+  hudZombieFill.style.width = `${zPct}%`;
+  hudZombieFill.style.background = zPct > 55 ? '#84cc16' : (zPct > 28 ? '#f97316' : '#ef4444');
+  hudZombieText.textContent = `🦠 Sarang ${zPct}%`;
+
+  if (frontlineMarker) {
+    frontlineMarker.style.left = `${stats.tugPct}%`;
+  }
 
   const defPct = Math.min(100, Math.round((state.goalDefend / GOAL_TARGET) * 100));
   const sabPct = Math.min(100, Math.round((state.goalSabotage / GOAL_TARGET) * 100));
@@ -718,20 +865,17 @@ function refreshHUD() {
   goalSabotageFill.style.width = `${sabPct}%`;
   goalSabotageText.textContent = `👾 Boss ${Math.round(state.goalSabotage)}/${GOAL_TARGET}`;
 
-  // Active status buffs
   const buffs = [];
   if (stats.rageActive) buffs.push('<span class="buff-pill fire">🔥 FRENZY 2x</span>');
   if (stats.shieldActive) buffs.push('<span class="buff-pill shield">🛡️ PERISAI</span>');
   if (stats.stormActive) buffs.push('<span class="buff-pill storm">⛈️ BADAI ZOMBIE</span>');
   hudBuffs.innerHTML = buffs.join('');
 
-  // Boss HP Bar
   if (stats.topBoss) {
     bossHud.classList.add('show');
     const b = stats.topBoss;
-    const bPct = Math.max(0, (b.hp / b.maxHp) * 100);
-    bossHudName.textContent = b.ownerName ? `💀 BOSS: @${b.ownerName} • ${b.shortName}` : `💀 ${b.shortName}`;
-    bossHudHpFill.style.width = `${bPct}%`;
+    bossHudName.textContent = b.ownerName ? `👑 BOSS: @${b.ownerName} • ${b.shortName}` : `💀 ${b.shortName}`;
+    bossHudHpFill.style.width = `${Math.max(0, (b.hp / b.maxHp) * 100)}%`;
     bossHudHpText.textContent = `${Math.round(b.hp)} / ${b.maxHp}`;
   } else {
     bossHud.classList.remove('show');
@@ -740,21 +884,19 @@ function refreshHUD() {
   renderSultanList(sultanDefendList, state.defendLeaderboard);
   renderSultanList(sultanSabotageList, state.sabotageLeaderboard);
 
-  // Studio Telemetry
   if (telCoins) telCoins.textContent = `${state.sessionCoins.toLocaleString('id-ID')} Koin`;
   const mins = Math.max(0.2, (Date.now() - state.sessionStartMs) / 60000);
   if (telCpm) telCpm.textContent = `${Math.round(state.sessionCoins / mins)} / mnt`;
   const totalSide = state.defendCoins + state.sabotageCoins;
   const dShare = totalSide > 0 ? Math.round((state.defendCoins / totalSide) * 100) : 50;
-  if (telDefPct) telDefPct.textContent = `🛡️ ${dShare}%`;
-  if (telSabPct) telSabPct.textContent = `${100 - dShare}% ☠️`;
+  if (telDefPct) telDefPct.textContent = `🏰 ${dShare}%`;
+  if (telSabPct) telSabPct.textContent = `${100 - dShare}% 🦠`;
   if (telTugDefBar) telTugDefBar.style.width = `${dShare}%`;
-  if (telUnits) telUnits.textContent = `${stats.survAlive} Surv / ${stats.enmAlive} Musuh`;
+  if (telUnits) telUnits.textContent = `${stats.survAlive} Surv / ${stats.enmAlive} Zomb`;
   if (telFps) telFps.textContent = `${stats.fps} FPS`;
   if (likeProgressText) likeProgressText.textContent = `Tap Likes: ${state.likesCount} (Bonus tiap 100)`;
 }
 
-// Build Gift Buttons in Left Simulator Panel
 function renderGiftButtons() {
   const mkBtn = (g) => {
     const btn = document.createElement('button');
@@ -786,7 +928,6 @@ function renderGiftButtons() {
   }
 }
 
-// Wire Simulator Controls
 renderGiftButtons();
 
 document.querySelectorAll('[data-combo]').forEach((btn) => {
@@ -803,18 +944,8 @@ if (btnRandomUser) {
   });
 }
 
-if (btnLike25) {
-  btnLike25.addEventListener('click', () => {
-    audio.unlock();
-    bus.emitLike({ user: inpUsername.value || 'Penonton', count: 25 });
-  });
-}
-if (btnLike100) {
-  btnLike100.addEventListener('click', () => {
-    audio.unlock();
-    bus.emitLike({ user: inpUsername.value || 'Penonton', count: 100 });
-  });
-}
+if (btnLike25) btnLike25.addEventListener('click', () => { audio.unlock(); bus.emitLike({ user: inpUsername.value || 'Penonton', count: 25 }); });
+if (btnLike100) btnLike100.addEventListener('click', () => { audio.unlock(); bus.emitLike({ user: inpUsername.value || 'Penonton', count: 100 }); });
 if (btnSendChat) {
   btnSendChat.addEventListener('click', () => {
     audio.unlock();
@@ -824,23 +955,9 @@ if (btnSendChat) {
     inpChat.value = '';
   });
 }
-if (inpChat) {
-  inpChat.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') btnSendChat.click();
-  });
-}
-if (btnQuickJoin) {
-  btnQuickJoin.addEventListener('click', () => {
-    audio.unlock();
-    bus.emitChat({ user: inpUsername.value || 'Penonton', message: '!join' });
-  });
-}
-if (btnQuickZombie) {
-  btnQuickZombie.addEventListener('click', () => {
-    audio.unlock();
-    bus.emitChat({ user: inpUsername.value || 'Penonton', message: '!zombie' });
-  });
-}
+if (inpChat) inpChat.addEventListener('keydown', (e) => { if (e.key === 'Enter') btnSendChat.click(); });
+if (btnQuickManusia) btnQuickManusia.addEventListener('click', () => { audio.unlock(); bus.emitChat({ user: inpUsername.value || 'Penonton', message: '!manusia' }); });
+if (btnQuickZombie) btnQuickZombie.addEventListener('click', () => { audio.unlock(); bus.emitChat({ user: inpUsername.value || 'Penonton', message: '!zombie' }); });
 
 if (btnAutoLive) {
   btnAutoLive.addEventListener('click', () => {
@@ -856,9 +973,7 @@ if (btnAutoLive) {
     }
   });
 }
-if (selAutoIntensity) {
-  selAutoIntensity.addEventListener('change', () => mockStream.setIntensity(selAutoIntensity.value));
-}
+if (selAutoIntensity) selAutoIntensity.addEventListener('change', () => mockStream.setIntensity(selAutoIntensity.value));
 
 document.querySelectorAll('[data-scenario]').forEach((btn) => {
   btn.addEventListener('click', () => {
@@ -877,6 +992,15 @@ document.querySelectorAll('[data-cam]').forEach((btn) => {
 if (selWeather) selWeather.addEventListener('change', () => engine.setWeather(selWeather.value));
 if (chkBloom) chkBloom.addEventListener('change', () => engine.setBloom(chkBloom.checked));
 if (chkSfx) chkSfx.addEventListener('change', () => audio.setEnabled(chkSfx.checked));
+if (sliderZoom) {
+  sliderZoom.addEventListener('input', () => {
+    const v = parseFloat(sliderZoom.value) || 1.0;
+    engine.setZoomScale(v);
+    if (zoomVal) zoomVal.textContent = `${v.toFixed(2)}x`;
+  });
+}
+if (chkCompactHud) chkCompactHud.addEventListener('change', () => document.body.classList.toggle('compact-hud', chkCompactHud.checked));
+if (chkMiniLabels) chkMiniLabels.addEventListener('change', () => document.body.classList.toggle('mini-labels', chkMiniLabels.checked));
 
 if (btnPause) {
   btnPause.addEventListener('click', () => {
@@ -892,16 +1016,8 @@ if (btnNextRound) {
     startNewRound();
   });
 }
-if (btnObsMode) {
-  btnObsMode.addEventListener('click', () => {
-    document.body.classList.add('obs-mode');
-  });
-}
-if (btnExitObs) {
-  btnExitObs.addEventListener('click', () => {
-    document.body.classList.remove('obs-mode');
-  });
-}
+if (btnObsMode) btnObsMode.addEventListener('click', () => document.body.classList.add('obs-mode'));
+if (btnExitObs) btnExitObs.addEventListener('click', () => document.body.classList.remove('obs-mode'));
 
 if (btnConnectWs) {
   btnConnectWs.addEventListener('click', () => {
@@ -915,7 +1031,6 @@ if (btnConnectWs) {
   });
 }
 
-// Boot Environment & Start Round #1
 (async () => {
   try {
     await engine.initEnvironment();
@@ -925,9 +1040,7 @@ if (btnConnectWs) {
       btnAutoLive.textContent = '🤖 Auto-Live Ramai: ON';
       btnAutoLive.classList.add('active-auto');
     }
-    if (wsParam) {
-      bus.connectWebSocket(wsParam);
-    }
+    if (wsParam) bus.connectWebSocket(wsParam);
   } catch (err) {
     console.error('Boot error:', err);
     addChatLine('❌ ERROR', 'Gagal memuat aset 3D. Pastikan dijalankan via HTTP server!', 'alert-sab');
