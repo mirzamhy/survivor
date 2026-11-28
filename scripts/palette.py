@@ -199,42 +199,42 @@ MATERIAL_SPECS = [
     # Apocalypse Environment Kit (19 PBR materials)
     ("Mat_Env_AsphaltCracked",  "#2E3238", 0.88, 0.00),
     ("Mat_Env_SoilCracked",     "#524436", 0.92, 0.00),
-    ("Mat_Env_ConcreteCracked", "#74726C", 0.88, 0.00),
-    ("Mat_Env_ConcreteDark",    "#4C4E4C", 0.90, 0.00),
+    ("Mat_Env_ConcreteCracked", "#74726C", 0.90, 0.00),
+    ("Mat_Env_ConcreteDark",    "#4C4E4C", 0.92, 0.00),
     ("Mat_Env_BrickRuined",     "#723D2F", 0.88, 0.00),
-    ("Mat_Env_PlasterDamaged",  "#8E8776", 0.88, 0.00),
-    ("Mat_Env_RustHeavy",       "#6E3724", 0.76, 0.35),
-    ("Mat_Env_CarPaintFaded",   "#415663", 0.62, 0.18),
-    ("Mat_Env_MetalScrap",      "#32363C", 0.52, 0.78),
-    ("Mat_Env_WoodPlank",       "#624932", 0.86, 0.00),
-    ("Mat_Env_GrassDry",        "#6E783B", 0.84, 0.00),
-    ("Mat_Env_GrassLush",       "#36582A", 0.78, 0.00),
-    ("Mat_Env_RoadStripe",      "#C29C32", 0.84, 0.00),
-    ("Mat_Env_HazardYellow",    "#C89A24", 0.76, 0.00),
-    ("Mat_Env_Sandbag",         "#928164", 0.92, 0.00),
-    ("Mat_Env_GlassBroken",     "#223640", 0.14, 0.25),
-    ("Mat_Env_BarrelRed",       "#922C24", 0.62, 0.32),
+    ("Mat_Env_PlasterDamaged",  "#8E8776", 0.90, 0.00),
+    ("Mat_Env_RustHeavy",       "#6A3826", 0.84, 0.18),
+    ("Mat_Env_CarPaintFaded",   "#3E505C", 0.74, 0.08),
+    ("Mat_Env_MetalScrap",      "#32363C", 0.62, 0.62),
+    ("Mat_Env_WoodPlank",       "#624932", 0.88, 0.00),
+    ("Mat_Env_GrassDry",        "#6E783B", 0.88, 0.00),
+    ("Mat_Env_GrassLush",       "#36582A", 0.84, 0.00),
+    ("Mat_Env_RoadStripe",      "#C29C32", 0.86, 0.00),
+    ("Mat_Env_HazardYellow",    "#C89A24", 0.80, 0.00),
+    ("Mat_Env_Sandbag",         "#928164", 0.94, 0.00),
+    ("Mat_Env_GlassBroken",     "#223640", 0.24, 0.15),
+    ("Mat_Env_BarrelRed",       "#882C24", 0.76, 0.14),
     ("Mat_Env_EmberGlow",       "#FF6A1A", 0.25, 0.00, "#FF5210", 4.5),
     ("Mat_Env_FireCore",        "#FFD44D", 0.18, 0.00, "#FFA820", 6.5),
-    ("Mat_Env_PuddleWet",       "#121820", 0.05, 0.22),
+    ("Mat_Env_PuddleWet",       "#121820", 0.32, 0.00),
     ("Mat_Env_BeaconRed",       "#FF2A20", 0.20, 0.00, "#FF1E14", 7.5),
     ("Mat_Env_BeaconBlue",      "#2288FF", 0.20, 0.00, "#1E78FF", 7.5),
-    ("Mat_Env_PoliceWhite",     "#D6DCE0", 0.56, 0.14),
+    ("Mat_Env_PoliceWhite",     "#BDC4C8", 0.72, 0.06),
     ("Mat_Env_MedCanvas",       "#C6CEC4", 0.88, 0.00),
     ("Mat_Env_MedCross",        "#BA2626", 0.78, 0.00),
-    ("Mat_Env_CrateGreen",      "#3E4D33", 0.74, 0.16),
+    ("Mat_Env_CrateGreen",      "#3E4D33", 0.80, 0.08),
 
-    # War-Torn Fortress, Wet Mud & Bio-Hive Kit (6 PBR materials)
-    ("Mat_Env_MudWet",          "#3D281A", 0.42, 0.04),
-    ("Mat_Env_MudPuddle",       "#1A120C", 0.04, 0.22),
-    ("Mat_Env_FortressSteel",   "#3B3E44", 0.56, 0.72),
-    ("Mat_Env_BarbedWire",      "#4A3A32", 0.58, 0.78),
-    ("Mat_Env_HiveFlesh",       "#2B1822", 0.44, 0.05),
+    # War-Torn Fortress & Matte Brown Earth Kit
+    ("Mat_Env_MudWet",          "#402E20", 0.88, 0.00),
+    ("Mat_Env_MudPuddle",       "#261B13", 0.58, 0.00),
+    ("Mat_Env_FortressSteel",   "#393D42", 0.68, 0.52),
+    ("Mat_Env_BarbedWire",      "#463932", 0.72, 0.55),
+    ("Mat_Env_HiveFlesh",       "#2B1822", 0.64, 0.00),
     ("Mat_Env_HiveGlow",        "#98F228", 0.18, 0.00, "#7CE018", 5.0),
 ]
 
 
-def create_materials(with_mutant_textures=False, with_env_textures=False, with_human_textures=False):
+def create_materials(with_mutant_textures=False, with_env_textures=False, with_human_textures=False, env_vertex_ao=False):
     """Create or return the survivor material list and index lookup."""
     apply_tex_fn = None
     if with_mutant_textures:
@@ -277,7 +277,7 @@ def create_materials(with_mutant_textures=False, with_env_textures=False, with_h
         applied_tex = False
         if len(spec) < 6:
             if apply_env_fn is not None and name.startswith("Mat_Env_"):
-                applied_tex = bool(apply_env_fn(mat, name, color_hex, roughness))
+                applied_tex = bool(apply_env_fn(mat, name, color_hex, roughness, use_vertex_ao=env_vertex_ao))
             elif apply_human_fn is not None:
                 applied_tex = bool(apply_human_fn(mat, name, color_hex, roughness))
             if not applied_tex and apply_tex_fn is not None:
